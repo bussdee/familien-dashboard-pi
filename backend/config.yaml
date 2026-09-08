@@ -1,0 +1,70 @@
+# Family Dashboard - Backend Runtime Config
+#
+# Secrets do NOT belong here. JWT_SECRET, WEATHER_LAT, WEATHER_LON and
+# WEATHER_TZ are read from the environment (.env / docker-compose) and override
+# anything set below.
+
+server:
+  host: "0.0.0.0"
+  port: 8080
+  read_timeout: "15s"
+  write_timeout: "60s"
+  # Cookies are only marked Secure when the dashboard is served over HTTPS.
+  secure_cookies: false
+  # Extra browser origins allowed to call the API. Empty in production, where
+  # frontend and backend share one origin behind Traefik.
+  allowed_origins: []
+
+database:
+  path: "/app/data/db.sqlite"
+  backup_dir: "/app/data/backup"
+  backup_retention_days: 7
+  backup_cron: "0 3 * * *"
+
+auth:
+  # jwt_secret comes from the JWT_SECRET environment variable.
+  token_ttl: "168h"   # 7 days — a family tablet should not log itself out daily
+
+weather:
+  latitude: 48.2082
+  longitude: 16.3738
+  timezone: "Europe/Vienna"
+  cache_ttl: "10m"
+
+calendar:
+  ics_dir: "/app/data/ics"
+  watch: true
+  lookahead_days: 60
+
+notes:
+  dir: "/app/data/notes"
+  watch: true
+
+photos:
+  dir: "/app/data/photos"
+
+devices:
+  check_interval: "30s"
+  timeout: "5s"
+  # Diese Liste wird NUR beim allerersten Start in die Datenbank übernommen.
+  # Danach werden Geräte im Dashboard unter Verwaltung -> Geräte gepflegt.
+  #
+  #   url  = Adresse, die der Health-Check abfragt (oft ein API-Pfad)
+  #   link = Oberfläche, die sich beim Antippen der Kachel öffnet
+  #
+  # Die Beispiele unten auf die eigenen Adressen anpassen oder ganz löschen
+  # und die Geräte stattdessen im Adminbereich anlegen.
+  targets:
+    - name: "Plex"
+      type: "http"
+      url: "http://192.168.1.20:32400/identity"
+      link: "http://192.168.1.20:32400/web"
+      expect_status: 200
+    - name: "Kavita"
+      type: "http"
+      url: "http://192.168.1.20:5000/api/health"
+      link: "http://192.168.1.20:5000"
+    - name: "FileBrowser"
+      type: "http"
+      url: "http://192.168.1.20:8080/health"
+      link: "http://192.168.1.20:8080"

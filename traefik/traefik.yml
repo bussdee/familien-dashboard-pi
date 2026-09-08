@@ -1,0 +1,30 @@
+global:
+  checkNewVersion: false
+  sendAnonymousUsage: false
+
+api:
+  dashboard: false
+
+# Required for `traefik healthcheck --ping` used by the container healthcheck.
+ping:
+  entryPoint: web
+
+entryPoints:
+  web:
+    address: ":80"
+  websecure:
+    address: ":443"
+
+providers:
+  # File provider only. The routing here is static (everything goes to the
+  # frontend container, which knows the /api split), so Traefik does not need
+  # access to the Docker socket — and handing a container the Docker socket is
+  # effectively handing it root on the host.
+  file:
+    directory: /etc/traefik/dynamic
+    watch: true
+
+log:
+  level: INFO
+
+accessLog: {}

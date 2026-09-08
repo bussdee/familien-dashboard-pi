@@ -1,0 +1,51 @@
+name: Release
+
+# Baut das Download-Archiv, sobald ein Versions-Tag geschoben wird:
+#
+#   git tag -a v1.0.0 -m "Version 1.0.0"
+#   git push origin v1.0.0
+#
+# Ergebnis: ein GitHub-Release mit tar.gz, zip und Prüfsummen.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  archiv:
+    name: Archiv bauen und veröffentlichen
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Version aus dem Tag ableiten
+        id: version
+        run: echo "nummer=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      # Das Skript prüft selbst auf .env, Datenbanken, Fotos und private
+      # Adressen und bricht ab, statt fremde Daten auszuliefern.
+      - name: Archiv bauen
+        run: bash scripts/make-release.sh "${{ steps.version.outputs.nummer }}"
+
+      - name: Prüfsummen anzeigen
+        run: cat dist/*.sha256
+
+      - name: Release anlegen
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/*.tar.gz
+            dist/*.zip
+            dist/*.sha256
+          generate_release_notes: true
+          body: |
+            Installationsanleitung: [INSTALL.md](INSTALL.md)
+
+            Nach dem Herunterladen die Prüfsumme vergleichen:
+
+            ```
+            sha256sum -c familien-dashboard-pi-${{ steps.version.outputs.nummer }}.tar.gz.sha256
+            ```

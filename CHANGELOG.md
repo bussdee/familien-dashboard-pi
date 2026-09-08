@@ -1,0 +1,70 @@
+# Änderungen
+
+Alle nennenswerten Änderungen an diesem Projekt.
+Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
+Versionierung nach [SemVer](https://semver.org/lang/de/).
+
+## [1.0.0] — 2026-09-08
+
+Erste öffentliche Fassung.
+
+### Enthalten
+
+**Aufgaben und Punkte**
+- Wiederkehrende Aufgaben mit Intervall, Punktwert und rotierender Zuständigkeit
+- Gemeinsames Punktesystem für Aufgaben und Einkäufe (`point_events`)
+- Level alle 100 Punkte mit Namen von Neuling bis Legende, Fortschrittsbalken
+- Serien über aufeinanderfolgende aktive Tage
+- Elf Abzeichen, Siegertreppchen, Wochenwertung, geteilte Plätze bei Gleichstand
+- Punkte fürs Einkaufen: 15 Grundpunkte plus 2 je Artikel, gedeckelt bei 80
+- Adminbereich: Verlauf, einzelne Einträge zurücknehmen, manuell buchen,
+  Punktestände zurücksetzen. Das Zurücknehmen einer Aufgabe macht sie wieder
+  fällig, statt nur den Punkt zu streichen.
+
+**Listen und Inhalte**
+- Einkaufsliste mit Live-Sync über WebSocket
+- Kalender: eigene Termine (einmalig, wöchentlich, monatlich, jährlich) plus
+  `.ics`-Import mit RRULE- und EXDATE-Auswertung
+- Notizen als Markdown, zweiseitig mit dem Dateisystem synchronisiert
+- Links mit Kategorien, Anpinnen auf die Startseite, Teilen mit der Familie
+- Foto-Rahmen mit Upload per Drag & Drop, Prüfung nach Dateiinhalt
+
+**Umgebung**
+- Wetter über Open-Meteo mit Ortssuche, ohne API-Schlüssel; Zwischenspeicher in
+  der Datenbank für den Offline-Fall
+- Geräte-Health-Checks über HTTP oder TCP, im Adminbereich konfigurierbar,
+  mit Verbindungstest vor dem Speichern
+- Countdowns, automatisch aus Kalendereinträgen abgeleitet
+
+**Benutzer und Oberfläche**
+- PIN-Anmeldung mit argon2id, Sperre nach fünf Fehlversuchen
+- Eigenes Profil: Name, Avatar, Farbe, PIN
+- Rollen Administrator und Familienmitglied
+- Fenster pro Person anordnen und ausblenden
+- Heller und dunkler Modus, dem System folgend
+- Schubladenmenü auf dem Handy, Navigationsleiste am Rechner
+- Eigener Bestätigungsdialog statt `window.confirm()` — letzteres wird von
+  manchen Browsern unterdrückt und liefert dann stumm `false`
+
+**Technik**
+- Go-Backend mit Chi, SQLite über `modernc.org/sqlite` (kein CGO)
+- SvelteKit-Frontend als SPA mit `adapter-static`
+- Traefik nur über Datei-Provider, ohne Zugriff auf den Docker-Socket
+- Container als non-root mit read-only Dateisystem
+- Nächtliche Sicherung per SQLite `VACUUM INTO`, sieben Tage Aufbewahrung
+- PWA: Service Worker mit Offline-Ansicht, Installations-Vorschlag,
+  Update-Benachrichtigung
+- 35 automatische Prüfungen über `make verify`
+
+### Bekannte Einschränkungen
+
+- Oberfläche nur auf Deutsch
+- Offline-Modus und Installation brauchen HTTPS; über `http://` funktioniert
+  beides nur auf `localhost`
+- Fenster lassen sich per Pfeiltasten sortieren, nicht per Drag & Drop
+- HEIC-Bilder von iPhones werden beim direkten Upload nicht unterstützt
+- Zweiwöchentliche Termine gehen nur über eine `.ics` mit `INTERVAL=2`
+- Ein Punkt lässt sich nicht vom Benutzer selbst zurücknehmen, nur von einem
+  Administrator
+
+[1.0.0]: https://github.com/bussdee/familien-dashboard-pi/releases/tag/v1.0.0

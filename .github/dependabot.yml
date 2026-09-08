@@ -1,0 +1,28 @@
+# Einmal im Monat nachsehen, ob Abhängigkeiten veraltet sind. Monatlich
+# statt wöchentlich, damit ein Familienprojekt nicht in Pull Requests ertrinkt.
+version: 2
+updates:
+  - package-ecosystem: gomod
+    directory: /backend
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 5
+    groups:
+      svelte:
+        patterns: ["@sveltejs/*", "svelte*", "vite"]
+
+  - package-ecosystem: docker
+    directories: ["/backend", "/frontend"]
+    schedule:
+      interval: monthly
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly

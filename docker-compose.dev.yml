@@ -1,0 +1,58 @@
+# Local development stack: Vite HMR + Go hot reload, no Traefik.
+#
+#   make dev   ->  http://localhost:5173   (and http://<LAN-IP>:5173)
+#
+# Vite proxies /api and the WebSocket to the backend, so the app runs on one
+# origin and the auth cookie behaves exactly as it does in production.
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    container_name: family-backend-dev
+    restart: unless-stopped
+    networks:
+      - family-dev
+    ports:
+      - "127.0.0.1:8080:8080"
+    environment:
+      TZ: ${TZ:-Europe/Vienna}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET fehlt - bitte .env anlegen}
+      WEATHER_LAT: ${WEATHER_LAT:-48.2082}
+      WEATHER_LON: ${WEATHER_LON:-16.3738}
+      WEATHER_TZ: ${WEATHER_TZ:-Europe/Vienna}
+      LOG_LEVEL: ${LOG_LEVEL:-debug}
+    volumes:
+      - ./backend:/app
+      - go-mod-cache:/go/pkg/mod
+      - go-build-cache:/root/.cache/go-build
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: family-frontend-dev
+    restart: unless-stopped
+    networks:
+      - family-dev
+    ports:
+      - "${BIND_ADDR:-0.0.0.0}:5173:5173"
+    environment:
+      # Vite runs inside the container, so the backend is reachable by service
+      # name rather than on localhost.
+      VITE_BACKEND_URL: http://backend:8080
+    volumes:
+      - ./frontend:/app
+      # Keep the image's node_modules; the bind mount would otherwise hide them.
+      - /app/node_modules
+    depends_on:
+      - backend
+
+volumes:
+  go-mod-cache:
+  go-build-cache:
+
+networks:
+  family-dev:
+    driver: bridge

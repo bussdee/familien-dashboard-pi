@@ -1,0 +1,53 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Geheimnisse und persönliche Daten — dürfen NIE in ein öffentliches Repository
+# ─────────────────────────────────────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+
+# Alles unterhalb von backend/data gehört der jeweiligen Familie:
+# Datenbank (mit PIN-Hashes), Notizen, Kalender, Fotos, Backups.
+backend/data/**
+# ... bis auf die Marker, die die leere Ordnerstruktur im Repo halten.
+!backend/data/**/
+!backend/data/**/.gitkeep
+!backend/data/.gitkeep
+
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+
+# Interne Arbeitsdokumente (Projekttagebuch, Textentwürfe). Bleiben lokal.
+.local/
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Build- und Cache-Artefakte
+# ─────────────────────────────────────────────────────────────────────────────
+node_modules/
+frontend/build/
+frontend/.svelte-kit/
+frontend/.vite/
+frontend/dist/
+backend/tmp/
+backend/build-errors.log
+.gocache/
+
+# Release-Archive
+dist/
+*.tar.gz
+*.zip
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Werkzeuge und Betriebssystem
+# ─────────────────────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+.DS_Store
+Thumbs.db
+
+*.log
+coverage/

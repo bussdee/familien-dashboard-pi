@@ -1,0 +1,32 @@
+name: Idee oder Wunsch
+description: Ein Vorschlag, was das Dashboard noch können sollte
+labels: ["idee"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Das Dashboard soll den Familienalltag leichter machen und dabei
+        einfach bleiben. Vorschläge, die es für Nicht-Techniker
+        komplizierter machen, haben es schwer — das ist kein Nein, nur
+        eine ehrliche Vorwarnung.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Welches Alltagsproblem soll gelöst werden?
+      description: Beschreibe die Situation, nicht die Lösung.
+      placeholder: Die Kinder vergessen, wer diese Woche mit dem Hund raus muss.
+    validations:
+      required: true
+
+  - type: textarea
+    id: idee
+    attributes:
+      label: Wie stellst du dir die Lösung vor?
+    validations:
+      required: true
+
+  - type: textarea
+    id: sonst
+    attributes:
+      label: Sonstiges (optional)

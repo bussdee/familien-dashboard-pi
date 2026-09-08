@@ -1,0 +1,16 @@
+# Zeilenenden vereinheitlichen. Ohne das holt sich ein Windows-Rechner beim
+# Klonen CRLF in die Shell-Skripte, und der Container startet nicht mehr:
+# "/bin/sh^M: bad interpreter".
+* text=auto eol=lf
+
+*.sh   text eol=lf
+*.yml  text eol=lf
+*.yaml text eol=lf
+Makefile text eol=lf
+Dockerfile* text eol=lf
+
+*.png binary
+*.jpg binary
+*.ico binary
+*.woff  binary
+*.woff2 binary

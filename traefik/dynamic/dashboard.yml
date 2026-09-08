@@ -1,0 +1,37 @@
+# Routing for the dashboard.
+#
+# nginx inside the frontend container serves the SPA and proxies /api and the
+# WebSocket to the Go backend, so Traefik only needs one route. Nothing is
+# stripped from the path — the backend expects the /api prefix.
+http:
+  routers:
+    dashboard:
+      rule: "PathPrefix(`/`)"
+      entryPoints: [web]
+      service: dashboard
+      middlewares: [security-headers]
+
+    dashboard-tls:
+      rule: "PathPrefix(`/`)"
+      entryPoints: [websecure]
+      service: dashboard
+      middlewares: [security-headers]
+      tls: {}
+
+  services:
+    dashboard:
+      loadBalancer:
+        passHostHeader: true
+        servers:
+          - url: "http://family-frontend:80"
+
+  middlewares:
+    security-headers:
+      headers:
+        frameDeny: true
+        contentTypeNosniff: true
+        referrerPolicy: "strict-origin-when-cross-origin"
+
+tls:
+  stores:
+    default: {}

@@ -1,0 +1,66 @@
+name: Fehler melden
+description: Etwas funktioniert nicht wie erwartet
+labels: ["fehler"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Danke, dass du dir die Zeit nimmst. Bitte keine Screenshots mit
+        echten Namen, Fotos oder Adressen aus deinem Haushalt hochladen —
+        die bleiben besser bei dir.
+
+  - type: textarea
+    id: was
+    attributes:
+      label: Was passiert?
+      placeholder: Die Aufgabenliste bleibt leer, obwohl ich Aufgaben angelegt habe.
+    validations:
+      required: true
+
+  - type: textarea
+    id: erwartet
+    attributes:
+      label: Was hättest du erwartet?
+    validations:
+      required: true
+
+  - type: textarea
+    id: schritte
+    attributes:
+      label: Wie kann man es nachstellen?
+      placeholder: |
+        1. Als Papa anmelden
+        2. Auf "Aufgaben" tippen
+        3. ...
+    validations:
+      required: true
+
+  - type: dropdown
+    id: geraet
+    attributes:
+      label: Worauf läuft das Dashboard?
+      options:
+        - Raspberry Pi
+        - Linux-PC oder Server
+        - Windows (Docker Desktop)
+        - Mac
+        - NAS (Synology, QNAP, ...)
+        - Weiß ich nicht
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Steht in der Datei VERSION, oder der Name des Archivs.
+      placeholder: "1.0.0"
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logausgabe (optional)
+      description: |
+        `docker compose logs --tail=50` — bitte vorher durchsehen und
+        persönliche Daten entfernen.
+      render: text

@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Frage zur Installation
+    url: https://github.com/bussdee/familien-dashboard-pi/blob/main/INSTALL.md
+    about: Die Installationsanleitung deckt PC, Linux, Raspberry Pi, Mac und NAS ab.
+  - name: Sicherheitslücke melden
+    url: https://github.com/bussdee/familien-dashboard-pi/blob/main/SECURITY.md
+    about: Bitte nicht öffentlich als Issue — so gehst du stattdessen vor.

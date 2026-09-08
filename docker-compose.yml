@@ -1,0 +1,91 @@
+# Production / LAN-test stack.
+#
+#   BIND_ADDR=0.0.0.0      -> reachable from every device in the LAN
+#   BIND_ADDR=192.168.1.20 -> pinned to one LAN address (recommended when live)
+#
+# The frontend container serves the built SPA and proxies /api to the backend,
+# so Traefik only ever needs one route.
+
+services:
+  traefik:
+    image: traefik:v3.1
+    container_name: family-traefik
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - family-net
+    ports:
+      - "${BIND_ADDR:-0.0.0.0}:${HTTP_PORT:-8088}:80"
+      - "${BIND_ADDR:-0.0.0.0}:${HTTPS_PORT:-8443}:443"
+    volumes:
+      # No Docker socket: routing comes from the static file below.
+      - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+      - ./traefik/dynamic:/etc/traefik/dynamic:ro
+    healthcheck:
+      test: ["CMD", "traefik", "healthcheck", "--ping"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: family-dashboard-backend:latest
+    container_name: family-backend
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+    networks:
+      - family-net
+    environment:
+      TZ: ${TZ:-Europe/Vienna}
+      # Refuses to start when this is missing or still the placeholder.
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET fehlt - bitte .env anlegen}
+      WEATHER_LAT: ${WEATHER_LAT:-48.2082}
+      WEATHER_LON: ${WEATHER_LON:-16.3738}
+      WEATHER_TZ: ${WEATHER_TZ:-Europe/Vienna}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+    volumes:
+      - ./backend/config.yaml:/app/config.yaml:ro
+      - ./backend/data:/app/data
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: family-dashboard-frontend:latest
+    container_name: family-frontend
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /var/cache/nginx
+      - /var/run
+    networks:
+      - family-net
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+networks:
+  family-net:
+    name: family-net
+    driver: bridge

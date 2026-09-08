@@ -1,0 +1,12 @@
+# Development image: Vite dev server with HMR.
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Dependencies are installed into the image, not the bind mount, so the
+# container works even when the host has no node_modules.
+COPY package.json package-lock.json ./
+RUN npm ci
+
+EXPOSE 5173
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "5173"]

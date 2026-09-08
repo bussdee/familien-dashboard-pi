@@ -1,0 +1,19 @@
+root = "."
+tmp_dir = "tmp"
+
+[build]
+  cmd = "go build -o ./tmp/server ."
+  bin = "./tmp/server"
+  full_bin = "./tmp/server -config /app/config.yaml"
+  delay = 400
+  exclude_dir = ["tmp", "data", "vendor", "testdata", "scripts"]
+  exclude_regex = ["_test\\.go"]
+  include_ext = ["go", "yaml", "yml"]
+  stop_on_error = true
+  log = "build-errors.log"
+
+[log]
+  time = false
+
+[misc]
+  clean_on_exit = true

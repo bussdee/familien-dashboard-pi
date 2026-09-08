@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="de" class="h-full">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="description" content="Familien Dashboard – Wetter, Kalender, Einkaufen, Notizen, Aufgaben" />
+    <meta name="theme-color" content="#0d9488" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0f172a" media="(prefers-color-scheme: dark)" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Familie" />
+    <link rel="manifest" href="%sveltekit.assets%/manifest.json" />
+    <link rel="icon" href="%sveltekit.assets%/icons/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="%sveltekit.assets%/icons/icon-192.png" />
+    <script>
+      // Apply the saved theme before first paint so the dashboard never flashes
+      // white on a wall-mounted tablet at night.
+      (function () {
+        try {
+          var t = localStorage.getItem('theme') || 'system';
+          var dark = t === 'dark' || (t === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
+          document.documentElement.classList.toggle('dark', dark);
+        } catch (e) {}
+      })();
+    </script>
+    %sveltekit.head%
+  </head>
+  <body data-sveltekit-preload-data="hover" class="h-full bg-background text-foreground antialiased">
+    <div style="display: contents" class="h-full">%sveltekit.body%</div>
+  </body>
+</html>
