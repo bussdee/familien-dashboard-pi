@@ -5,7 +5,7 @@ go 1.23
 require (
 	github.com/alexedwards/argon2id v1.0.0
 	github.com/emersion/go-ical v0.0.0-20240127095438-fc1c9d8fb2b6
-	github.com/fsnotify/fsnotify v1.7.0
+	github.com/fsnotify/fsnotify v1.10.1
 	github.com/go-chi/chi/v5 v5.0.12
 	github.com/go-chi/cors v1.2.1
 	github.com/golang-jwt/jwt/v5 v5.2.1
