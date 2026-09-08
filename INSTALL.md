@@ -38,8 +38,8 @@ docker ps && docker compose version
 ### Variante A – Archiv
 
 ```bash
-tar -xzf familien-dashboard-pi-1.0.0.tar.gz
-cd familien-dashboard-pi-1.0.0
+tar -xzf familien-dashboard-pi-1.0.1.tar.gz
+cd familien-dashboard-pi-1.0.1
 ```
 
 ### Variante B – Git

@@ -4,6 +4,24 @@ Alle nennenswerten Änderungen an diesem Projekt.
 Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 Versionierung nach [SemVer](https://semver.org/lang/de/).
 
+## [1.0.1] — 2026-09-08
+
+### Behoben
+
+- **Das Backend startete nicht, wenn der eigene Benutzer nicht die Kennung 1000
+  hat.** SQLite konnte die Datenbank in `backend/data` nicht anlegen und meldete
+  irreführend `unable to open database file: out of memory (14)`. Betraf unter
+  anderem viele NAS-Konten und zweite Benutzer eines Systems. Die Kennung kommt
+  jetzt aus `PUID`/`PGID` in der `.env`, `make setup` trägt die eigene ein.
+
+### Geändert
+
+- Go-Werkzeugkette auf 1.25, Abhängigkeiten aktualisiert — darunter
+  `golang-jwt` (Anmeldung) und `gorilla/websocket` (Einkaufsliste in Echtzeit)
+- GitHub Actions aktualisiert
+- Dependabot zurückhaltender eingestellt: monatlich, gebündelt, keine
+  Hauptversionssprünge
+
 ## [1.0.0] — 2026-09-08
 
 Erste öffentliche Fassung.
@@ -67,4 +85,5 @@ Erste öffentliche Fassung.
 - Ein Punkt lässt sich nicht vom Benutzer selbst zurücknehmen, nur von einem
   Administrator
 
+[1.0.1]: https://github.com/bussdee/familien-dashboard-pi/releases/tag/v1.0.1
 [1.0.0]: https://github.com/bussdee/familien-dashboard-pi/releases/tag/v1.0.0
