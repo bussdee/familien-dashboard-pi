@@ -54,9 +54,11 @@ setup: init-data
 	@if [ ! -f .env ]; then \
 		echo "Erzeuge .env mit frischem JWT_SECRET..."; \
 		SECRET=$$(openssl rand -base64 48 | tr -d '\n'); \
-		sed "s|^JWT_SECRET=.*|JWT_SECRET=$$SECRET|" .env.example > .env; \
+		sed -e "s|^JWT_SECRET=.*|JWT_SECRET=$$SECRET|" \
+		    -e "s|^PUID=.*|PUID=$$(id -u)|" \
+		    -e "s|^PGID=.*|PGID=$$(id -g)|" .env.example > .env; \
 		chmod 600 .env; \
-		echo "✅ .env angelegt (JWT_SECRET erzeugt)"; \
+		echo "✅ .env angelegt (JWT_SECRET erzeugt, Kennung $$(id -u):$$(id -g))"; \
 	else \
 		echo "ℹ️  .env existiert bereits – unverändert gelassen"; \
 	fi

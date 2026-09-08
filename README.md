@@ -412,6 +412,7 @@ Auf ein anderes Gerät ausrollen: [DEPLOY.md](DEPLOY.md).
 |---------|--------|
 | `JWT_SECRET ist nicht gesetzt` | `make setup` ausführen |
 | `port is already allocated` | `HTTP_PORT` in der `.env` auf einen freien Port ändern |
+| `unable to open database file` | `PUID`/`PGID` in der `.env` stimmen nicht mit dem Besitzer von `backend/data` überein. Eigene Kennung mit `id -u` und `id -g` ermitteln und eintragen. |
 | Build bricht mit `killed` ab | Zu wenig Arbeitsspeicher, siehe unten |
 | Seite nicht erreichbar | `docker compose ps` — laufen alle drei Container? |
 | PIN vergessen | Ein Administrator setzt sie in der Verwaltung neu |

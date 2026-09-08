@@ -36,6 +36,11 @@ services:
     image: family-dashboard-backend:latest
     container_name: family-backend
     restart: unless-stopped
+    # Der Dienst schreibt in ./backend/data auf dem Host. Läuft er unter einer
+    # anderen Kennung als der Besitzer dieses Ordners, kann er die Datenbank
+    # nicht anlegen ("unable to open database file"). "make setup" trägt die
+    # eigene Kennung in die .env ein; 1000 ist der übliche erste Benutzer.
+    user: "${PUID:-1000}:${PGID:-1000}"
     security_opt:
       - no-new-privileges:true
     read_only: true
