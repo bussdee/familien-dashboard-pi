@@ -20,7 +20,7 @@ RUN --mount=type=cache,target=/go/pkg/mod \
     go build -trimpath -ldflags="-s -w" -o /out/server .
 
 # ---- runtime --------------------------------------------------------------
-FROM alpine:3.20
+FROM alpine:3.24
 
 RUN apk add --no-cache ca-certificates tzdata wget \
     && adduser -D -u 1000 app
