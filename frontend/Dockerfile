@@ -10,7 +10,7 @@ COPY . .
 RUN npm run build
 
 # ---- runtime --------------------------------------------------------------
-FROM nginx:1.27-alpine
+FROM nginx:1.31-alpine
 
 # adapter-static writes the SPA (index.html fallback + hashed assets) to build/.
 COPY --from=builder /app/build /usr/share/nginx/html
