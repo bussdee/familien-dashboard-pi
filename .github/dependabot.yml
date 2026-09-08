@@ -1,28 +1,65 @@
-# Einmal im Monat nachsehen, ob Abhängigkeiten veraltet sind. Monatlich
-# statt wöchentlich, damit ein Familienprojekt nicht in Pull Requests ertrinkt.
+# Dependabot schlägt Aktualisierungen von Abhängigkeiten vor.
+#
+# Bewusst zurückhaltend eingestellt. Dieses Projekt läuft im Heimnetz und
+# soll jahrelang unangetastet funktionieren — nicht jede Woche eine neue
+# Hauptversion einbauen. Deshalb:
+#
+#   * monatlich statt wöchentlich
+#   * zusammengefasst zu wenigen Pull Requests statt vieler einzelner
+#   * große Versionssprünge werden NICHT vorgeschlagen; die macht man
+#     bewusst von Hand, wenn man Zeit zum Testen hat
+#
+# Sicherheitslücken kommen trotzdem an: Sicherheitskorrekturen sind fast
+# immer Patch- oder Minor-Versionen und damit weiterhin erlaubt.
 version: 2
 updates:
   - package-ecosystem: gomod
     directory: /backend
     schedule:
       interval: monthly
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 3
+    groups:
+      go-pakete:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: npm
     directory: /frontend
     schedule:
       interval: monthly
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 3
     groups:
-      svelte:
-        patterns: ["@sveltejs/*", "svelte*", "vite"]
+      oberflaeche:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+    # Svelte, SvelteKit, Tailwind, TypeScript und Vite sind eng verzahnt.
+    # Ein Hauptversionssprung bricht hier zuverlässig etwas — TypeScript 7
+    # etwa passt nicht zu SvelteKit 2.
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
 
+  # Basis-Images bleiben bewusst auf ihrer Reihe (node 20, golang 1.23,
+  # nginx 1.27, alpine 3.20). Nur Fehlerkorrekturen darin sind willkommen.
   - package-ecosystem: docker
     directories: ["/backend", "/frontend"]
     schedule:
       interval: monthly
+    open-pull-requests-limit: 2
+    ignore:
+      - dependency-name: "*"
+        update-types:
+          - version-update:semver-major
+          - version-update:semver-minor
 
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: monthly
+    open-pull-requests-limit: 2
+    groups:
+      actions:
+        patterns: ["*"]
