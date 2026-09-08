@@ -16,7 +16,7 @@ jobs:
     name: Backend bauen und prüfen
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - uses: actions/setup-go@v5
         with:
@@ -39,7 +39,7 @@ jobs:
     name: Frontend typprüfen
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - uses: actions/setup-node@v4
         with:
@@ -63,7 +63,7 @@ jobs:
     name: Shell-Skripte prüfen
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - name: ShellCheck
         run: shellcheck -S warning scripts/*.sh
@@ -72,7 +72,7 @@ jobs:
     name: Container bauen und starten
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       # Zuerst die .env, sonst kann Compose ${JWT_SECRET} nicht auflösen
       # und bricht schon beim Einlesen der Datei ab.
