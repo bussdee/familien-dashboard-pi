@@ -106,6 +106,33 @@ for item in json.load(sys.stdin):
   pass=$((pass + 1))
 
   echo ""
+  echo "Aufgaben"
+  # Eine erledigte Aufgabe darf nicht von der nächsten Person noch einmal
+  # abgehakt werden — sonst gibt es für einen Müllsack dreimal Punkte.
+  CHORE="$(curl -s -b "$JAR" -X POST -H 'Content-Type: application/json' \
+    -d '{"title":"Smoke-Test Aufgabe","interval_days":1,"points":1,"rotate":false}' \
+    "$BASE/api/chores")"
+  CHORE_ID="$(printf '%s' "$CHORE" | sed -n 's/.*"id":\([0-9]*\).*/\1/p' | head -1)"
+  if [ -n "$CHORE_ID" ]; then
+    check "Aufgabe anlegen"              201 "$(printf '%s' "$CHORE" | grep -q '"id"' && echo 201)"
+    check "Einmal abhaken"               200 "$(code -b "$JAR" -X POST "$BASE/api/chores/$CHORE_ID/complete")"
+    check "Zweites Abhaken wird abgelehnt" 409 \
+      "$(code -b "$JAR" -X POST "$BASE/api/chores/$CHORE_ID/complete")"
+
+    # Der Test darf keine Punkte hinterlassen: die eben vergebenen wieder
+    # zurücknehmen, sonst wächst der Punktestand mit jedem Testlauf.
+    PT_ID="$(curl -s -b "$JAR" "$BASE/api/admin/points" | python3 -c 'import json,sys
+for e in json.load(sys.stdin):
+    if e.get("note") == "Smoke-Test Aufgabe":
+        print(e["id"]); break' 2>/dev/null)"
+    if [ -n "$PT_ID" ]; then
+      check "Punkte wieder zurückgenommen" 204 \
+        "$(code -b "$JAR" -X DELETE "$BASE/api/admin/points/$PT_ID")"
+    fi
+    check "Aufgabe wieder löschen"       204 "$(code -b "$JAR" -X DELETE "$BASE/api/chores/$CHORE_ID")"
+  fi
+
+  echo ""
   echo "Adminbereich"
   check "Geräteliste"                  200 "$(code -b "$JAR" "$BASE/api/admin/devices")"
   check "Gerät testen (ungültige URL)" 400 \

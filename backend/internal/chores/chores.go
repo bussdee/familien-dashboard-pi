@@ -33,6 +33,11 @@ type Chore struct {
 	AssigneeEmoji string `json:"assignee_emoji"`
 	IsOverdue     bool   `json:"is_overdue"`
 	DaysUntilDue  int    `json:"days_until_due"`
+
+	// IsDue entscheidet, ob die Oberfläche das Abhaken überhaupt anbietet.
+	// LastDoneBy beantwortet die Frage, die dann sofort kommt: von wem denn?
+	IsDue      bool   `json:"is_due"`
+	LastDoneBy string `json:"last_done_by,omitempty"`
 }
 
 type CreateRequest struct {
@@ -84,9 +89,12 @@ func (s *Service) rotateDue() {
 		return
 	}
 
+	// Die Fälligkeit wird bewusst in Go entschieden und nicht per SQL. In der
+	// Datenbank stehen Zeitstempel historisch in zwei Textformaten — einmal
+	// von Go geschrieben, einmal von SQLite selbst. Ein Vergleich mit
+	// datetime('now') stellt die beiden Formate gegenüber und liefert Unsinn.
 	rows, err := s.db.Query(`
-		SELECT id, assignee_id FROM chores
-		WHERE rotate = 1 AND (assignee_id IS NULL OR (next_due_at IS NOT NULL AND next_due_at <= datetime('now')))`)
+		SELECT id, assignee_id, next_due_at FROM chores WHERE rotate = 1`)
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to load chores for rotation")
 		return
@@ -97,10 +105,20 @@ func (s *Service) rotateDue() {
 		id      int
 		current sql.NullInt64
 	}
+	now := time.Now()
 	var todo []pending
 	for rows.Next() {
 		var p pending
-		if err := rows.Scan(&p.id, &p.current); err != nil {
+		var due sql.NullTime
+		if err := rows.Scan(&p.id, &p.current, &due); err != nil {
+			continue
+		}
+		var faellig *time.Time
+		if due.Valid {
+			faellig = &due.Time
+		}
+		// Weitergereicht wird nur, was niemandem gehört oder wirklich ansteht.
+		if p.current.Valid && !isDue(now, faellig) {
 			continue
 		}
 		todo = append(todo, p)
@@ -169,7 +187,9 @@ func (s *Service) userIDs(query string) ([]int, error) {
 
 const choreColumns = `c.id, c.title, c.description, c.interval_days, c.points, c.rotate,
 	c.assignee_id, c.last_done_at, c.next_due_at, c.created_at, c.updated_at,
-	u.name, u.color, u.avatar_emoji`
+	u.name, u.color, u.avatar_emoji,
+	(SELECT du.name FROM chore_completions cc JOIN users du ON du.id = cc.user_id
+	  WHERE cc.chore_id = c.id ORDER BY cc.id DESC LIMIT 1)`
 
 // Everyone sees the whole board — a family chore list is only motivating if you
 // can see what the others still owe.
@@ -225,7 +245,10 @@ func (s *Service) Create(w http.ResponseWriter, r *http.Request) {
 		assignee = *req.AssigneeID
 	}
 
-	nextDue := time.Now().AddDate(0, 0, req.IntervalDays)
+	// Eine frisch angelegte Aufgabe steht heute an. Sie stattdessen erst in
+	// einem Intervall fällig zu machen, hieße: anlegen und dann einen Tag
+	// warten dürfen, bis man sie abhaken kann.
+	nextDue := startOfDay(time.Now())
 	res, err := s.db.Exec(
 		`INSERT INTO chores (title, description, interval_days, points, rotate, assignee_id, next_due_at)
 		 VALUES (?, ?, ?, ?, ?, ?, ?)`,
@@ -336,17 +359,31 @@ func (s *Service) Complete(w http.ResponseWriter, r *http.Request) {
 	var intervalDays, reward int
 	var title string
 	var assignee sql.NullInt64
+	var due sql.NullTime
 	err = s.db.QueryRow(
-		"SELECT title, interval_days, points, assignee_id FROM chores WHERE id = ?", id,
-	).Scan(&title, &intervalDays, &reward, &assignee)
+		"SELECT title, interval_days, points, assignee_id, next_due_at FROM chores WHERE id = ?", id,
+	).Scan(&title, &intervalDays, &reward, &assignee, &due)
 	if err != nil {
 		auth.HTTPError(w, http.StatusNotFound, "Aufgabe nicht gefunden")
 		return
 	}
 
-	// Anyone may help out, but the points go to whoever actually did it.
 	now := time.Now()
-	nextDue := now.AddDate(0, 0, intervalDays)
+
+	// Ohne diese Prüfung konnte eine bereits erledigte Aufgabe von jedem
+	// weiteren Familienmitglied noch einmal abgehakt werden — jedes Mal mit
+	// vollen Punkten. Den Müll bringt man aber nur einmal raus.
+	var faellig *time.Time
+	if due.Valid {
+		faellig = &due.Time
+	}
+	if !isDue(now, faellig) {
+		auth.HTTPError(w, http.StatusConflict, s.bereitsErledigt(id, title, due.Time))
+		return
+	}
+
+	// Anyone may help out, but the points go to whoever actually did it.
+	nextDue := dueDate(now, intervalDays)
 
 	tx, err := s.db.Begin()
 	if err != nil {
@@ -388,6 +425,29 @@ func (s *Service) Complete(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// bereitsErledigt formuliert die Absage so, dass sie im Alltag weiterhilft:
+// wer schon dran war und wann es wieder losgeht. Sortiert wird über die ID,
+// nicht über completed_at — die Zeitstempel liegen historisch in zwei
+// verschiedenen Textformaten in der Datenbank und sortieren nicht verlässlich.
+func (s *Service) bereitsErledigt(choreID int, title string, due time.Time) string {
+	var name string
+	err := s.db.QueryRow(`
+		SELECT u.name FROM chore_completions cc
+		JOIN users u ON u.id = cc.user_id
+		WHERE cc.chore_id = ?
+		ORDER BY cc.id DESC LIMIT 1`, choreID).Scan(&name)
+
+	wann := "am " + due.Format("02.01.2006")
+	if tage := daysUntil(time.Now(), due); tage == 1 {
+		wann = "morgen"
+	}
+
+	if err != nil || name == "" {
+		return "„" + title + "\u201c ist noch nicht wieder dran — erst " + wann + "."
+	}
+	return "„" + title + "\u201c hat " + name + " schon erledigt. Wieder dran ist die Aufgabe " + wann + "."
+}
+
 func (s *Service) byID(id int) (Chore, error) {
 	row := s.db.QueryRow(`SELECT `+choreColumns+`
 		FROM chores c LEFT JOIN users u ON c.assignee_id = u.id WHERE c.id = ?`, id)
@@ -404,11 +464,11 @@ func scanChore(row scanner, now time.Time) (Chore, error) {
 	var c Chore
 	var assignee sql.NullInt64
 	var lastDone, nextDue sql.NullTime
-	var name, color, emoji sql.NullString
+	var name, color, emoji, doneBy sql.NullString
 
 	if err := row.Scan(&c.ID, &c.Title, &c.Description, &c.IntervalDays, &c.Points, &c.Rotate,
 		&assignee, &lastDone, &nextDue, &c.CreatedAt, &c.UpdatedAt,
-		&name, &color, &emoji); err != nil {
+		&name, &color, &emoji, &doneBy); err != nil {
 		return Chore{}, err
 	}
 
@@ -421,9 +481,15 @@ func scanChore(row scanner, now time.Time) (Chore, error) {
 	}
 	if nextDue.Valid {
 		c.NextDueAt = &nextDue.Time
-		c.IsOverdue = nextDue.Time.Before(now)
-		c.DaysUntilDue = int(nextDue.Time.Sub(now).Hours() / 24)
+		c.DaysUntilDue = daysUntil(now, nextDue.Time)
+		// Überfällig ist eine Aufgabe erst ab dem Tag NACH dem Stichtag —
+		// am Stichtag selbst hat man noch den ganzen Tag Zeit.
+		c.IsOverdue = c.DaysUntilDue < 0
+		c.IsDue = c.DaysUntilDue <= 0
+	} else {
+		c.IsDue = true
 	}
+	c.LastDoneBy = doneBy.String
 	c.AssigneeName = name.String
 	c.AssigneeColor = color.String
 	c.AssigneeEmoji = emoji.String

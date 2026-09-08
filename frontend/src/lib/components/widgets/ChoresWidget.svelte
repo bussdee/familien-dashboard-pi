@@ -1,6 +1,6 @@
 <script lang="ts">
   import {
-    CircleAlert, Flame, ListChecks, Pencil, Plus, Trash2, Trophy, X,
+    CalendarClock, Check, CircleAlert, Flame, ListChecks, Pencil, Plus, Trash2, Trophy, X,
   } from 'lucide-svelte';
   import { format, parseISO } from 'date-fns';
   import { de } from 'date-fns/locale';
@@ -36,12 +36,17 @@
   const me = $derived(board.for($session.user?.id));
 
   const overdue = $derived(chores.filter((c) => c.is_overdue));
-  const dueToday = $derived(chores.filter((c) => !c.is_overdue && c.days_until_due <= 0));
-  const later = $derived(chores.filter((c) => !c.is_overdue && c.days_until_due > 0));
+  const dueToday = $derived(chores.filter((c) => c.is_due && !c.is_overdue));
+  // Alles, was gerade nicht ansteht — meist frisch erledigt.
+  const later = $derived(chores.filter((c) => !c.is_due));
   const mine = $derived(chores.filter((c) => c.assignee_id === $session.user?.id));
 
   async function complete(chore: Chore) {
     if (completing !== null) return;
+    // Erledigtes bleibt erledigt: sonst holt sich der Nächste dieselben
+    // Punkte für denselben Müllsack. Der Server weist es ohnehin ab, hier
+    // sparen wir die Fehlermeldung.
+    if (!chore.is_due) return;
     completing = chore.id;
     error = '';
     try {
@@ -53,6 +58,9 @@
       }
     } catch (e) {
       error = e instanceof ApiError ? e.message : 'Konnte nicht abhaken';
+      // Hat jemand anderes am anderen Gerät zuerst abgehakt, ist unsere
+      // Liste veraltet — neu laden, damit die Zeile stimmt.
+      if (e instanceof ApiError && e.status === 409) await onRefresh();
     } finally {
       completing = null;
     }
@@ -116,15 +124,31 @@
     }
   }
 
+  // "Nicht fällig" hat zwei ganz verschiedene Gründe: erledigt, oder schlicht
+  // noch nicht an der Reihe. Eine nie erledigte Aufgabe als "erledigt" zu
+  // zeigen wäre schlicht falsch.
+  function isDone(chore: Chore): boolean {
+    return !chore.is_due && !!chore.last_done_at;
+  }
+
   function dueLabel(chore: Chore): string {
     if (!chore.next_due_at) return 'Kein Termin';
     if (chore.is_overdue) {
       const days = Math.abs(chore.days_until_due);
       return days >= 1 ? `${days} Tage überfällig` : 'Überfällig';
     }
-    if (chore.days_until_due <= 0) return 'Heute fällig';
-    if (chore.days_until_due === 1) return 'Morgen';
-    return format(parseISO(chore.next_due_at), 'EEEE, d. MMM', { locale: de });
+    if (chore.is_due) return 'Heute fällig';
+
+    const wieder = isDone(chore) ? 'Wieder ' : '';
+    if (chore.days_until_due === 1) return `${wieder}morgen`;
+    const tag = format(parseISO(chore.next_due_at), 'EEEE, d. MMM', { locale: de });
+    return wieder ? `${wieder}${tag}` : tag;
+  }
+
+  // Wer zuletzt dran war. Steht nur an erledigten Zeilen, dort ist es die
+  // Antwort auf die naheliegende Frage "warum kann ich das nicht abhaken?".
+  function doneLabel(chore: Chore): string {
+    return chore.last_done_by ? `Erledigt von ${chore.last_done_by}` : 'Erledigt';
   }
 </script>
 
@@ -228,37 +252,72 @@
         <li
           class="group flex items-center gap-3 rounded-xl p-3 transition-colors {chore.is_overdue
             ? 'bg-destructive/5 ring-1 ring-destructive/20'
-            : 'bg-muted/30'}"
+            : chore.is_due
+              ? 'bg-muted/30'
+              : 'bg-muted/10'}"
         >
-          <button
-            class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-primary/30 text-primary transition-all hover:border-primary hover:bg-primary hover:text-primary-foreground active:scale-90 disabled:opacity-50"
-            onclick={() => complete(chore)}
-            disabled={completing !== null}
-            aria-label="{chore.title} erledigt"
-            title="Erledigt – gibt {chore.points} Punkte"
-          >
-            {#if completing === chore.id}
-              <span class="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></span>
-            {:else}
-              <span class="text-lg leading-none">✓</span>
-            {/if}
-          </button>
+          {#if chore.is_due}
+            <button
+              class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-primary/30 text-primary transition-all hover:border-primary hover:bg-primary hover:text-primary-foreground active:scale-90 disabled:opacity-50"
+              onclick={() => complete(chore)}
+              disabled={completing !== null}
+              aria-label="{chore.title} erledigt"
+              title="Erledigt – gibt {chore.points} Punkte"
+            >
+              {#if completing === chore.id}
+                <span class="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></span>
+              {:else}
+                <span class="text-lg leading-none">✓</span>
+              {/if}
+            </button>
+          {:else if isDone(chore)}
+            <!-- Erledigt: kein Knopf, damit niemand dieselbe Aufgabe ein
+                 zweites Mal abhakt und dafür noch einmal Punkte bekommt. -->
+            <span
+              class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary"
+              title={doneLabel(chore)}
+            >
+              <Check class="h-5 w-5" />
+            </span>
+          {:else}
+            <!-- Steht erst später an, gemacht hat sie noch niemand. -->
+            <span
+              class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-dashed border-muted-foreground/25 text-muted-foreground"
+              title="Noch nicht an der Reihe"
+            >
+              <CalendarClock class="h-4 w-4" />
+            </span>
+          {/if}
 
           <div class="min-w-0 flex-1">
-            <p class="truncate text-sm font-medium">{chore.title}</p>
+            <p class="truncate text-sm font-medium {chore.is_due ? '' : 'text-muted-foreground'}">
+              {chore.title}
+            </p>
             <p class="flex flex-wrap items-center gap-x-1.5 text-xs text-muted-foreground">
               {#if chore.is_overdue}<CircleAlert class="h-3 w-3 shrink-0 text-destructive" />{/if}
-              <span class={chore.is_overdue ? 'text-destructive' : ''}>{dueLabel(chore)}</span>
-              {#if chore.assignee_name}
-                <span>· {chore.assignee_emoji} {chore.assignee_name}</span>
+              {#if chore.is_due}
+                <span class={chore.is_overdue ? 'text-destructive' : ''}>{dueLabel(chore)}</span>
+                {#if chore.assignee_name}
+                  <span>· {chore.assignee_emoji} {chore.assignee_name}</span>
+                {:else}
+                  <span>· frei</span>
+                {/if}
+              {:else if isDone(chore)}
+                <span class="text-primary">{doneLabel(chore)}</span>
+                <span>· {dueLabel(chore)}</span>
               {:else}
-                <span>· frei</span>
+                <span>{dueLabel(chore)}</span>
+                {#if chore.assignee_name}
+                  <span>· {chore.assignee_emoji} {chore.assignee_name}</span>
+                {/if}
               {/if}
             </p>
           </div>
 
           <span
-            class="shrink-0 rounded-full bg-amber-500/15 px-2.5 py-1 text-xs font-semibold tabular-nums text-amber-600 dark:text-amber-400"
+            class="shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold tabular-nums {chore.is_due
+              ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400'
+              : 'bg-muted text-muted-foreground'}"
           >
             +{chore.points}
           </span>

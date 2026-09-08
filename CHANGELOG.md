@@ -4,6 +4,32 @@ Alle nennenswerten Änderungen an diesem Projekt.
 Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 Versionierung nach [SemVer](https://semver.org/lang/de/).
 
+## [1.0.2] — 2026-09-08
+
+### Behoben
+
+- **Dieselbe Aufgabe konnte mehrfach abgehakt werden — jedes Mal mit vollen
+  Punkten.** Hatte das Kind den Müll rausgebracht, konnten Mama und Papa
+  danach denselben Müllsack abhaken und bekamen dafür ebenfalls Punkte. Eine
+  erledigte Aufgabe ist jetzt bis zu ihrem nächsten Stichtag geschlossen; die
+  Oberfläche bietet das Abhaken gar nicht mehr an und zeigt stattdessen, wer
+  dran war.
+- **Stichtage sind jetzt Tage, keine Uhrzeiten.** Wer eine tägliche Aufgabe
+  abends um 22 Uhr erledigt hat, war vorher erst am Folgetag um 22 Uhr wieder
+  dran. Jetzt gilt der ganze nächste Tag.
+- **Eine neu angelegte Aufgabe steht sofort an** statt erst nach einem vollen
+  Intervall.
+- **Überfällig** heißt jetzt „der Stichtag ist vorbei" und nicht mehr „der
+  Zeitpunkt ist ein paar Stunden her".
+- Die Weitergabe reihum verglich Zeitstempel als Text. Weil in der Datenbank
+  zwei verschiedene Textformate stehen, konnte der Vergleich danebengreifen;
+  entschieden wird das jetzt im Programm.
+
+### Neu
+
+- Erste automatische Tests im Backend, die genau diese Fälle festhalten
+- Der Rauchtest prüft mit, dass ein zweites Abhaken abgelehnt wird
+
 ## [1.0.1] — 2026-09-08
 
 ### Behoben
@@ -85,5 +111,6 @@ Erste öffentliche Fassung.
 - Ein Punkt lässt sich nicht vom Benutzer selbst zurücknehmen, nur von einem
   Administrator
 
+[1.0.2]: https://github.com/bussdee/familien-dashboard-pi/releases/tag/v1.0.2
 [1.0.1]: https://github.com/bussdee/familien-dashboard-pi/releases/tag/v1.0.1
 [1.0.0]: https://github.com/bussdee/familien-dashboard-pi/releases/tag/v1.0.0

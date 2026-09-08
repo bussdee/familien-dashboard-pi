@@ -123,6 +123,10 @@ export interface Chore {
   assignee_emoji: string;
   is_overdue: boolean;
   days_until_due: number;
+  /** Steht die Aufgabe heute an? Nur dann lässt sie sich abhaken. */
+  is_due: boolean;
+  /** Wer zuletzt abgehakt hat — leer, solange es niemand getan hat. */
+  last_done_by?: string;
 }
 
 export interface Badge {
