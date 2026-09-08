@@ -79,7 +79,7 @@ preflight:
 
 check:
 	@echo "▶ Backend kompilieren + vet..."
-	@docker run --rm -v "$(PWD)/backend":/src -w /src golang:1.23-alpine \
+	@docker run --rm -v "$(PWD)/backend":/src -w /src golang:1.25-alpine \
 		sh -c "go build ./... && go vet ./..."
 	@echo "✅ Backend OK"
 	@echo "▶ Frontend typprüfen..."

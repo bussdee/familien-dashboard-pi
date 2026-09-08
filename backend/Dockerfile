@@ -3,7 +3,7 @@
 # ---- build ----------------------------------------------------------------
 # modernc.org/sqlite is pure Go, so CGO stays off and the same source
 # cross-compiles for the Pi (arm64) without a toolchain.
-FROM --platform=$BUILDPLATFORM golang:1.23-alpine AS builder
+FROM --platform=$BUILDPLATFORM golang:1.25-alpine AS builder
 
 WORKDIR /src
 
