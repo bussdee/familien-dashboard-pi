@@ -8,6 +8,14 @@ import type {
 
 const BASE = '/api';
 
+/**
+ * Liest den Familien-Modus aus dem Wurzelelement. Bewusst nicht über den
+ * Store: die Store-Datei importiert diese Datei, das gäbe einen Ringschluss.
+ */
+function imFamilienModus(): boolean {
+  return browser && document.documentElement.dataset.familienmodus === 'ja';
+}
+
 export class ApiError extends Error {
   constructor(
     public status: number,
@@ -45,7 +53,11 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
       /* a plain-text or empty error body is fine */
     }
 
-    if (res.status === 401 && browser && !location.pathname.startsWith('/login')) {
+    // Ein Wandgerät ist angemeldet — nur eben als niemand. Es auf den
+    // Anmeldebildschirm zu werfen, weil ein einzelner persönlicher Endpunkt
+    // "nein" sagt, wäre falsch: dann stünde das Tablet im Flur mit einer
+    // PIN-Abfrage da.
+    if (res.status === 401 && browser && !location.pathname.startsWith('/login') && !imFamilienModus()) {
       void goto('/login');
     }
     throw new ApiError(res.status, message);
@@ -65,7 +77,12 @@ export const authApi = {
   login: (userId: number, pin: string) =>
     request<{ user: User }>('/auth/login', { method: 'POST', ...json({ user_id: userId, pin }) }),
   logout: () => request<void>('/auth/logout', { method: 'POST' }),
-  me: () => request<User>('/auth/me'),
+  /** Liefert entweder die angemeldete Person oder {device:true} am Wandgerät. */
+  me: () => request<User | { device: true }>('/auth/me'),
+  /** Macht diesen Browser zum Wandgerät (nur Administratoren). */
+  enableDevice: () => request<{ device: true }>('/auth/device', { method: 'POST' }),
+  /** Beendet den Familien-Modus auf diesem Gerät. */
+  disableDevice: () => request<void>('/auth/device', { method: 'DELETE' }),
   changePin: (currentPin: string, newPin: string) =>
     request<void>('/auth/pin', { method: 'POST', ...json({ current_pin: currentPin, new_pin: newPin }) }),
   /** Anyone may change their own name, colour and avatar — but not their role. */
@@ -168,9 +185,11 @@ export const shoppingApi = {
     data: Partial<{ name: string; quantity: string; category: string; checked: boolean }>,
   ) => request<ShoppingItem>(`/shopping/${id}`, { method: 'PUT', ...json(data) }),
   remove: (id: number) => request<void>(`/shopping/${id}`, { method: 'DELETE' }),
-  clearChecked: () =>
+  /** userId nur im Familien-Modus nötig — sonst zählt die eigene Anmeldung. */
+  clearChecked: (userId?: number) =>
     request<{ deleted: number; points_awarded: number }>('/shopping/clear-checked', {
       method: 'POST',
+      ...json(userId ? { user_id: userId } : {}),
     }),
   /** What the currently ticked-off items are worth, shown before committing. */
   reward: () => request<{ checked_items: number; points_awarded: number }>('/shopping/reward'),
@@ -195,10 +214,11 @@ export const choresApi = {
     data: Partial<{ title: string; description: string; interval_days: number; points: number; assignee_id: number }>,
   ) => request<Chore>(`/chores/${id}`, { method: 'PUT', ...json(data) }),
   remove: (id: number) => request<void>(`/chores/${id}`, { method: 'DELETE' }),
-  complete: (id: number) =>
+  /** userId nur im Familien-Modus nötig — sonst zählt die eigene Anmeldung. */
+  complete: (id: number, userId?: number) =>
     request<{ completed_at: string; next_due_at: string; points_awarded: number; title: string }>(
       `/chores/${id}/complete`,
-      { method: 'POST', ...json({}) },
+      { method: 'POST', ...json(userId ? { user_id: userId } : {}) },
     ),
 };
 

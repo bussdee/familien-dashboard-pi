@@ -279,7 +279,7 @@ const noteColumns = `id, title, content, tags, pinned, owner_id, source_file, cr
 
 func (s *Service) List(w http.ResponseWriter, r *http.Request) {
 	userID, ok := auth.GetUserID(r)
-	if !ok {
+	if !ok && !auth.IsDevice(r) {
 		auth.HTTPError(w, http.StatusUnauthorized, "Nicht angemeldet")
 		return
 	}
@@ -289,6 +289,15 @@ func (s *Service) List(w http.ResponseWriter, r *http.Request) {
 	          WHERE owner_id IS NULL OR owner_id = ?
 	          ORDER BY pinned DESC, updated_at DESC`
 	args := []any{userID}
+
+	// Am Wandgerät gibt es kein "eigenes": dort erscheinen nur die Notizen,
+	// die der ganzen Familie gehören.
+	if !ok {
+		query = `SELECT ` + noteColumns + ` FROM notes
+		         WHERE owner_id IS NULL
+		         ORDER BY pinned DESC, updated_at DESC`
+		args = nil
+	}
 
 	if role, _ := auth.GetUserRole(r); role == "admin" {
 		query = `SELECT ` + noteColumns + ` FROM notes ORDER BY pinned DESC, updated_at DESC`
@@ -317,7 +326,7 @@ func (s *Service) List(w http.ResponseWriter, r *http.Request) {
 
 func (s *Service) Create(w http.ResponseWriter, r *http.Request) {
 	userID, ok := auth.GetUserID(r)
-	if !ok {
+	if !ok && !auth.IsDevice(r) {
 		auth.HTTPError(w, http.StatusUnauthorized, "Nicht angemeldet")
 		return
 	}
@@ -336,7 +345,12 @@ func (s *Service) Create(w http.ResponseWriter, r *http.Request) {
 	s.syncMu.Lock()
 	defer s.syncMu.Unlock()
 
-	var owner any = userID
+	// Ohne angemeldete Person bleibt die Notiz ohne Besitzer und damit für
+	// alle sichtbar — am Wandgerät ist das genau richtig.
+	var owner any
+	if ok {
+		owner = userID
+	}
 	if req.Shared {
 		owner = nil
 	}

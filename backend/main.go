@@ -121,10 +121,26 @@ func main() {
 			r.Use(authSvc.AuthMiddleware)
 
 			r.Get("/auth/me", authSvc.Me)
-			r.Put("/auth/profile", authSvc.UpdateOwnProfile)
-			r.Post("/auth/pin", authSvc.ChangeOwnPIN)
-			r.Get("/preferences/{key}", authSvc.GetPreference)
-			r.Put("/preferences/{key}", authSvc.SetPreference)
+			// Wandgerät ein- und ausschalten. Einschalten darf nur ein
+			// Administrator, ausschalten das Gerät selbst.
+			r.Delete("/auth/device", authSvc.DisableDevice)
+
+			// Alles, was einer Person gehört: am Wandgerät gesperrt, dort ist
+			// niemand persönlich angemeldet.
+			r.Group(func(r chi.Router) {
+				r.Use(authSvc.PersonMiddleware)
+				r.Put("/auth/profile", authSvc.UpdateOwnProfile)
+				r.Post("/auth/pin", authSvc.ChangeOwnPIN)
+				r.Get("/preferences/{key}", authSvc.GetPreference)
+				r.Put("/preferences/{key}", authSvc.SetPreference)
+
+				r.Get("/links", linksSvc.List)
+				r.Post("/links", linksSvc.Create)
+				r.Put("/links/{id}", linksSvc.Update)
+				r.Post("/links/{id}/pin", linksSvc.TogglePin)
+				r.Delete("/links/{id}", linksSvc.Delete)
+				r.Post("/links/reorder", linksSvc.Reorder)
+			})
 
 			r.Get("/weather", weatherSvc.GetWeather)
 			r.Get("/weather/location", weatherSvc.GetLocation)
@@ -163,13 +179,6 @@ func main() {
 
 			r.Get("/devices", devicesSvc.GetStatus)
 
-			r.Get("/links", linksSvc.List)
-			r.Post("/links", linksSvc.Create)
-			r.Put("/links/{id}", linksSvc.Update)
-			r.Post("/links/{id}/pin", linksSvc.TogglePin)
-			r.Delete("/links/{id}", linksSvc.Delete)
-			r.Post("/links/reorder", linksSvc.Reorder)
-
 			r.Get("/photos", photosSvc.List)
 			r.Post("/photos", photosSvc.Upload)
 			r.Get("/photos/{name}", photosSvc.Serve)
@@ -177,6 +186,7 @@ func main() {
 
 			r.Group(func(r chi.Router) {
 				r.Use(authSvc.AdminMiddleware)
+				r.Post("/auth/device", authSvc.EnableDevice)
 				r.Get("/admin/users", authSvc.ListUsers)
 				r.Post("/admin/users", authSvc.CreateUser)
 				r.Put("/admin/users/{id}", authSvc.UpdateUser)

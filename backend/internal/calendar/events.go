@@ -201,9 +201,14 @@ func (s *Service) ListStored(w http.ResponseWriter, r *http.Request) {
 
 func (s *Service) CreateEvent(w http.ResponseWriter, r *http.Request) {
 	userID, ok := auth.GetUserID(r)
-	if !ok {
+	if !ok && !auth.IsDevice(r) {
 		auth.HTTPError(w, http.StatusUnauthorized, "Nicht angemeldet")
 		return
+	}
+	// Am Wandgerät bleibt der Urheber offen — der Termin gehört der Familie.
+	var urheber any
+	if ok {
+		urheber = userID
 	}
 	if s.db == nil {
 		auth.HTTPError(w, http.StatusServiceUnavailable, "Termine sind nicht verfügbar")
@@ -233,7 +238,7 @@ func (s *Service) CreateEvent(w http.ResponseWriter, r *http.Request) {
 			(title, description, location, start_at, end_at, all_day, repeat, color, created_by)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		strings.TrimSpace(req.Title), req.Description, req.Location,
-		start, end, req.AllDay, string(req.Repeat), req.Color, userID)
+		start, end, req.AllDay, string(req.Repeat), req.Color, urheber)
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to create calendar event")
 		auth.HTTPError(w, http.StatusInternalServerError, "Termin konnte nicht gespeichert werden")

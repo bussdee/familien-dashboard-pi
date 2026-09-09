@@ -26,6 +26,13 @@
     // Already signed in? Go straight to the dashboard.
     try {
       const me = await authApi.me();
+      // Ein Wandgerät ist zwar "angemeldet", aber niemand persönlich.
+      // Weiterleiten wäre hier falsch: wer hier landet, will sich gerade
+      // anmelden — sonst käme er nie in sein eigenes Konto.
+      if ('device' in me) {
+        session.setDevice();
+        return;
+      }
       session.set(me);
       await goto('/');
     } catch {

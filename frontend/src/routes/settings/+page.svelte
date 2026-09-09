@@ -109,7 +109,7 @@
       currentPin = newPin = confirmPin = '';
       // Reflect that the default PIN warning can go away.
       const me = await authApi.me();
-      session.set(me);
+      if (!('device' in me)) session.set(me);
     } catch (e) {
       pinError = e instanceof ApiError ? e.message : 'Konnte PIN nicht ändern';
     } finally {

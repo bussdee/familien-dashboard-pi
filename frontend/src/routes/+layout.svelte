@@ -13,6 +13,7 @@
   import InstallPrompt from '$lib/components/InstallPrompt.svelte';
   import UpdatePrompt from '$lib/components/UpdatePrompt.svelte';
   import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
+  import WerWarDas from '$lib/components/WerWarDas.svelte';
 
   let { children } = $props();
 
@@ -26,8 +27,16 @@
     // the dashboard would flash before we know whether anyone is signed in.
     authApi
       .me()
-      .then((user) => {
-        session.set(user);
+      .then((antwort) => {
+        // Am Wandgerät antwortet der Server mit {device:true} statt mit einer
+        // Person. Das ist kein Fehler, sondern der Familien-Modus.
+        if ('device' in antwort) {
+          session.setDevice();
+          void layout.load();
+          void board.refresh().catch(() => {});
+          return;
+        }
+        session.set(antwort);
         void layout.load();
         // The header shows the signed-in person's score on every page, so the
         // board is loaded once here rather than only on the dashboard.
@@ -87,6 +96,7 @@
 
   <!-- Outside the isLogin guard: a confirmation can be asked from anywhere. -->
   <ConfirmDialog />
+  <WerWarDas />
 
   {#if !isLogin}
     <Celebration />

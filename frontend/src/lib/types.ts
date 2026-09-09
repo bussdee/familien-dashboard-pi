@@ -7,6 +7,8 @@ export interface User {
   role: Role;
   avatar_emoji: string;
   pin_is_default: boolean;
+  /** true, wenn auf diesem Gerät zusätzlich der Familien-Modus eingerichtet ist. */
+  device_mode?: boolean;
 }
 
 export interface WeatherCurrent {

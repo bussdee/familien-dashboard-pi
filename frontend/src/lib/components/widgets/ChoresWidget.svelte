@@ -10,6 +10,7 @@
   import Modal from '$lib/components/Modal.svelte';
   import type { Chore, User } from '$lib/types';
   import { confirmAction } from '$lib/stores/confirm.svelte';
+  import { werWarDas } from '$lib/stores/werwardas.svelte';
 
   let {
     chores = $bindable([]),
@@ -47,14 +48,23 @@
     // Punkte für denselben Müllsack. Der Server weist es ohnehin ab, hier
     // sparen wir die Fehlermeldung.
     if (!chore.is_due) return;
+
+    // Am Wandtablet ist niemand angemeldet: erst fragen, wer abgehakt hat,
+    // sonst bekäme die Punkte, wer zuletzt am Gerät war.
+    let wer: number | null = $session.user?.id ?? null;
+    if ($session.device) {
+      wer = await werWarDas({ was: chore.title });
+      if (wer === null) return;
+    }
+
     completing = chore.id;
     error = '';
     try {
-      const result = await choresApi.complete(chore.id);
+      const result = await choresApi.complete(chore.id, $session.device ? wer! : undefined);
       await onRefresh();
       // The shared board handles the confetti and the level-up check.
-      if ($session.user) {
-        await board.award($session.user.id, result.points_awarded, result.title || chore.title);
+      if (wer !== null) {
+        await board.award(wer, result.points_awarded, result.title || chore.title);
       }
     } catch (e) {
       error = e instanceof ApiError ? e.message : 'Konnte nicht abhaken';

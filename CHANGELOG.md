@@ -4,6 +4,44 @@ Alle nennenswerten Änderungen an diesem Projekt.
 Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 Versionierung nach [SemVer](https://semver.org/lang/de/).
 
+## [1.4.0] — 2026-09-09
+
+### Neu
+
+- **Familien-Modus für das Wandtablet.** Ein Tablet, das fest an der Wand
+  hängt, wird in der Verwaltung einmalig als Wandgerät eingerichtet. Danach
+  ist nicht mehr eine Person angemeldet, sondern das Gerät: Es zeigt Aufgaben,
+  Einkaufsliste, Termine und Wetter, aber keine persönlichen Daten — keine
+  Rangliste, keine Einstellungen, keine eigenen Links.
+
+  Wer eine Aufgabe abhakt, wird kurz gefragt: **„Wer war das?"** Ein Tipp aufs
+  eigene Gesicht, keine PIN. Damit landen die Punkte bei dem, der die Arbeit
+  gemacht hat — und nicht bei dem, der sich zuletzt angemeldet hatte.
+
+- **Konto-Wechsel ohne Verlust des Wandgeräts.** Wer das Tablet mit aufs Sofa
+  nimmt, meldet sich normal an und bekommt seine persönliche Ansicht. Nach dem
+  Abmelden fällt das Gerät von allein in den Familien-Modus zurück, statt auf
+  dem Anmeldebildschirm stehen zu bleiben. Möglich macht das ein zweiter,
+  getrennter Sitzungsschlüssel für das Gerät.
+
+- **Ruhezustand.** Nach fünf Minuten ohne Berührung wechselt ein Wandgerät von
+  selbst in die Diashow. Eine Berührung führt zurück in den Familien-Modus.
+
+### Sicherheit
+
+- Im Familien-Modus sind persönliche Wege gesperrt: Profil, PIN, eigene
+  Ansicht und eigene Links antworten mit einem klaren Hinweis statt mit Daten.
+  Die Verwaltung bleibt Administratoren vorbehalten.
+- Bewusste Entscheidung: Wer das Wandtablet in der Hand hält, kann ohne PIN
+  Punkte für jedes Familienmitglied buchen. Für ein Gerät im eigenen Flur ist
+  das richtig; die Alternative wäre, dass niemand es benutzt.
+
+### Behoben
+
+- Eine einzelne abgewiesene Anfrage warf die ganze Oberfläche auf den
+  Anmeldebildschirm. Im Familien-Modus hätte das Wandtablet dadurch eine
+  PIN-Abfrage im Flur gezeigt.
+
 ## [1.3.0] — 2026-09-09
 
 ### Neu
@@ -184,6 +222,7 @@ Erste öffentliche Fassung.
 - Ein Punkt lässt sich nicht vom Benutzer selbst zurücknehmen, nur von einem
   Administrator
 
+[1.4.0]: https://github.com/bussdee/familien-dashboard-pi/releases/tag/v1.4.0
 [1.3.0]: https://github.com/bussdee/familien-dashboard-pi/releases/tag/v1.3.0
 [1.2.0]: https://github.com/bussdee/familien-dashboard-pi/releases/tag/v1.2.0
 [1.1.0]: https://github.com/bussdee/familien-dashboard-pi/releases/tag/v1.1.0

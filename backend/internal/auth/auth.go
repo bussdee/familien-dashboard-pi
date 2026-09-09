@@ -19,7 +19,12 @@ import (
 )
 
 const (
-	CookieName     = "auth_token"
+	CookieName = "auth_token"
+	// Der Geräte-Token liegt in einem eigenen Keks. Sonst würde eine
+	// persönliche Anmeldung am Wandtablet den Gerätemodus überschreiben —
+	// und nach dem Abmelden stünde das Tablet leer da, statt in den
+	// Familien-Modus zurückzufallen.
+	DeviceCookieName = "family_device"
 	maxPINFailures = 5
 	lockoutWindow  = 5 * time.Minute
 )
@@ -47,6 +52,15 @@ type User struct {
 	AvatarEmoji  string `json:"avatar_emoji"`
 	PINIsDefault bool   `json:"pin_is_default"`
 }
+
+// RoleDevice steht in der Rolle eines Geräte-Tokens. Ein Gerät ist nie
+// Administrator — die Admin-Prüfung fällt damit von selbst durch.
+const RoleDevice = "device"
+
+// deviceTTL: ein Wandtablet soll sich nicht alle paar Tage neu anmelden
+// müssen. Der Token gilt ein Jahr und lässt sich jederzeit widerrufen,
+// indem in der Verwaltung der Gerätemodus wieder ausgeschaltet wird.
+const deviceTTL = 365 * 24 * time.Hour
 
 type Claims struct {
 	UserID int    `json:"uid"`
@@ -149,6 +163,13 @@ func (s *Service) Logout(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Service) Me(w http.ResponseWriter, r *http.Request) {
+	// Am Wandgerät ist niemand angemeldet — das ist kein Fehler, sondern der
+	// Betriebszustand. Die Oberfläche schaltet daraufhin in den Familien-Modus.
+	if IsDevice(r) {
+		writeJSON(w, map[string]any{"device": true})
+		return
+	}
+
 	userID, ok := GetUserID(r)
 	if !ok {
 		httpError(w, http.StatusUnauthorized, "Nicht angemeldet")
@@ -163,7 +184,39 @@ func (s *Service) Me(w http.ResponseWriter, r *http.Request) {
 		httpError(w, http.StatusNotFound, "Benutzer nicht gefunden")
 		return
 	}
-	writeJSON(w, user)
+	// Ein Administrator, der auf dem Wandtablet angemeldet ist, soll in der
+	// Verwaltung sehen, dass dieses Gerät bereits eingerichtet ist.
+	_, geraet := r.Cookie(DeviceCookieName)
+	writeJSON(w, struct {
+		User
+		DeviceMode bool `json:"device_mode"`
+	}{User: user, DeviceMode: geraet == nil})
+}
+
+// EnableDevice verwandelt genau diesen Browser in ein Wandgerät: die
+// persönliche Sitzung wird durch eine Geräte-Sitzung ersetzt. Nur ein
+// Administrator darf das, und nur auf dem Gerät, an dem er gerade steht.
+func (s *Service) EnableDevice(w http.ResponseWriter, r *http.Request) {
+	token, err := s.generateTokenTTL(0, RoleDevice, deviceTTL)
+	if err != nil {
+		httpError(w, http.StatusInternalServerError, "Server-Fehler")
+		return
+	}
+	s.setDeviceCookie(w, token, int(deviceTTL.Seconds()))
+	writeJSON(w, map[string]any{"device": true})
+}
+
+// DisableDevice beendet den Geräte-Modus. Danach ist der Browser abgemeldet
+// und zeigt wieder den Anmeldebildschirm.
+func (s *Service) DisableDevice(w http.ResponseWriter, r *http.Request) {
+	// Auch eine angemeldete Person darf den Gerätemodus beenden — sonst
+	// käme man nach dem Anmelden nicht mehr heran.
+	if _, err := r.Cookie(DeviceCookieName); err != nil {
+		httpError(w, http.StatusBadRequest, "Dieses Gerät ist kein Wandgerät")
+		return
+	}
+	s.setDeviceCookie(w, "", -1)
+	w.WriteHeader(http.StatusNoContent)
 }
 
 // ChangeOwnPIN lets any signed-in member rotate their own PIN.
@@ -377,22 +430,52 @@ func allowedPreference(key string) bool {
 
 func (s *Service) AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		cookie, err := r.Cookie(CookieName)
-		if err != nil {
-			httpError(w, http.StatusUnauthorized, "Nicht angemeldet")
-			return
+		var claims *Claims
+
+		// Erst die Person: wer sich angemeldet hat, arbeitet als er selbst,
+		// auch wenn er dafür am Wandtablet steht.
+		if cookie, err := r.Cookie(CookieName); err == nil {
+			if c, err := s.validateToken(cookie.Value); err == nil {
+				claims = c
+			} else {
+				s.setCookie(w, "", -1)
+			}
 		}
 
-		claims, err := s.validateToken(cookie.Value)
-		if err != nil {
-			s.setCookie(w, "", -1)
-			httpError(w, http.StatusUnauthorized, "Sitzung abgelaufen")
-			return
+		// Sonst das Gerät: Familien-Modus.
+		if claims == nil {
+			cookie, err := r.Cookie(DeviceCookieName)
+			if err != nil {
+				httpError(w, http.StatusUnauthorized, "Nicht angemeldet")
+				return
+			}
+			c, err := s.validateToken(cookie.Value)
+			if err != nil || c.Role != RoleDevice {
+				s.setDeviceCookie(w, "", -1)
+				httpError(w, http.StatusUnauthorized, "Sitzung abgelaufen")
+				return
+			}
+			claims = c
 		}
 
 		ctx := context.WithValue(r.Context(), userIDKey, claims.UserID)
 		ctx = context.WithValue(ctx, userRoleKey, claims.Role)
+		ctx = context.WithValue(ctx, deviceKey, claims.Role == RoleDevice)
 		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+// PersonMiddleware sperrt Wege, die einer Person gehören: eigenes Profil,
+// eigene PIN, eigene Ansicht, eigene Links. Am Wandtablet hat niemand ein
+// "eigenes" — dort muss man sich dafür richtig anmelden.
+func (s *Service) PersonMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if IsDevice(r) {
+			httpError(w, http.StatusForbidden,
+				"Dafür bitte anmelden — am Wandgerät ist niemand persönlich angemeldet.")
+			return
+		}
+		next.ServeHTTP(w, r)
 	})
 }
 
@@ -639,12 +722,28 @@ func (s *Service) setCookie(w http.ResponseWriter, value string, maxAge int) {
 	})
 }
 
+func (s *Service) setDeviceCookie(w http.ResponseWriter, value string, maxAge int) {
+	http.SetCookie(w, &http.Cookie{
+		Name:     DeviceCookieName,
+		Value:    value,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   s.secureCookie,
+		SameSite: http.SameSiteLaxMode,
+		MaxAge:   maxAge,
+	})
+}
+
 func (s *Service) generateToken(userID int, role string) (string, error) {
+	return s.generateTokenTTL(userID, role, s.tokenTTL)
+}
+
+func (s *Service) generateTokenTTL(userID int, role string, ttl time.Duration) (string, error) {
 	claims := Claims{
 		UserID: userID,
 		Role:   role,
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(s.tokenTTL)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(ttl)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},
 	}
@@ -688,11 +787,24 @@ type contextKey string
 const (
 	userIDKey   contextKey = "user_id"
 	userRoleKey contextKey = "user_role"
+	deviceKey   contextKey = "is_device"
 )
 
+// GetUserID liefert nur für eine echte Person eine Kennung. Ein Wandgerät
+// ist bewusst niemand: so scheitert jeder Handler, der still auf "irgendeinen
+// Benutzer" gebaut hat, statt Daten unter falschem Namen zu speichern.
 func GetUserID(r *http.Request) (int, bool) {
+	if IsDevice(r) {
+		return 0, false
+	}
 	id, ok := r.Context().Value(userIDKey).(int)
 	return id, ok
+}
+
+// IsDevice sagt, ob die Anfrage vom Wandtablet im Familien-Modus kommt.
+func IsDevice(r *http.Request) bool {
+	is, _ := r.Context().Value(deviceKey).(bool)
+	return is
 }
 
 func GetUserRole(r *http.Request) (string, bool) {

@@ -7,11 +7,41 @@
   } from 'lucide-svelte';
   import { formatDistanceToNow, parseISO } from 'date-fns';
   import { de } from 'date-fns/locale';
-  import { ApiError, adminApi } from '$lib/api';
+  import { ApiError, adminApi, authApi } from '$lib/api';
   import { session } from '$lib/stores';
   import { board } from '$lib/stores/scores.svelte';
   import type { Activity, BackupFile, DeviceTarget, User } from '$lib/types';
   import { confirmAction } from '$lib/stores/confirm.svelte';
+
+  // ---- Wandgerät ----
+  let istWandgeraet = $state(false);
+  let geraetFehler = $state('');
+
+  async function wandgeraetAn() {
+    geraetFehler = '';
+    busy = true;
+    try {
+      await authApi.enableDevice();
+      istWandgeraet = true;
+    } catch (e) {
+      geraetFehler = e instanceof ApiError ? e.message : 'Konnte nicht einrichten';
+    } finally {
+      busy = false;
+    }
+  }
+
+  async function wandgeraetAus() {
+    geraetFehler = '';
+    busy = true;
+    try {
+      await authApi.disableDevice();
+      istWandgeraet = false;
+    } catch (e) {
+      geraetFehler = e instanceof ApiError ? e.message : 'Konnte nicht aufheben';
+    } finally {
+      busy = false;
+    }
+  }
 
   let users = $state<User[]>([]);
   let backups = $state<BackupFile[]>([]);
@@ -326,6 +356,9 @@
       void goto('/');
       return;
     }
+    // Der Server weiß, ob auf DIESEM Gerät der Familien-Modus eingerichtet
+    // ist — der Keks liegt hier, nicht in der Datenbank.
+    istWandgeraet = $session.user?.device_mode === true;
     void load();
   });
 </script>
@@ -788,6 +821,41 @@
           </li>
         {/each}
       </ul>
+    {/if}
+  </section>
+
+  <section class="card mt-4 p-5">
+    <h2 class="mb-2 flex items-center gap-2 font-semibold">
+      <MonitorSmartphone class="h-5 w-5" /> Wandgerät
+    </h2>
+    <p class="mb-4 text-sm text-muted-foreground">
+      Ein Tablet, das fest an der Wand hängt, wird hier zum Familien-Gerät.
+      Es bleibt dauerhaft angemeldet, zeigt aber keine persönlichen Daten:
+      keine Rangliste, keine Einstellungen, keine eigenen Links. Wer eine
+      Aufgabe abhakt, wird kurz gefragt, wer er ist — ohne PIN. Diese
+      Einstellung gilt nur für <strong>dieses</strong> Gerät.
+    </p>
+
+    {#if geraetFehler}
+      <p class="mb-3 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
+        {geraetFehler}
+      </p>
+    {/if}
+
+    {#if istWandgeraet}
+      <div class="flex flex-wrap items-center gap-3">
+        <span class="flex items-center gap-2 text-sm text-primary">
+          <Check class="h-4 w-4" /> Dieses Gerät ist ein Wandgerät.
+        </span>
+        <button class="btn-outline px-3 text-sm" onclick={wandgeraetAus} disabled={busy}>
+          Wieder aufheben
+        </button>
+      </div>
+    {:else}
+      <button class="btn-primary px-4 text-sm" onclick={wandgeraetAn} disabled={busy}>
+        <MonitorSmartphone class="h-4 w-4" />
+        Dieses Gerät als Wandgerät einrichten
+      </button>
     {/if}
   </section>
 </div>

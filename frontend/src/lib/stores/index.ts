@@ -7,17 +7,45 @@ import type { User } from '$lib/types';
  * — there is deliberately no client-side "switch user", because swapping the
  * name in the UI would not swap the credential behind it.
  */
+/**
+ * Am Wandtablet ist niemand persönlich angemeldet, aber das Gerät ist es.
+ * "device" unterscheidet diesen Familien-Modus von "gar nicht angemeldet":
+ * im einen Fall zeigt die App den Familienstand, im anderen den
+ * Anmeldebildschirm.
+ */
+/**
+ * Der Familien-Modus wird zusätzlich am Wurzelelement vermerkt, damit die
+ * API-Schicht ihn lesen kann, ohne diesen Store zu importieren.
+ */
+function merken(an: boolean) {
+  if (!browser) return;
+  if (an) document.documentElement.dataset.familienmodus = 'ja';
+  else delete document.documentElement.dataset.familienmodus;
+}
+
 function createSession() {
-  const { subscribe, set } = writable<{ user: User | null; ready: boolean }>({
+  const { subscribe, set } = writable<{ user: User | null; device: boolean; ready: boolean }>({
     user: null,
+    device: false,
     ready: false,
   });
 
   return {
     subscribe,
-    set: (user: User | null) => set({ user, ready: true }),
-    clear: () => set({ user: null, ready: true }),
-    markReady: () => set({ user: null, ready: true }),
+    set: (user: User | null) => {
+      merken(false);
+      set({ user, device: false, ready: true });
+    },
+    /** Familien-Modus: das Gerät ist angemeldet, die Person nicht. */
+    setDevice: () => {
+      merken(true);
+      set({ user: null, device: true, ready: true });
+    },
+    clear: () => {
+      merken(false);
+      set({ user: null, device: false, ready: true });
+    },
+    markReady: () => set({ user: null, device: false, ready: true }),
   };
 }
 

@@ -283,7 +283,7 @@ func (s *Service) List(w http.ResponseWriter, r *http.Request) {
 
 func (s *Service) Create(w http.ResponseWriter, r *http.Request) {
 	userID, ok := auth.GetUserID(r)
-	if !ok {
+	if !ok && !auth.IsDevice(r) {
 		auth.HTTPError(w, http.StatusUnauthorized, "Nicht angemeldet")
 		return
 	}
@@ -299,9 +299,16 @@ func (s *Service) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Am Wandgerät hat der Eintrag keinen Urheber: er gehört der Familie.
+	// Eine 0 wäre ein Verweis auf einen Benutzer, den es nicht gibt.
+	var urheber any
+	if ok {
+		urheber = userID
+	}
+
 	res, err := s.db.Exec(
 		`INSERT INTO shopping_items (name, quantity, category, user_id) VALUES (?, ?, ?, ?)`,
-		req.Name, strings.TrimSpace(req.Quantity), strings.TrimSpace(req.Category), userID,
+		req.Name, strings.TrimSpace(req.Quantity), strings.TrimSpace(req.Category), urheber,
 	)
 	if err != nil {
 		log.Error().Err(err).Msg("DB error creating shopping item")
@@ -413,8 +420,26 @@ func ShoppingReward(items int) int {
 func (s *Service) ClearChecked(w http.ResponseWriter, r *http.Request) {
 	userID, ok := auth.GetUserID(r)
 	if !ok {
-		auth.HTTPError(w, http.StatusUnauthorized, "Nicht angemeldet")
-		return
+		if !auth.IsDevice(r) {
+			auth.HTTPError(w, http.StatusUnauthorized, "Nicht angemeldet")
+			return
+		}
+		// Für den Einkauf gibt es Punkte, also muss auch hier feststehen,
+		// wer eingekauft hat.
+		var req struct {
+			UserID int `json:"user_id"`
+		}
+		_ = json.NewDecoder(r.Body).Decode(&req)
+		if req.UserID <= 0 {
+			auth.HTTPError(w, http.StatusBadRequest, "Wer war einkaufen?")
+			return
+		}
+		var da int
+		if err := s.db.QueryRow("SELECT 1 FROM users WHERE id = ?", req.UserID).Scan(&da); err != nil {
+			auth.HTTPError(w, http.StatusBadRequest, "Unbekanntes Familienmitglied")
+			return
+		}
+		userID = req.UserID
 	}
 
 	tx, err := s.db.Begin()

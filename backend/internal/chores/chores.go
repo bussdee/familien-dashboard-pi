@@ -387,11 +387,34 @@ func (s *Service) Delete(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// completeRequest trägt am Wandgerät die Person, die gerade abgehakt hat.
+// Angemeldete Personen brauchen das Feld nicht — für sie zählt ihre Sitzung.
+type completeRequest struct {
+	UserID int `json:"user_id"`
+}
+
 func (s *Service) Complete(w http.ResponseWriter, r *http.Request) {
 	userID, ok := auth.GetUserID(r)
 	if !ok {
-		auth.HTTPError(w, http.StatusUnauthorized, "Nicht angemeldet")
-		return
+		if !auth.IsDevice(r) {
+			auth.HTTPError(w, http.StatusUnauthorized, "Nicht angemeldet")
+			return
+		}
+		// Am Wandtablet ist niemand angemeldet. Die Oberfläche fragt deshalb
+		// "Wer war das?" und schickt die Antwort mit — sonst bekäme immer
+		// derjenige die Punkte, der sich zuletzt angemeldet hat.
+		var req completeRequest
+		_ = json.NewDecoder(r.Body).Decode(&req)
+		if req.UserID <= 0 {
+			auth.HTTPError(w, http.StatusBadRequest, "Wer hat das erledigt?")
+			return
+		}
+		var da int
+		if err := s.db.QueryRow("SELECT 1 FROM users WHERE id = ?", req.UserID).Scan(&da); err != nil {
+			auth.HTTPError(w, http.StatusBadRequest, "Unbekanntes Familienmitglied")
+			return
+		}
+		userID = req.UserID
 	}
 	id, err := strconv.Atoi(chi.URLParam(r, "id"))
 	if err != nil {

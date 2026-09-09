@@ -3,6 +3,7 @@
   import { ApiError, shoppingApi } from '$lib/api';
   import { session } from '$lib/stores';
   import { board } from '$lib/stores/scores.svelte';
+  import { werWarDas } from '$lib/stores/werwardas.svelte';
   import type { ShoppingItem } from '$lib/types';
 
   let {
@@ -71,14 +72,23 @@
 
   async function clearDone() {
     if (done.length === 0 || busy) return;
+
+    // Fürs Einkaufen gibt es Punkte, also muss auch hier feststehen, wer
+    // unterwegs war — am Wandtablet weiß das Gerät es nicht von allein.
+    let wer: number | null = $session.user?.id ?? null;
+    if ($session.device) {
+      wer = await werWarDas({ was: `${done.length} Artikel eingekauft` });
+      if (wer === null) return;
+    }
+
     busy = true;
     const count = done.length;
     try {
-      const result = await shoppingApi.clearChecked();
+      const result = await shoppingApi.clearChecked($session.device ? wer! : undefined);
       items = items.filter((i) => !i.checked);
-      if (result.points_awarded > 0 && $session.user) {
+      if (result.points_awarded > 0 && wer !== null) {
         await board.award(
-          $session.user.id,
+          wer,
           result.points_awarded,
           `Einkauf erledigt · ${count} ${count === 1 ? 'Artikel' : 'Artikel'}`,
         );

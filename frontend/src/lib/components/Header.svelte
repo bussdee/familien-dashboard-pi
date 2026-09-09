@@ -6,7 +6,7 @@
   import { board } from '$lib/stores/scores.svelte';
   import {
     CloudSun, House, LayoutGrid, Link as LinkIcon, LogOut, Menu, Monitor, Moon,
-    Settings, Shield, Sun, Trophy, WifiOff, X,
+    Settings, Shield, Sun, Trophy, WifiOff, X, UserRound,
   } from 'lucide-svelte';
 
   let menuOpen = $state(false);
@@ -21,14 +21,19 @@
   const path = $derived($page.url.pathname);
   const me = $derived(board.for(user?.id));
 
+  const geraet = $derived($session.device);
+
+  // Im Familien-Modus verschwindet alles, was einer Person gehört: Links,
+  // eigene Ansicht, Einstellungen — und die Rangliste, die im Flur niemanden
+  // etwas angeht.
   const nav = $derived(
     [
       { href: '/', label: 'Übersicht', icon: House, show: true },
-      { href: '/links', label: 'Links', icon: LinkIcon, show: true },
       { href: '/wetter', label: 'Wetter', icon: CloudSun, show: true },
-      { href: '/rangliste', label: 'Rangliste', icon: Trophy, show: true },
-      { href: '/ansicht', label: 'Ansicht anpassen', icon: LayoutGrid, show: true },
-      { href: '/settings', label: 'Einstellungen', icon: Settings, show: true },
+      { href: '/links', label: 'Links', icon: LinkIcon, show: !geraet },
+      { href: '/rangliste', label: 'Rangliste', icon: Trophy, show: !geraet },
+      { href: '/ansicht', label: 'Ansicht anpassen', icon: LayoutGrid, show: !geraet },
+      { href: '/settings', label: 'Einstellungen', icon: Settings, show: !geraet },
       { href: '/admin', label: 'Verwaltung', icon: Shield, show: user?.role === 'admin' },
     ].filter((item) => item.show),
   );
@@ -49,10 +54,23 @@
     menuOpen = false;
     try {
       await authApi.logout();
-    } finally {
-      session.clear();
-      await goto('/login');
+    } catch {
+      /* die Sitzung ist so oder so vorbei */
     }
+    // Auf einem Wandgerät bleibt nach dem Abmelden der Familien-Modus
+    // übrig. Nur wo das nicht so ist, geht es zum Anmeldebildschirm.
+    try {
+      const danach = await authApi.me();
+      if ('device' in danach) {
+        session.setDevice();
+        await goto('/');
+        return;
+      }
+    } catch {
+      /* niemand mehr da — normaler Abmeldeweg */
+    }
+    session.clear();
+    await goto('/login');
   }
 </script>
 
@@ -99,8 +117,8 @@
         </span>
       {/if}
 
-      <!-- Just my own standing, not the whole table. -->
-      {#if me}
+      <!-- Just my own standing, not the whole table. Am Wandgerät gar nicht. -->
+      {#if me && !geraet}
         <a
           href="/rangliste"
           class="flex items-center gap-1.5 rounded-full bg-muted px-3 py-1.5 text-sm transition-colors hover:bg-accent"
@@ -120,6 +138,17 @@
           title={user.name}
         >
           <span class="text-xl leading-none">{user.avatar_emoji}</span>
+        </a>
+      {:else if geraet}
+        <!-- Der Konto-Wechsler: wer das Tablet mit aufs Sofa nimmt, meldet
+             sich hier an und bekommt seine persönliche Ansicht. -->
+        <a
+          href="/login"
+          class="flex items-center gap-1.5 rounded-full border border-[color:var(--haarlinie)] px-3 py-1.5 text-sm transition-colors hover:bg-accent"
+          title="Als Familienmitglied anmelden"
+        >
+          <UserRound class="h-4 w-4" />
+          <span class="hidden sm:inline">Anmelden</span>
         </a>
       {/if}
     </div>
@@ -201,13 +230,26 @@
     </nav>
 
     <div class="safe-bottom border-t border-border p-2">
-      <button
-        class="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm text-destructive transition-colors hover:bg-accent"
-        onclick={signOut}
-      >
-        <LogOut class="h-5 w-5" />
-        Abmelden
-      </button>
+      {#if geraet}
+        <!-- Im Familien-Modus gibt es nichts abzumelden — aber einen Weg
+             in das eigene Konto, wenn das Tablet mit aufs Sofa wandert. -->
+        <a
+          href="/login"
+          class="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm transition-colors hover:bg-accent"
+          onclick={() => (menuOpen = false)}
+        >
+          <UserRound class="h-5 w-5" />
+          Als Familienmitglied anmelden
+        </a>
+      {:else}
+        <button
+          class="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm text-destructive transition-colors hover:bg-accent"
+          onclick={signOut}
+        >
+          <LogOut class="h-5 w-5" />
+          Abmelden
+        </button>
+      {/if}
     </div>
   </div>
 {/if}

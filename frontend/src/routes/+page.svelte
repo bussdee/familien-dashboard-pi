@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { goto } from '$app/navigation';
   import { RefreshCw, TriangleAlert } from 'lucide-svelte';
   import {
     adminApi, calendarApi, choresApi, connectShoppingSocket,
@@ -101,9 +102,24 @@
     devices = await devicesApi.list();
   }
 
+  /**
+   * Ein Wandgerät soll nicht stundenlang eine Aufgabenliste anstarren. Nach
+   * einer Weile ohne Berührung wird daraus ein Bilderrahmen; eine Berührung
+   * dort führt zurück in den Familien-Modus, nie in ein fremdes Konto.
+   */
+  const RUHE_MS = 5 * 60_000;
+  let ruheTimer: ReturnType<typeof setTimeout> | null = null;
+
+  function ruheNeuStarten() {
+    if (ruheTimer) clearTimeout(ruheTimer);
+    if (!$session.device) return;
+    ruheTimer = setTimeout(() => void goto('/diashow'), RUHE_MS);
+  }
+
   onMount(() => {
     void loadAll();
     if (!layout.loaded) void layout.load();
+    ruheNeuStarten();
 
     if ($session.user?.role === 'admin') {
       adminApi.listUsers().then((list) => (users = list)).catch(() => {});
@@ -133,12 +149,17 @@
     return () => {
       disconnect();
       clearInterval(timer);
+      if (ruheTimer) clearTimeout(ruheTimer);
       connection.setLive(false);
     };
   });
+
 </script>
 
 <svelte:head><title>Familien Dashboard</title></svelte:head>
+
+<!-- Jede Berührung schiebt den Ruhezustand nach hinten. -->
+<svelte:window onpointerdown={ruheNeuStarten} onkeydown={ruheNeuStarten} />
 
 <!-- Volle Breite: auf einem großen Monitor bleibt sonst links und rechts
      Rand stehen, und der Flurbildschirm verschenkt die Hälfte der Fläche. -->
@@ -150,9 +171,15 @@
         {today}
       </p>
       <h1 class="mt-2 font-display text-[2.5rem] font-light leading-[1.05] tracking-tight sm:text-5xl">
-        {greeting}{$session.user ? ',' : ''}
-        {#if $session.user}
-          <span class="font-medium italic">{$session.user.name}</span>
+        {#if $session.device}
+          <!-- Familien-Modus: das Gerät grüßt niemanden persönlich, weil es
+               nicht weiß (und nicht wissen soll), wer gerade davorsteht. -->
+          {greeting}<span class="font-medium italic">, Familie</span>
+        {:else}
+          {greeting}{$session.user ? ',' : ''}
+          {#if $session.user}
+            <span class="font-medium italic">{$session.user.name}</span>
+          {/if}
         {/if}
       </h1>
       {#if !loading}
@@ -184,9 +211,11 @@
     </button>
   </header>
 
-  <PointsBand {me} total={board.scores.length} />
+  {#if !$session.device}
+    <PointsBand {me} total={board.scores.length} />
+  {/if}
 
-  {#if $session.user?.pin_is_default}
+  {#if $session.user?.pin_is_default && !$session.device}
     <a
       href="/settings"
       class="mb-4 flex items-center gap-2 rounded-xl bg-amber-500/10 px-4 py-3 text-sm text-amber-700 transition-colors hover:bg-amber-500/15 dark:text-amber-400"
@@ -215,7 +244,9 @@
       default puts the two lists people act on first.
     -->
     <div class="widget-raster mt-2">
-      {#each layout.visible as widget (widget.id)}
+      <!-- Links gehören einer Person. Am Wandgerät bliebe die Kachel leer
+           und würde nur Fragen aufwerfen. -->
+      {#each layout.visible.filter((w) => !($session.device && w.id === 'links')) as widget (widget.id)}
         <div id={widget.id} class="scroll-mt-20">
           {#if widget.id === 'chores'}
             <ChoresWidget bind:chores {users} onRefresh={reloadChores} />
