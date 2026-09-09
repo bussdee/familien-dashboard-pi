@@ -15,6 +15,23 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
+// Wer ist für eine Aufgabe zuständig? Die Reihum-Verteilung ist praktisch,
+// passt aber nicht überall: Wer wenig Zeit hat, steht sonst ständig im Plan.
+const (
+	AssignRotate   = "rotate"   // reihum an die Familie
+	AssignPerson   = "person"   // eine feste Person
+	AssignEveryone = "everyone" // alle gemeinsam
+	AssignNobody   = "nobody"   // niemand fest, wer mag
+)
+
+func gueltigeZuweisung(v string) bool {
+	switch v {
+	case AssignRotate, AssignPerson, AssignEveryone, AssignNobody:
+		return true
+	}
+	return false
+}
+
 type Chore struct {
 	ID           int        `json:"id"`
 	Title        string     `json:"title"`
@@ -22,6 +39,7 @@ type Chore struct {
 	IntervalDays int        `json:"interval_days"`
 	Points       int        `json:"points"`
 	Rotate       bool       `json:"rotate"`
+	Assignment   string     `json:"assignment"`
 	AssigneeID   *int       `json:"assignee_id"`
 	LastDoneAt   *time.Time `json:"last_done_at,omitempty"`
 	NextDueAt    *time.Time `json:"next_due_at,omitempty"`
@@ -46,6 +64,7 @@ type CreateRequest struct {
 	IntervalDays int    `json:"interval_days"`
 	Points       int    `json:"points"`
 	Rotate       *bool  `json:"rotate"`
+	Assignment   string `json:"assignment"`
 	AssigneeID   *int   `json:"assignee_id"`
 }
 
@@ -55,6 +74,7 @@ type UpdateRequest struct {
 	IntervalDays *int    `json:"interval_days"`
 	Points       *int    `json:"points"`
 	Rotate       *bool   `json:"rotate"`
+	Assignment   *string `json:"assignment"`
 	AssigneeID   *int    `json:"assignee_id"`
 }
 
@@ -94,7 +114,7 @@ func (s *Service) rotateDue() {
 	// von Go geschrieben, einmal von SQLite selbst. Ein Vergleich mit
 	// datetime('now') stellt die beiden Formate gegenüber und liefert Unsinn.
 	rows, err := s.db.Query(`
-		SELECT id, assignee_id, next_due_at FROM chores WHERE rotate = 1`)
+		SELECT id, assignee_id, next_due_at FROM chores WHERE assignment = 'rotate'`)
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to load chores for rotation")
 		return
@@ -186,7 +206,7 @@ func (s *Service) userIDs(query string) ([]int, error) {
 // ------------------------------------------------------------------ Handlers
 
 const choreColumns = `c.id, c.title, c.description, c.interval_days, c.points, c.rotate,
-	c.assignee_id, c.last_done_at, c.next_due_at, c.created_at, c.updated_at,
+	c.assignment, c.assignee_id, c.last_done_at, c.next_due_at, c.created_at, c.updated_at,
 	u.name, u.color, u.avatar_emoji,
 	(SELECT du.name FROM chore_completions cc JOIN users du ON du.id = cc.user_id
 	  WHERE cc.chore_id = c.id ORDER BY cc.id DESC LIMIT 1)`
@@ -235,13 +255,25 @@ func (s *Service) Create(w http.ResponseWriter, r *http.Request) {
 	if req.Points <= 0 {
 		req.Points = 10
 	}
-	rotate := true
-	if req.Rotate != nil {
-		rotate = *req.Rotate
+	// Zuweisung bestimmen. Ältere Fassungen kannten nur "rotate" als
+	// Ja/Nein — die werden weiter verstanden, damit nichts bricht.
+	zuweisung := req.Assignment
+	if !gueltigeZuweisung(zuweisung) {
+		switch {
+		case req.Rotate != nil && !*req.Rotate && req.AssigneeID != nil && *req.AssigneeID > 0:
+			zuweisung = AssignPerson
+		case req.Rotate != nil && !*req.Rotate:
+			zuweisung = AssignNobody
+		default:
+			zuweisung = AssignRotate
+		}
 	}
+	rotate := zuweisung == AssignRotate
 
+	// Nur eine feste Person trägt einen Namen. Bei "alle", "niemand" und
+	// "reihum" bleibt das Feld leer — reihum füllt es der Hintergrundlauf.
 	var assignee any
-	if req.AssigneeID != nil && *req.AssigneeID > 0 {
+	if zuweisung == AssignPerson && req.AssigneeID != nil && *req.AssigneeID > 0 {
 		assignee = *req.AssigneeID
 	}
 
@@ -250,9 +282,9 @@ func (s *Service) Create(w http.ResponseWriter, r *http.Request) {
 	// warten dürfen, bis man sie abhaken kann.
 	nextDue := startOfDay(time.Now())
 	res, err := s.db.Exec(
-		`INSERT INTO chores (title, description, interval_days, points, rotate, assignee_id, next_due_at)
-		 VALUES (?, ?, ?, ?, ?, ?, ?)`,
-		req.Title, req.Description, req.IntervalDays, req.Points, rotate, assignee, nextDue)
+		`INSERT INTO chores (title, description, interval_days, points, rotate, assignment, assignee_id, next_due_at)
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+		req.Title, req.Description, req.IntervalDays, req.Points, rotate, zuweisung, assignee, nextDue)
 	if err != nil {
 		log.Error().Err(err).Msg("DB error creating chore")
 		auth.HTTPError(w, http.StatusInternalServerError, "Server-Fehler")
@@ -303,6 +335,19 @@ func (s *Service) Update(w http.ResponseWriter, r *http.Request) {
 	if req.Rotate != nil {
 		sets = append(sets, "rotate = ?")
 		args = append(args, *req.Rotate)
+	}
+	if req.Assignment != nil {
+		if !gueltigeZuweisung(*req.Assignment) {
+			auth.HTTPError(w, http.StatusBadRequest, "Unbekannte Zuständigkeit")
+			return
+		}
+		sets = append(sets, "assignment = ?", "rotate = ?")
+		args = append(args, *req.Assignment, *req.Assignment == AssignRotate)
+		// Bei "alle" und "niemand" gehört kein Name mehr an die Aufgabe,
+		// sonst bliebe der alte stehen und stiftet Verwirrung.
+		if *req.Assignment == AssignEveryone || *req.Assignment == AssignNobody {
+			sets = append(sets, "assignee_id = NULL")
+		}
 	}
 	// assignee_id = 0 explicitly clears the assignment.
 	if req.AssigneeID != nil {
@@ -467,7 +512,7 @@ func scanChore(row scanner, now time.Time) (Chore, error) {
 	var name, color, emoji, doneBy sql.NullString
 
 	if err := row.Scan(&c.ID, &c.Title, &c.Description, &c.IntervalDays, &c.Points, &c.Rotate,
-		&assignee, &lastDone, &nextDue, &c.CreatedAt, &c.UpdatedAt,
+		&c.Assignment, &assignee, &lastDone, &nextDue, &c.CreatedAt, &c.UpdatedAt,
 		&name, &color, &emoji, &doneBy); err != nil {
 		return Chore{}, err
 	}

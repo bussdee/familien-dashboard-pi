@@ -113,6 +113,8 @@ export interface Chore {
   interval_days: number;
   points: number;
   rotate: boolean;
+  /** rotate | person | everyone | nobody */
+  assignment: string;
   assignee_id: number | null;
   last_done_at: string | null;
   next_due_at: string | null;

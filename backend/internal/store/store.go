@@ -95,6 +95,8 @@ func (s *Store) Migrate() error {
 			interval_days INTEGER NOT NULL DEFAULT 7,
 			points INTEGER NOT NULL DEFAULT 10,
 			rotate BOOLEAN NOT NULL DEFAULT 1,
+			-- rotate | person | everyone | nobody
+			assignment TEXT NOT NULL DEFAULT 'rotate',
 			assignee_id INTEGER,
 			last_done_at DATETIME,
 			next_due_at DATETIME,
@@ -226,6 +228,23 @@ func (s *Store) Migrate() error {
 		if _, err := s.db.Exec(m); err != nil {
 			return fmt.Errorf("migration failed (%.60s...): %w", m, err)
 		}
+	}
+
+	// Nachträglich ergänzte Spalten. CREATE TABLE IF NOT EXISTS greift bei
+	// bestehenden Datenbanken nicht, ALTER TABLE bricht ab, wenn die Spalte
+	// schon da ist — deshalb erst nachsehen.
+	if err := s.addColumn("chores", "assignment", "TEXT NOT NULL DEFAULT ''"); err != nil {
+		return err
+	}
+	// Bestehende Aufgaben in die neue Schreibweise überführen. Läuft genau
+	// einmal, weil danach kein leerer Wert mehr übrig ist.
+	if _, err := s.db.Exec(`
+		UPDATE chores SET assignment = CASE
+			WHEN rotate = 1            THEN 'rotate'
+			WHEN assignee_id IS NOT NULL THEN 'person'
+			ELSE 'nobody'
+		END WHERE assignment = ''`); err != nil {
+		return fmt.Errorf("chores.assignment backfill: %w", err)
 	}
 
 	if err := s.seedUsers(); err != nil {
@@ -370,4 +389,36 @@ func (s *Store) SetUserSetting(userID int, key, value string) error {
 		ON CONFLICT(user_id, key) DO UPDATE SET value = excluded.value, updated_at = CURRENT_TIMESTAMP`,
 		userID, key, value)
 	return err
+}
+
+// addColumn ergänzt eine Spalte, falls sie noch fehlt. SQLite kennt kein
+// "ADD COLUMN IF NOT EXISTS", also wird vorher in der Tabellenbeschreibung
+// nachgesehen.
+func (s *Store) addColumn(table, column, ddl string) error {
+	rows, err := s.db.Query("PRAGMA table_info(" + table + ")")
+	if err != nil {
+		return fmt.Errorf("read columns of %s: %w", table, err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var cid int
+		var name, typ string
+		var notNull, pk int
+		var dflt sql.NullString
+		if err := rows.Scan(&cid, &name, &typ, &notNull, &dflt, &pk); err != nil {
+			return err
+		}
+		if name == column {
+			return nil
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return err
+	}
+
+	if _, err := s.db.Exec("ALTER TABLE " + table + " ADD COLUMN " + column + " " + ddl); err != nil {
+		return fmt.Errorf("add column %s.%s: %w", table, column, err)
+	}
+	return nil
 }

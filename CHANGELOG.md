@@ -4,6 +4,24 @@ Alle nennenswerten Änderungen an diesem Projekt.
 Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 Versionierung nach [SemVer](https://semver.org/lang/de/).
 
+## [1.1.0] — 2026-09-09
+
+### Neu
+
+- **Zuständigkeit „Alle" und „Wer mag".** Bisher rotierte eine Aufgabe reihum
+  oder gehörte einer festen Person. Wer wenig Zeit für den Haushalt hat, stand
+  dadurch trotzdem überall im Plan. Jetzt gibt es vier Möglichkeiten:
+  *Reihum*, *Alle*, *Wer mag* und eine feste Person. Bei „Alle" und „Wer mag"
+  steht kein Name mehr an der Aufgabe, und die Weitergabe reihum überspringt
+  sie.
+
+### Geändert
+
+- Im Formular hat die Zuständigkeit eine eigene Zeile bekommen — in drei
+  Spalten war das Auswahlfeld so schmal, dass „Reihum" abgeschnitten wurde.
+- Bestehende Aufgaben werden beim ersten Start übernommen: was reihum lief,
+  läuft weiter reihum; was einer Person gehörte, bleibt bei ihr.
+
 ## [1.0.2] — 2026-09-08
 
 ### Behoben
@@ -111,6 +129,7 @@ Erste öffentliche Fassung.
 - Ein Punkt lässt sich nicht vom Benutzer selbst zurücknehmen, nur von einem
   Administrator
 
+[1.1.0]: https://github.com/bussdee/familien-dashboard-pi/releases/tag/v1.1.0
 [1.0.2]: https://github.com/bussdee/familien-dashboard-pi/releases/tag/v1.0.2
 [1.0.1]: https://github.com/bussdee/familien-dashboard-pi/releases/tag/v1.0.1
 [1.0.0]: https://github.com/bussdee/familien-dashboard-pi/releases/tag/v1.0.0

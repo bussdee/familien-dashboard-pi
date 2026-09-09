@@ -27,7 +27,8 @@
   let completing = $state<number | null>(null);
 
   function emptyDraft() {
-    return { title: '', description: '', interval_days: 7, points: 10, assignee_id: 0 };
+    // 'rotate' | 'everyone' | 'nobody' | die ID einer Person als Text
+    return { title: '', description: '', interval_days: 7, points: 10, zustaendig: 'rotate' };
   }
 
   let draft = $state(emptyDraft());
@@ -80,7 +81,10 @@
       description: chore.description,
       interval_days: chore.interval_days,
       points: chore.points,
-      assignee_id: chore.assignee_id ?? 0,
+      zustaendig:
+        chore.assignment === 'person' && chore.assignee_id
+          ? String(chore.assignee_id)
+          : chore.assignment || 'rotate',
     };
     error = '';
     showForm = true;
@@ -90,13 +94,16 @@
     event.preventDefault();
     if (!draft.title.trim()) return;
     error = '';
+    // Eine Zahl im Auswahlfeld ist eine Person, alles andere eine der
+    // festen Zuständigkeiten.
+    const person = Number(draft.zustaendig);
     const payload = {
       title: draft.title.trim(),
       description: draft.description,
       interval_days: draft.interval_days,
       points: draft.points,
-      // 0 clears the assignment and hands the chore back to the rotation.
-      assignee_id: draft.assignee_id,
+      assignment: Number.isFinite(person) && person > 0 ? 'person' : draft.zustaendig,
+      assignee_id: Number.isFinite(person) && person > 0 ? person : 0,
     };
     try {
       if (editingId !== null) await choresApi.update(editingId, payload);
@@ -143,6 +150,15 @@
     if (chore.days_until_due === 1) return `${wieder}morgen`;
     const tag = format(parseISO(chore.next_due_at), 'EEEE, d. MMM', { locale: de });
     return wieder ? `${wieder}${tag}` : tag;
+  }
+
+  // Wer ist zuständig? "Alle" und "Wer mag" sind bewusste Antworten und
+  // nicht dasselbe wie eine leere Zeile.
+  function whoLabel(chore: Chore): string {
+    if (chore.assignment === 'everyone') return '👪 Alle';
+    if (chore.assignment === 'nobody') return '🙋 Wer mag';
+    if (chore.assignee_name) return `${chore.assignee_emoji} ${chore.assignee_name}`;
+    return '🔄 Reihum';
   }
 
   // Wer zuletzt dran war. Steht nur an erledigten Zeilen, dort ist es die
@@ -215,7 +231,10 @@
     <form class="mb-4 space-y-2 rounded-xl border border-border p-3" onsubmit={save}>
       <input class="input" placeholder="Was ist zu tun?" bind:value={draft.title} maxlength="80" />
       <input class="input" placeholder="Beschreibung (optional)" bind:value={draft.description} />
-      <div class="grid grid-cols-3 gap-2">
+      <!-- Zwei Zahlen nebeneinander, die Zuständigkeit auf voller Breite:
+           in drei Spalten war das Auswahlfeld so schmal, dass "Reihum"
+           abgeschnitten wurde. -->
+      <div class="grid grid-cols-2 gap-2">
         <label class="text-xs text-muted-foreground">
           Alle X Tage
           <input class="input mt-1" type="number" min="1" max="365" bind:value={draft.interval_days} />
@@ -224,14 +243,18 @@
           Punkte
           <input class="input mt-1" type="number" min="1" max="500" bind:value={draft.points} />
         </label>
-        <label class="text-xs text-muted-foreground">
-          Zuständig
-          <select class="input mt-1" bind:value={draft.assignee_id}>
-            <option value={0}>Rotieren</option>
-            {#each users as u (u.id)}<option value={u.id}>{u.avatar_emoji} {u.name}</option>{/each}
-          </select>
-        </label>
       </div>
+      <label class="block text-xs text-muted-foreground">
+          Zuständig
+          <select class="input mt-1" bind:value={draft.zustaendig}>
+            <option value="rotate">🔄 Reihum</option>
+            <option value="everyone">👪 Alle</option>
+            <option value="nobody">🙋 Wer mag</option>
+            {#each users as u (u.id)}
+              <option value={String(u.id)}>{u.avatar_emoji} {u.name}</option>
+            {/each}
+          </select>
+      </label>
       <button class="btn-primary w-full" disabled={!draft.title.trim()}>
         {editingId !== null ? 'Änderungen speichern' : 'Anlegen'}
       </button>
@@ -297,19 +320,13 @@
               {#if chore.is_overdue}<CircleAlert class="h-3 w-3 shrink-0 text-destructive" />{/if}
               {#if chore.is_due}
                 <span class={chore.is_overdue ? 'text-destructive' : ''}>{dueLabel(chore)}</span>
-                {#if chore.assignee_name}
-                  <span>· {chore.assignee_emoji} {chore.assignee_name}</span>
-                {:else}
-                  <span>· frei</span>
-                {/if}
+                <span>· {whoLabel(chore)}</span>
               {:else if isDone(chore)}
                 <span class="text-primary">{doneLabel(chore)}</span>
                 <span>· {dueLabel(chore)}</span>
               {:else}
                 <span>{dueLabel(chore)}</span>
-                {#if chore.assignee_name}
-                  <span>· {chore.assignee_emoji} {chore.assignee_name}</span>
-                {/if}
+                <span>· {whoLabel(chore)}</span>
               {/if}
             </p>
           </div>
