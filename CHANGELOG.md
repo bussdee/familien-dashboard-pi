@@ -4,6 +4,19 @@ Alle nennenswerten Änderungen an diesem Projekt.
 Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 Versionierung nach [SemVer](https://semver.org/lang/de/).
 
+## [1.4.2] — 2026-09-09
+
+### Geändert
+
+- Die Beschreibung war auf dem Stand der ersten Fassung. README und
+  Installationsanleitung führen jetzt auf, was seither dazugekommen ist:
+  Zuständigkeiten *alle* und *wer mag*, Wetter mit Regenzeiten, Diashow im
+  Vollbild, die beiden Oberflächen und der Familien-Modus fürs Wandtablet —
+  samt einer Anleitung, wie man ein Tablet dafür einrichtet.
+- Bei den Grenzen steht jetzt offen, dass am Wandgerät ohne PIN abgehakt
+  werden kann, und warum das so gewollt ist.
+- Die Zahl der Prüfungen in allen Anleitungen auf 40 berichtigt.
+
 ## [1.4.1] — 2026-09-09
 
 ### Behoben
@@ -231,6 +244,7 @@ Erste öffentliche Fassung.
 - Ein Punkt lässt sich nicht vom Benutzer selbst zurücknehmen, nur von einem
   Administrator
 
+[1.4.2]: https://github.com/bussdee/familien-dashboard-pi/releases/tag/v1.4.2
 [1.4.1]: https://github.com/bussdee/familien-dashboard-pi/releases/tag/v1.4.1
 [1.4.0]: https://github.com/bussdee/familien-dashboard-pi/releases/tag/v1.4.0
 [1.3.0]: https://github.com/bussdee/familien-dashboard-pi/releases/tag/v1.3.0

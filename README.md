@@ -51,16 +51,17 @@ solange es im eigenen, vertrauenswürdigen Netz bleibt.
 
 | | |
 |---|---|
-| ⭐ **Aufgaben** | Müll, Geschirrspüler, Katzenklo. Jede Aufgabe hat ein Intervall, einen Punktwert und wechselt reihum die Zuständigkeit. |
+| ⭐ **Aufgaben** | Müll, Geschirrspüler, Katzenklo. Jede Aufgabe hat ein Intervall und einen Punktwert. Zuständig ist wahlweise *reihum*, eine feste Person, *alle* oder *wer mag*. Einmal erledigt ist erledigt — ein zweites Abhaken am selben Tag gibt es nicht. |
 | 🏆 **Punkte & Level** | Wer abhakt, bekommt Punkte. Level von *Neuling* bis *Legende*, Serien, elf Abzeichen, Siegertreppchen. Verklickt? Ein Elternteil nimmt es zurück — die Aufgabe wird dabei wieder fällig. |
 | 🛒 **Einkaufsliste** | Gemeinsam und **in Echtzeit**: Was im Laden abgehakt wird, verschwindet sofort auf allen Geräten. Punkte gibt es auch dafür. |
 | 📅 **Kalender** | Termine direkt eintragen, einmalig oder wiederkehrend. Oder eine `.ics` aus Apple, Google oder Outlook ablegen. |
 | 📝 **Notizen** | Markdown, zweiseitig mit echten Dateien synchronisiert. Bleiben lesbar, auch ohne dieses Programm. |
-| 🔗 **Links** | Eigene Lesezeichen mit Kategorien. Angepinnte erscheinen auf der Startseite. |
-| ☀️ **Wetter** | Kompakt neben dem Datum, Details auf Klick. Ortssuche ohne Anmeldung. |
-| 🖼️ **Foto-Rahmen** | Bilder hochladen, wechseln automatisch. Aus dem Wandtablet wird nebenbei ein Bilderrahmen. |
+| 🔗 **Links** | Lesezeichen mit Kategorien, privat oder mit der Familie geteilt. Angepinnte erscheinen auf der Startseite. |
+| 🌧️ **Wetter mit Regenzeiten** | Nicht „98 % Regen", sondern **„Regen ab 18:30"**. Dazu der Temperaturverlauf der nächsten Stunden als Kurve. Wo Open-Meteo Viertelstundenwerte liefert (Mitteleuropa, DWD-Modell), wird es entsprechend genau. |
+| 🖼️ **Foto-Rahmen & Diashow** | Bilder hochladen, wechseln automatisch. Ein Knopf schaltet auf **Vollbild**: nur Foto, Uhrzeit, Wetter und was heute noch ansteht. |
+| 🏠 **Familien-Modus fürs Wandtablet** | Ein Tablet im Flur wird zum Familiengerät: dauerhaft angemeldet, aber ohne persönliche Daten. Wer abhakt, tippt kurz auf sein Gesicht — **keine PIN**, und die Punkte landen beim Richtigen. Wer es mit aufs Sofa nimmt, meldet sich an und ist danach wieder im Familien-Modus. |
 | 📱 **Geräte-Status** | Läuft Plex, Kavita, der NAS? Kachel antippen öffnet die Oberfläche. |
-| 🎛️ **Pro Person** | Jeder ordnet sich die Fenster selbst an und blendet aus, was er nicht braucht. |
+| 🎛️ **Pro Person** | Jeder ordnet sich die Fenster selbst an und blendet aus, was er nicht braucht. Zwei Oberflächen zur Wahl — *Nachtlicht* (offen, mit feinen Linien) und *Glas* (Fenster als milchige Scheiben) — jeweils hell oder dunkel. |
 | 📲 **Wie eine App** | Zum Startbildschirm hinzufügen: eigenes Symbol, keine Browserleiste, Offline-Ansicht. |
 
 ---
@@ -348,7 +349,7 @@ make up
 make verify
 ```
 
-Erwartet: **35 Prüfungen bestanden.** Wenn hier etwas rot ist, hilft
+Erwartet: **40 Prüfungen bestanden.** Wenn hier etwas rot ist, hilft
 [INSTALL.md](INSTALL.md) weiter.
 
 **Im Browser öffnen** und anmelden. Es sind drei Benutzer angelegt — **Papa**,
@@ -366,6 +367,27 @@ Dann in dieser Reihenfolge:
    was ein Sechsjähriger schafft, ist anders bewertet als das Bad putzen.
 6. **Geräte eintragen** (optional). Verwaltung → Geräte, mit *Verbindung testen*.
 
+### Ein Tablet an die Wand hängen
+
+Wenn ein Tablet fest im Flur oder in der Küche hängt, gehört es niemandem —
+es gehört allen. Genau dafür gibt es den **Familien-Modus**:
+
+Auf diesem Tablet einmal als Administrator anmelden, dann **Verwaltung →
+Wandgerät → Dieses Gerät als Wandgerät einrichten**. Danach abmelden.
+
+Ab jetzt ist das Tablet dauerhaft bereit und zeigt Aufgaben, Einkaufsliste,
+Termine, Wetter und die geteilten Links — aber nichts Persönliches: keine
+Rangliste, keine Einstellungen, keine privaten Lesezeichen. Hakt jemand eine
+Aufgabe ab, fragt es kurz **„Wer war das?"** und zeigt die Gesichter. Ein
+Tipp genügt, die Punkte landen beim Richtigen.
+
+Nach fünf Minuten ohne Berührung wird daraus von selbst ein Bilderrahmen.
+Und wer das Tablet mit aufs Sofa nimmt, meldet sich oben rechts an — nach dem
+Abmelden ist es wieder das Familiengerät.
+
+Der Schalter gilt nur für **dieses eine Gerät**. Handys bleiben davon
+unberührt.
+
 **Aufs Handy holen:** Im Browser „Zum Home-Bildschirm hinzufügen" (iPhone:
 Safari → Teilen) beziehungsweise „App installieren" (Android: Chrome-Menü).
 
@@ -378,6 +400,12 @@ Damit du nicht enttäuscht wirst:
 - **Nur auf Deutsch.** Eine Übersetzungsebene gibt es noch nicht.
 - **Keine ernsthafte Zugangssicherung.** Vierstellige PIN, sonst nichts. Siehe
   ganz oben.
+- **Am Wandgerät gibt es gar keine PIN.** Wer das Tablet im Flur in der Hand
+  hält, kann Aufgaben für jedes Familienmitglied abhaken und damit Punkte
+  buchen. Das ist Absicht: Ein Kind soll im Vorbeigehen abhaken können, ohne
+  sich anzumelden. Alles, was wehtut — Punkte korrigieren, Benutzer verwalten,
+  PIN ändern — bleibt hinter der Anmeldung. Wer das nicht will, richtet den
+  Familien-Modus einfach nicht ein.
 - **Offline-Modus und App-Installation brauchen HTTPS.** Über `http://` und eine
   LAN-Adresse verweigern Browser den Service Worker. Ein HTTPS-Zugang liegt auf
   Port **8443** bereit, mit selbstsigniertem Zertifikat — die Warnung muss man
@@ -398,7 +426,7 @@ Damit du nicht enttäuscht wirst:
 make setup       Einrichten (einmalig)
 make preflight   Prüfen, ob das Gerät passt (ändert nichts)
 make up          Starten                 make down     Stoppen
-make logs        Logs ansehen            make verify   35 Prüfungen
+make logs        Logs ansehen            make verify   40 Prüfungen
 make backup      Sichern                 make restore  Zurückspielen
 make dev         Entwicklungsmodus mit Hot-Reload
 make clean       Aufräumen

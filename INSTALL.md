@@ -38,8 +38,8 @@ docker ps && docker compose version
 ### Variante A – Archiv
 
 ```bash
-tar -xzf familien-dashboard-pi-1.4.1.tar.gz
-cd familien-dashboard-pi-1.4.1
+tar -xzf familien-dashboard-pi-1.4.2.tar.gz
+cd familien-dashboard-pi-1.4.2
 ```
 
 ### Variante B – Git
@@ -108,7 +108,7 @@ Prüfen, ob alles läuft:
 make verify
 ```
 
-Erwartet: **35 Prüfungen bestanden.**
+Erwartet: **40 Prüfungen bestanden.**
 
 ---
 
