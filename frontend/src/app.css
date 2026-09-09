@@ -182,8 +182,29 @@
   /* min-w-0: a grid item defaults to min-width:auto, so a widget with a wide
      horizontal strip (the weather forecast) would otherwise refuse to shrink
      and push the whole column past the viewport on a phone. */
+  /* Auf den Unterseiten sind Karten weiterhin sinnvoll — ein Formular
+     braucht eine Fläche. Sie sind nur leiser geworden: Haarlinie statt
+     kräftigem Rahmen, kein Schlagschatten. */
   .card {
-    @apply min-w-0 rounded-2xl border border-border bg-card text-card-foreground shadow-sm;
+    @apply min-w-0 rounded-2xl bg-card/70 text-card-foreground;
+    border: 1px solid var(--haarlinie);
+  }
+
+  /* Bei Glas werden auch sie zu Scheiben, damit die App eine Sprache spricht. */
+  [data-oberflaeche='glas'] .card {
+    border-color: var(--glas-rand);
+    background-color: transparent;
+    background-image: var(--glas-flaeche);
+    box-shadow: var(--glas-schatten), var(--glas-kante);
+  }
+
+  @supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+    @media (prefers-reduced-transparency: no-preference) {
+      [data-oberflaeche='glas'] .card {
+        -webkit-backdrop-filter: blur(22px) saturate(140%);
+        backdrop-filter: blur(22px) saturate(140%);
+      }
+    }
   }
 
   /* ---------------------------------------------------------------------

@@ -4,6 +4,27 @@ Alle nennenswerten Änderungen an diesem Projekt.
 Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 Versionierung nach [SemVer](https://semver.org/lang/de/).
 
+## [1.3.0] — 2026-09-09
+
+### Neu
+
+- **Diashow im Vollbild.** Der Knopf im Foto-Rahmen öffnet die Bilder
+  formatfüllend, dazu nur Uhrzeit, Wetter und was heute noch ansteht. Die
+  Bedienung erscheint bei Berührung und verschwindet von allein wieder;
+  Leertaste hält an, Pfeiltasten blättern, Escape beendet. Gedacht für das
+  Tablet an der Wand, wenn gerade niemand etwas eintragen will.
+
+### Geändert
+
+- Die Unterseiten (Rangliste, Links, Einstellungen, Verwaltung) sprechen jetzt
+  dieselbe Sprache wie die Übersicht: Haarlinie statt kräftigem Rahmen, kein
+  Schlagschatten. Bei der Oberfläche *Glas* werden auch sie zu Scheiben.
+
+### Behoben
+
+- Auf hellem Grund waren die Titel überfälliger Aufgaben unsichtbar — sie
+  hatten eine weiße Schriftfarbe geerbt.
+
 ## [1.2.0] — 2026-09-09
 
 ### Neu
@@ -163,6 +184,7 @@ Erste öffentliche Fassung.
 - Ein Punkt lässt sich nicht vom Benutzer selbst zurücknehmen, nur von einem
   Administrator
 
+[1.3.0]: https://github.com/bussdee/familien-dashboard-pi/releases/tag/v1.3.0
 [1.2.0]: https://github.com/bussdee/familien-dashboard-pi/releases/tag/v1.2.0
 [1.1.0]: https://github.com/bussdee/familien-dashboard-pi/releases/tag/v1.1.0
 [1.0.2]: https://github.com/bussdee/familien-dashboard-pi/releases/tag/v1.0.2

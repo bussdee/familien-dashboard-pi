@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import {
-    ChevronLeft, ChevronRight, Image, Pause, Play, Trash2, Upload, X,
+    ChevronLeft, ChevronRight, Expand, Image, Pause, Play, Trash2, Upload, X,
   } from 'lucide-svelte';
   import { ApiError, photosApi } from '$lib/api';
   import { session } from '$lib/stores';
@@ -121,6 +121,17 @@
     </div>
 
     <div class="flex shrink-0 items-center gap-1">
+      {#if photos.length > 0}
+        <!-- Vollbild: dafür hängt das Tablet schließlich an der Wand. -->
+        <a
+          href="/diashow"
+          class="btn-ghost px-2"
+          aria-label="Diashow im Vollbild starten"
+          title="Diashow im Vollbild"
+        >
+          <Expand class="h-5 w-5" />
+        </a>
+      {/if}
       {#if photos.length > 1}
         <button
           class="btn-ghost px-2"
