@@ -10,6 +10,10 @@ Wer bringt heute den Müll raus? Was fehlt beim Einkaufen? Wann ist der Elternab
 
 [![CI](https://github.com/bussdee/familien-dashboard-pi/actions/workflows/ci.yml/badge.svg)](https://github.com/bussdee/familien-dashboard-pi/actions/workflows/ci.yml) ![Lizenz](https://img.shields.io/badge/Lizenz-MIT-blue) ![Nur LAN](https://img.shields.io/badge/Nur%20f%C3%BCrs-Heimnetz-orange) ![Ohne Cloud](https://img.shields.io/badge/Cloud-nein%20danke-green)
 
+<br>
+
+<img src="docs/screenshots/Familien_Dashboard.png" alt="Die Übersicht mit Aufgaben, Einkaufsliste, Kalender, Countdowns, Notizen, Foto-Rahmen, Links und Geräte-Status">
+
 </div>
 
 ---
@@ -67,11 +71,6 @@ solange es im eigenen, vertrauenswürdigen Netz bleibt.
 ---
 
 ## So sieht es aus
-
-Die Übersicht auf einem breiten Bildschirm. Wetter mit Regenzeit, Punktestand
-quer über der Seite, darunter die Fenster — jeder ordnet sie sich selbst an.
-
-![Die Übersicht mit Aufgaben, Einkaufsliste, Kalender, Countdowns, Notizen, Foto-Rahmen, Links und Geräte-Status](docs/screenshots/Familien_Dashboard.png)
 
 <table>
 <tr>
