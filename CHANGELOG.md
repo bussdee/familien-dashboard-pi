@@ -4,6 +4,15 @@ Alle nennenswerten Änderungen an diesem Projekt.
 Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 Versionierung nach [SemVer](https://semver.org/lang/de/).
 
+## [1.4.5] — 2026-09-09
+
+### Geändert
+
+- **Der Familien-Modus ist jetzt das erste Bild im README.** Bisher stand dort
+  die persönliche Ansicht mit Namen und Punkteband — also ausgerechnet nicht
+  das, was dieses Projekt von anderen Dashboards unterscheidet. Dazu neu: der
+  Dialog „Wer war das?" mit den drei Gesichtern.
+
 ## [1.4.4] — 2026-09-09
 
 ### Behoben
@@ -268,6 +277,7 @@ Erste öffentliche Fassung.
 - Ein Punkt lässt sich nicht vom Benutzer selbst zurücknehmen, nur von einem
   Administrator
 
+[1.4.5]: https://github.com/bussdee/familien-dashboard-pi/releases/tag/v1.4.5
 [1.4.4]: https://github.com/bussdee/familien-dashboard-pi/releases/tag/v1.4.4
 [1.4.3]: https://github.com/bussdee/familien-dashboard-pi/releases/tag/v1.4.3
 [1.4.2]: https://github.com/bussdee/familien-dashboard-pi/releases/tag/v1.4.2

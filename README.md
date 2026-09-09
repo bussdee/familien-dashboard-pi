@@ -12,7 +12,9 @@ Wer bringt heute den Müll raus? Was fehlt beim Einkaufen? Wann ist der Elternab
 
 <br>
 
-<img src="docs/screenshots/Familien_Dashboard.png" alt="Die Übersicht mit Aufgaben, Einkaufsliste, Kalender, Countdowns, Notizen, Foto-Rahmen, Links und Geräte-Status">
+<img src="docs/screenshots/Familien_Modus.png" alt="Das Dashboard im Familien-Modus: Aufgaben, Einkaufsliste, Kalender, geteilte Links, Notizen, Foto-Rahmen und Geräte-Status">
+
+<sub>Das Wandtablet im Familien-Modus — begrüßt niemanden persönlich, zeigt keine Rangliste.</sub>
 
 </div>
 
@@ -72,6 +74,17 @@ solange es im eigenen, vertrauenswürdigen Netz bleibt.
 
 ## So sieht es aus
 
+### Der Familien-Modus
+
+Das Wandtablet gehört niemandem — es gehört allen. Hakt jemand eine Aufgabe
+ab, fragt es kurz nach. **Ein Tipp aufs eigene Gesicht, keine PIN.** Die Punkte
+landen bei dem, der die Arbeit gemacht hat, und nicht bei dem, der sich zuletzt
+angemeldet hatte.
+
+![Der Dialog „Wer war das?" mit den drei Familienmitgliedern zur Auswahl](docs/screenshots/WerWarDas.png)
+
+### Der Rest
+
 <table>
 <tr>
 <td width="50%">
@@ -85,6 +98,17 @@ Antippen, PIN, fertig. Keine E-Mail, kein Konto.
 </td>
 <td width="50%">
 
+**Angemeldet: die persönliche Ansicht**
+
+Mit Namen, Punktestand und Level. Am Wandgerät fehlt genau das.
+
+<img src="docs/screenshots/Familien_Dashboard.png" alt="Die Übersicht als angemeldete Person, mit Begrüßung und Punkteband">
+
+</td>
+</tr>
+<tr>
+<td width="50%">
+
 **Rangliste**
 
 Siegertreppchen, Level, Abzeichen und wer zuletzt was erledigt hat.
@@ -92,8 +116,6 @@ Siegertreppchen, Level, Abzeichen und wer zuletzt was erledigt hat.
 <img src="docs/screenshots/Rangliste.png" alt="Rangliste mit Siegertreppchen, Punkten, Abzeichen und Verlauf">
 
 </td>
-</tr>
-<tr>
 <td width="50%">
 
 **Einstellungen**
@@ -104,18 +126,13 @@ die Wahl zwischen den Oberflächen *Nachtlicht* und *Glas*.
 <img src="docs/screenshots/Einstellungen.png" alt="Einstellungen mit Profil, Avatarauswahl, Darstellung, Oberfläche und PIN-Änderung">
 
 </td>
-<td width="50%">
-
-**Auf einem schmaleren Bildschirm**
-
-Dieselbe Übersicht in drei Spalten. Auf dem Handy rutschen die Fenster
-untereinander.
-
-<img src="docs/screenshots/Dashboard_Papa.png" alt="Die Übersicht in drei Spalten">
-
-</td>
 </tr>
 </table>
+
+**Auf einem schmaleren Bildschirm** rücken die Fenster in drei Spalten
+zusammen, auf dem Handy untereinander.
+
+![Die Übersicht in drei Spalten](docs/screenshots/Dashboard_Papa.png)
 
 ---
 

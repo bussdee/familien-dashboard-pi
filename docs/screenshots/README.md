@@ -1,12 +1,15 @@
 # Screenshots fürs README
 
 Diese Bilder sind im [README](../../README.md) eingebunden. Wer sie neu
-aufnimmt, sollte die Dateinamen beibehalten.
+aufnimmt, sollte die Dateinamen beibehalten — ohne Leerzeichen, die machen in
+Markdown-Verweisen Ärger.
 
 | Datei | Was drauf ist |
 |---|---|
-| `Familien_Dashboard.png` | Die Übersicht auf einem breiten Bildschirm (vier Spalten) |
-| `Dashboard_Papa.png` | Dieselbe Übersicht in drei Spalten |
+| `Familien_Modus.png` | **Der Aufmacher:** das Wandtablet im Familien-Modus, ohne Namen und ohne Rangliste |
+| `WerWarDas.png` | Der Dialog „Wer war das?“ am Wandgerät |
+| `Familien_Dashboard.png` | Dieselbe Übersicht als angemeldete Person, mit Punkteband |
+| `Dashboard_Papa.png` | Die Übersicht in drei Spalten |
 | `LogIn.png` | Der Anmeldebildschirm |
 | `Rangliste.png` | Siegertreppchen, Level, Abzeichen, Verlauf |
 | `Einstellungen.png` | Profil, Darstellung, Oberfläche, PIN |
