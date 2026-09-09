@@ -13,6 +13,22 @@ Versionierung nach [SemVer](https://semver.org/lang/de/).
   das, was dieses Projekt von anderen Dashboards unterscheidet. Dazu neu: der
   Dialog „Wer war das?" mit den drei Gesichtern.
 
+## Unveröffentlicht
+
+### Behoben
+
+- **Der Wetterort war nicht mehr einstellbar.** Beim Umbau der Oberfläche in
+  1.2.0 ist das kleine Wetter-Symbol dem grossen Wetterblock gewichen — nur
+  war das Symbol verlinkt und der Block nicht. Da die Wetterseite in der
+  Kopfleiste bewusst nicht auftaucht (sie war ja über das Symbol erreichbar),
+  gab es auf einem breiten Bildschirm überhaupt keinen Weg mehr dorthin.
+  Der Wetterblock führt jetzt wieder auf die Wetterseite.
+
+### Geändert
+
+- Im README steht der Familien-Modus als erstes Bild, dazu der Dialog
+  „Wer war das?".
+
 ## [1.4.4] — 2026-09-09
 
 ### Behoben

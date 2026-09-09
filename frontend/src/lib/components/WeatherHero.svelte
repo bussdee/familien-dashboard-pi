@@ -57,7 +57,16 @@
 </script>
 
 {#if current}
-  <div class="flex flex-wrap items-end gap-x-8 gap-y-4">
+  <!--
+    Anklickbar wie früher das kleine Wetter-Symbol: Die Wetterseite ist der
+    einzige Ort, an dem der Ort eingestellt wird, und in der Kopfleiste steht
+    sie bewusst nicht. Ohne diesen Verweis wäre sie gar nicht erreichbar.
+  -->
+  <a
+    href="/wetter"
+    class="flex flex-wrap items-end gap-x-8 gap-y-4 rounded-2xl transition-colors hover:bg-muted/20"
+    title="Wetterdetails und Ort einstellen"
+  >
     <!-- Die Temperatur ist die Zahl, die man aus dem Flur noch lesen soll -->
     <div class="flex items-end gap-4">
       <span class="font-display text-6xl font-light leading-[0.85] tracking-tight sm:text-7xl">
@@ -130,5 +139,5 @@
         </div>
       </div>
     {/if}
-  </div>
+  </a>
 {/if}
