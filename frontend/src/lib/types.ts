@@ -7,6 +7,8 @@ export interface User {
   role: Role;
   avatar_emoji: string;
   pin_is_default: boolean;
+  /** Nimmt diese Person an der Reihum-Verteilung von Aufgaben teil? */
+  in_rotation: boolean;
   /** true, wenn auf diesem Gerät zusätzlich der Familien-Modus eingerichtet ist. */
   device_mode?: boolean;
 }
@@ -263,6 +265,101 @@ export interface Photo {
 }
 
 export interface PhotoUploadResult {
+  uploaded: string[];
+  skipped?: Record<string, string>;
+  count: number;
+}
+
+/** Ein Titel aus dem Musik-Index. */
+export interface Track {
+  id: number;
+  /** Ordnerpfad relativ zur Wurzel; '' ist die Wurzel selbst. */
+  folder: string;
+  filename: string;
+  title: string;
+  artist: string;
+  album: string;
+  track_no: number;
+  /** Länge in Sekunden, 0 wenn sie nicht in den ID3-Feldern stand. */
+  duration: number;
+  size: number;
+}
+
+export interface MusicFolder {
+  path: string;
+  name: string;
+  tracks: number;
+}
+
+export interface MusicBrowse {
+  path: string;
+  parent: string;
+  folders: MusicFolder[];
+  tracks: Track[];
+}
+
+export interface MusicProgress {
+  running: boolean;
+  scanned: number;
+  added: number;
+  updated: number;
+  removed: number;
+  started_at?: string;
+  ended_at?: string;
+  error?: string;
+}
+
+export interface MusicStatus {
+  /** false, wenn gar kein Musikordner eingerichtet ist. */
+  enabled: boolean;
+  /** false, wenn der Ordner gerade nicht erreichbar ist (Platte abgemeldet). */
+  available: boolean;
+  tracks: number;
+  progress: MusicProgress;
+  /** Der Pfad, der in den Container eingehängt wurde (kommt aus der .env). */
+  mount: string;
+  /** Der im Adminbereich gewählte Teil davon; '' heisst alles. */
+  subdir: string;
+}
+
+/** Ein echtes Verzeichnis im eingehängten Ordner, zur Auswahl im Adminbereich. */
+export interface MusicDirEntry {
+  path: string;
+  name: string;
+  has_audio: boolean;
+  has_subfolders: boolean;
+}
+
+export interface MusicDirListing {
+  path: string;
+  parent: string;
+  folders: MusicDirEntry[];
+  /** true, wenn direkt in diesem Ordner Audiodateien liegen. */
+  has_audio: boolean;
+  selected: string;
+  mount: string;
+}
+
+/** Eine Datei aus der Familien-Ablage. */
+export interface StoredFile {
+  name: string;
+  size: number;
+  modified: string;
+}
+
+export interface FileListing {
+  files: StoredFile[];
+  count: number;
+  /** Summe der abgelegten Dateien. */
+  used_bytes: number;
+  /** Freier Platz auf dem Datenträger; 0 heisst „unbekannt". */
+  free_bytes: number;
+  /** true, wenn es auf dem Datenträger eng wird. */
+  tight: boolean;
+  max_file_bytes: number;
+}
+
+export interface FileUploadResult {
   uploaded: string[];
   skipped?: Record<string, string>;
   count: number;

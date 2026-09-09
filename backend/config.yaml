@@ -43,6 +43,19 @@ notes:
 photos:
   dir: "/app/data/photos"
 
+# Dateien zum Herunterladen. Hochladen darf nur ein Administrator, herunterladen
+# jeder — auch das Wandgerät, denn das sind Familiendateien.
+files:
+  dir: "/app/data/files"
+
+# Musik. Der Ordner wird in docker-compose.yml schreibgeschützt eingehängt;
+# WO er auf dem Rechner liegt, steht in der .env unter MUSIC_HOST_DIR.
+#
+# Der Pfad hier ist der Pfad INNERHALB des Containers. Ein leerer Wert schaltet
+# das Modul ganz ab. Überschreibbar über die Umgebungsvariable MUSIC_DIR.
+music:
+  dir: "/app/audio"
+
 devices:
   check_interval: "30s"
   timeout: "5s"
@@ -52,19 +65,28 @@ devices:
   #   url  = Adresse, die der Health-Check abfragt (oft ein API-Pfad)
   #   link = Oberfläche, die sich beim Antippen der Kachel öffnet
   #
-  # Die Beispiele unten auf die eigenen Adressen anpassen oder ganz löschen
-  # und die Geräte stattdessen im Adminbereich anlegen.
+  # Die Beispiele unten stehen bewusst auf "enabled: false". Sie zeigen auf
+  # 192.168.1.20 — eine Adresse aus der Vorlage, die es bei dir sehr
+  # wahrscheinlich nicht gibt. Aktiv ausgeliefert begrüsst eine frische
+  # Installation ihren Besitzer mit drei roten Kacheln.
+  #
+  # Also: eigene Adressen eintragen, "enabled" auf true setzen — oder die
+  # Beispiele löschen und die Geräte im Adminbereich anlegen. Fehlt das Feld
+  # ganz, gilt ein Gerät als aktiv.
   targets:
     - name: "Plex"
       type: "http"
       url: "http://192.168.1.20:32400/identity"
       link: "http://192.168.1.20:32400/web"
       expect_status: 200
+      enabled: false
     - name: "Kavita"
       type: "http"
       url: "http://192.168.1.20:5000/api/health"
       link: "http://192.168.1.20:5000"
+      enabled: false
     - name: "FileBrowser"
       type: "http"
       url: "http://192.168.1.20:8080/health"
       link: "http://192.168.1.20:8080"
+      enabled: false

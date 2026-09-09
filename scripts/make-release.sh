@@ -75,7 +75,7 @@ for path in "${INCLUDE[@]}"; do
 done
 
 # Leere Datenverzeichnisse anlegen, damit der erste Start funktioniert
-mkdir -p "$STAGE"/backend/data/{notes,ics,photos,backup}
+mkdir -p "$STAGE"/backend/data/{notes,ics,photos,files,music,backup}
 for dir in "$STAGE"/backend/data "$STAGE"/backend/data/*/; do
   touch "$dir/.gitkeep"
 done

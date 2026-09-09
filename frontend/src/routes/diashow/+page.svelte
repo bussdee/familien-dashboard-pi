@@ -5,6 +5,7 @@
   import { de } from 'date-fns/locale';
   import { ChevronLeft, ChevronRight, Images, Pause, Play, X } from 'lucide-svelte';
   import { calendarApi, choresApi, photosApi, shoppingApi, weatherApi } from '$lib/api';
+  import { diashow } from '$lib/stores/diashow.svelte';
   import type { CalendarEvent, Chore, Photo, WeatherData } from '$lib/types';
 
   /** Wie lange ein Bild stehen bleibt. Kurz genug, dass es lebendig wirkt. */
@@ -76,8 +77,15 @@
   /** Die Knöpfe erscheinen bei Berührung und verschwinden von allein wieder. */
   function zeigeBedienung() {
     bedienung = true;
+    // Die Abspielleiste im Seitenlayout kann diese Seite nicht sehen. Damit
+    // sie mit aus- und einblendet, läuft der Zustand über einen gemeinsamen
+    // Speicher.
+    diashow.wach = true;
     if (bedienTimer) clearTimeout(bedienTimer);
-    bedienTimer = setTimeout(() => (bedienung = false), 4000);
+    bedienTimer = setTimeout(() => {
+      bedienung = false;
+      diashow.wach = false;
+    }, 4000);
   }
 
   function beenden() {

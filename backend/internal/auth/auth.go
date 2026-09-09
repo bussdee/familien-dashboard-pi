@@ -25,8 +25,8 @@ const (
 	// und nach dem Abmelden stünde das Tablet leer da, statt in den
 	// Familien-Modus zurückzufallen.
 	DeviceCookieName = "family_device"
-	maxPINFailures = 5
-	lockoutWindow  = 5 * time.Minute
+	maxPINFailures   = 5
+	lockoutWindow    = 5 * time.Minute
 )
 
 // PreferenceStore is the slice of the store this service needs for per-person
@@ -51,6 +51,9 @@ type User struct {
 	Role         string `json:"role"`
 	AvatarEmoji  string `json:"avatar_emoji"`
 	PINIsDefault bool   `json:"pin_is_default"`
+	// InRotation sagt, ob diese Person bei reihum verteilten Aufgaben an der
+	// Reihe ist. Wer arbeitet, stand sonst trotzdem überall im Plan.
+	InRotation bool `json:"in_rotation"`
 }
 
 // RoleDevice steht in der Rolle eines Geräte-Tokens. Ein Gerät ist nie
@@ -124,9 +127,10 @@ func (s *Service) Login(w http.ResponseWriter, r *http.Request) {
 	var user User
 	var pinHash string
 	err := s.db.QueryRow(
-		`SELECT id, name, color, pin_hash, role, avatar_emoji, pin_is_default
+		`SELECT id, name, color, pin_hash, role, avatar_emoji, pin_is_default, in_rotation
 		 FROM users WHERE id = ?`, req.UserID,
-	).Scan(&user.ID, &user.Name, &user.Color, &pinHash, &user.Role, &user.AvatarEmoji, &user.PINIsDefault)
+	).Scan(&user.ID, &user.Name, &user.Color, &pinHash, &user.Role, &user.AvatarEmoji,
+		&user.PINIsDefault, &user.InRotation)
 
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
@@ -178,8 +182,10 @@ func (s *Service) Me(w http.ResponseWriter, r *http.Request) {
 
 	var user User
 	err := s.db.QueryRow(
-		`SELECT id, name, color, role, avatar_emoji, pin_is_default FROM users WHERE id = ?`, userID,
-	).Scan(&user.ID, &user.Name, &user.Color, &user.Role, &user.AvatarEmoji, &user.PINIsDefault)
+		`SELECT id, name, color, role, avatar_emoji, pin_is_default, in_rotation
+		 FROM users WHERE id = ?`, userID,
+	).Scan(&user.ID, &user.Name, &user.Color, &user.Role, &user.AvatarEmoji,
+		&user.PINIsDefault, &user.InRotation)
 	if err != nil {
 		httpError(w, http.StatusNotFound, "Benutzer nicht gefunden")
 		return
@@ -510,6 +516,9 @@ type userPayload struct {
 	PIN         string `json:"pin"`
 	Role        string `json:"role"`
 	AvatarEmoji string `json:"avatar_emoji"`
+	// Zeiger, damit ein Aufruf ohne dieses Feld den bestehenden Wert stehen
+	// lässt, statt die Person still aus der Rotation zu nehmen.
+	InRotation *bool `json:"in_rotation"`
 }
 
 func (s *Service) CreateUser(w http.ResponseWriter, r *http.Request) {
@@ -542,10 +551,12 @@ func (s *Service) CreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	inRotation := req.InRotation == nil || *req.InRotation
+
 	res, err := s.db.Exec(
-		`INSERT INTO users (name, color, pin_hash, role, avatar_emoji, pin_is_default)
-		 VALUES (?, ?, ?, ?, ?, 0)`,
-		strings.TrimSpace(req.Name), req.Color, hash, req.Role, req.AvatarEmoji,
+		`INSERT INTO users (name, color, pin_hash, role, avatar_emoji, pin_is_default, in_rotation)
+		 VALUES (?, ?, ?, ?, ?, 0, ?)`,
+		strings.TrimSpace(req.Name), req.Color, hash, req.Role, req.AvatarEmoji, inRotation,
 	)
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to create user")
@@ -557,7 +568,7 @@ func (s *Service) CreateUser(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusCreated)
 	writeJSON(w, User{
 		ID: int(id), Name: strings.TrimSpace(req.Name), Color: req.Color,
-		Role: req.Role, AvatarEmoji: req.AvatarEmoji,
+		Role: req.Role, AvatarEmoji: req.AvatarEmoji, InRotation: inRotation,
 	})
 }
 
@@ -602,6 +613,10 @@ func (s *Service) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		}
 		sets = append(sets, "role = ?")
 		args = append(args, req.Role)
+	}
+	if req.InRotation != nil {
+		sets = append(sets, "in_rotation = ?")
+		args = append(args, *req.InRotation)
 	}
 	if req.PIN != "" {
 		if !validPIN(req.PIN) {
@@ -656,7 +671,8 @@ func (s *Service) DeleteUser(w http.ResponseWriter, r *http.Request) {
 
 func (s *Service) listUsers() ([]User, error) {
 	rows, err := s.db.Query(
-		`SELECT id, name, color, role, avatar_emoji, pin_is_default FROM users ORDER BY id`)
+		`SELECT id, name, color, role, avatar_emoji, pin_is_default, in_rotation
+		 FROM users ORDER BY id`)
 	if err != nil {
 		return nil, err
 	}
@@ -665,7 +681,8 @@ func (s *Service) listUsers() ([]User, error) {
 	users := []User{}
 	for rows.Next() {
 		var u User
-		if err := rows.Scan(&u.ID, &u.Name, &u.Color, &u.Role, &u.AvatarEmoji, &u.PINIsDefault); err != nil {
+		if err := rows.Scan(&u.ID, &u.Name, &u.Color, &u.Role, &u.AvatarEmoji,
+			&u.PINIsDefault, &u.InRotation); err != nil {
 			return nil, err
 		}
 		users = append(users, u)

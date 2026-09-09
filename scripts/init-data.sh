@@ -6,11 +6,11 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DATA="$ROOT/backend/data"
 
-mkdir -p "$DATA"/{notes,ics,photos,backup}
+mkdir -p "$DATA"/{notes,ics,photos,files,music,backup}
 
 # Der Backend-Container läuft als UID 1000. Statt 777 wird nur so weit
 # geöffnet, wie es dafür nötig ist.
-chmod 755 "$DATA" "$DATA"/{notes,ics,photos,backup} 2>/dev/null || true
+chmod 755 "$DATA" "$DATA"/{notes,ics,photos,files,music,backup} 2>/dev/null || true
 
 created=0
 
@@ -39,6 +39,8 @@ Alles läuft lokal auf unserem eigenen Server – keine Cloud, keine Konten.
 - **Geräte** – ist Plex/Kavita/FileBrowser erreichbar?
 - **Countdowns** – Geburtstage und Ferien aus dem Kalender
 - **Fotos** – Bilder aus `backend/data/photos/`
+- **Dateien** – Anleitungen und Formulare; Admin lädt hoch, alle laden herunter
+- **Musik** – MP3s und Hörspiele aus einem eingehängten Ordner (`MUSIC_HOST_DIR`)
 
 ## Als App installieren
 - **iPhone/iPad:** Safari → Teilen → „Zum Home-Bildschirm"
@@ -78,6 +80,10 @@ NOTE
 fi
 
 touch "$DATA/photos/.gitkeep"
+touch "$DATA/files/.gitkeep"
+# Der Musikordner ist nur der Platzhalter für die Einhängung. Wer eine
+# Sammlung hat, trägt ihren Pfad in der .env unter MUSIC_HOST_DIR ein.
+touch "$DATA/music/.gitkeep"
 
 if [ "$created" -eq 1 ]; then
   echo "✅ Beispieldaten angelegt."

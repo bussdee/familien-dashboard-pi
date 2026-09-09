@@ -3,14 +3,17 @@
   import { goto } from '$app/navigation';
   import {
     Check, ChevronDown, ChevronUp, Database, Download, HardDriveDownload,
-    MonitorSmartphone, Plus, RotateCcw, Shield, Sparkles, Trash2, Undo2, Users, X, Zap,
+    ChevronRight, CornerLeftUp, Folder, MonitorSmartphone, Music, Plus, RefreshCw,
+    RotateCcw, Shield, Sparkles, Trash2, TriangleAlert, Undo2, Users, X, Zap,
   } from 'lucide-svelte';
   import { formatDistanceToNow, parseISO } from 'date-fns';
   import { de } from 'date-fns/locale';
   import { ApiError, adminApi, authApi } from '$lib/api';
   import { session } from '$lib/stores';
   import { board } from '$lib/stores/scores.svelte';
-  import type { Activity, BackupFile, DeviceTarget, User } from '$lib/types';
+  import type {
+    Activity, BackupFile, DeviceTarget, MusicDirListing, MusicStatus, User,
+  } from '$lib/types';
   import { confirmAction } from '$lib/stores/confirm.svelte';
 
   // ---- Wandgerät ----
@@ -60,7 +63,10 @@
   const emojis = ['👨', '👩', '🧒', '👦', '👧', '👴', '👵', '🧑', '🐶', '🐱', '⭐', '🚀'];
   const colors = ['#3b82f6', '#ec4899', '#f59e0b', '#10b981', '#8b5cf6', '#ef4444', '#14b8a6', '#64748b'];
 
-  let draft = $state({ name: '', color: colors[0], pin: '', role: 'member', avatar_emoji: '🧑' });
+  let draft = $state({
+    name: '', color: colors[0], pin: '', role: 'member', avatar_emoji: '🧑',
+    in_rotation: true,
+  });
 
   const size = (bytes: number) =>
     bytes > 1_048_576
@@ -170,6 +176,33 @@
 
   let deviceDraft = $state(emptyDevice());
 
+  /**
+   * Punkt 8 aus dem Plan: Die Prüf-Adresse und der Link zur Oberfläche sind
+   * zwei verschiedene Felder — und genau deshalb geraten sie auseinander. Wer
+   * beim Umzug ins neue Netz nur die Prüfung anpasst, bekommt eine grüne
+   * Kachel, die beim Antippen ins Leere führt. Die Prüfung sagt ja
+   * "erreichbar", also sieht alles richtig aus.
+   *
+   * Das ist kein Fehler und wird deshalb auch nicht abgelehnt: Ein Dienst
+   * darf hinter einem Namen liegen und unter einer IP geprüft werden. Nur
+   * selten ist es Absicht, also ein Hinweis.
+   */
+  function hostVon(adresse: string): string {
+    try {
+      return new URL(adresse.trim()).host.toLowerCase();
+    } catch {
+      return '';
+    }
+  }
+
+  const hostWarnung = $derived.by(() => {
+    if (deviceDraft.type !== 'http') return null;
+    const pruefung = hostVon(deviceDraft.url);
+    const ziel = hostVon(deviceDraft.link);
+    if (!pruefung || !ziel || pruefung === ziel) return null;
+    return { pruefung, ziel };
+  });
+
   function startNewDevice() {
     editingDevice = null;
     deviceDraft = emptyDevice();
@@ -269,6 +302,9 @@
         adminApi.listDevices(),
         adminApi.pointHistory(),
       ]);
+      // Die Musik darf nachkommen: Ist die Platte abgemeldet, soll das nicht
+      // die ganze Verwaltungsseite aufhalten.
+      void ladeMusik();
       if (!board.loaded) void board.refresh();
     } catch (e) {
       error = e instanceof ApiError ? e.message : 'Laden fehlgeschlagen';
@@ -279,7 +315,10 @@
 
   function startNew() {
     editing = null;
-    draft = { name: '', color: colors[0], pin: '', role: 'member', avatar_emoji: '🧑' };
+    draft = {
+      name: '', color: colors[0], pin: '', role: 'member', avatar_emoji: '🧑',
+      in_rotation: true,
+    };
     showForm = true;
   }
 
@@ -291,6 +330,7 @@
       pin: '',
       role: user.role,
       avatar_emoji: user.avatar_emoji,
+      in_rotation: user.in_rotation,
     };
     showForm = true;
   }
@@ -303,11 +343,12 @@
     try {
       if (editing) {
         // An empty PIN field means "leave the PIN alone".
-        const payload: Record<string, string> = {
+        const payload: Record<string, string | boolean> = {
           name: draft.name,
           color: draft.color,
           role: draft.role,
           avatar_emoji: draft.avatar_emoji,
+          in_rotation: draft.in_rotation,
         };
         if (draft.pin) payload.pin = draft.pin;
         await adminApi.updateUser(editing.id, payload);
@@ -342,6 +383,72 @@
     }
   }
 
+  // ---- Musik ----
+  let musik = $state<MusicStatus | null>(null);
+  let musikOrdner = $state<MusicDirListing | null>(null);
+  let musikFehler = $state('');
+  let musikOffen = $state(false);
+  let musikTimer: ReturnType<typeof setInterval> | null = null;
+
+  const musikPfadTeile = $derived.by(() => {
+    const pfad = musikOrdner?.path ?? '';
+    if (!pfad) return [];
+    const teile = pfad.split('/');
+    return teile.map((name, i) => ({ name, path: teile.slice(0, i + 1).join('/') }));
+  });
+
+  async function ladeMusik() {
+    try {
+      musik = await adminApi.musicStatus();
+    } catch {
+      musik = null;
+    }
+  }
+
+  async function musikBlaettern(pfad: string) {
+    musikFehler = '';
+    try {
+      musikOrdner = await adminApi.musicFolders(pfad);
+    } catch (e) {
+      musikFehler = e instanceof ApiError ? e.message : 'Ordner nicht lesbar';
+      musikOrdner = null;
+    }
+  }
+
+  async function musikOrdnerWaehlen(pfad: string) {
+    const ok = await confirmAction({
+      title: pfad ? `„${pfad}" als Musikordner setzen?` : 'Den ganzen Ordner verwenden?',
+      message:
+        'Der bisherige Index wird verworfen und neu aufgebaut. Bei einer grossen ' +
+        'Sammlung dauert das einige Minuten — das Dashboard bleibt währenddessen ' +
+        'bedienbar.',
+      confirmLabel: 'Setzen und einlesen',
+    });
+    if (!ok) return;
+
+    musikFehler = '';
+    busy = true;
+    try {
+      await adminApi.setMusicDir(pfad);
+      notice = 'Musikordner gesetzt, wird eingelesen';
+      await Promise.all([ladeMusik(), musikBlaettern(musikOrdner?.path ?? '')]);
+    } catch (e) {
+      musikFehler = e instanceof ApiError ? e.message : 'Konnte nicht gesetzt werden';
+    } finally {
+      busy = false;
+    }
+  }
+
+  async function musikNeuEinlesen() {
+    musikFehler = '';
+    try {
+      await adminApi.rescanMusic();
+      await ladeMusik();
+    } catch (e) {
+      musikFehler = e instanceof ApiError ? e.message : 'Einlesen fehlgeschlagen';
+    }
+  }
+
   async function runBackup() {
     busy = true;
     error = '';
@@ -365,6 +472,14 @@
     // ist — der Keks liegt hier, nicht in der Datenbank.
     istWandgeraet = $session.user?.device_mode === true;
     void load();
+
+    // Läuft gerade ein Durchlauf, wächst die Zahl im Hintergrund.
+    musikTimer = setInterval(() => {
+      if (musik?.progress?.running) void ladeMusik();
+    }, 4000);
+    return () => {
+      if (musikTimer) clearInterval(musikTimer);
+    };
   });
 </script>
 
@@ -455,6 +570,22 @@
           </select>
         </label>
 
+        <label class="flex items-start gap-2 text-sm">
+          <input
+            type="checkbox"
+            class="mt-0.5 h-4 w-4 shrink-0 rounded"
+            bind:checked={draft.in_rotation}
+          />
+          <span>
+            Nimmt an der Reihum-Verteilung teil
+            <span class="mt-0.5 block text-xs text-muted-foreground">
+              Aus dem Häkchen genommen, steht diese Person bei „reihum" nicht
+              mehr im Plan. Feste Zuständigkeiten und „alle" bleiben davon
+              unberührt.
+            </span>
+          </span>
+        </label>
+
         <button class="btn-primary w-full" disabled={busy || !draft.name.trim()}>
           {editing ? 'Änderungen speichern' : 'Anlegen'}
         </button>
@@ -477,6 +608,7 @@
               <p class="truncate text-sm font-medium">{user.name}</p>
               <p class="text-xs text-muted-foreground">
                 {user.role === 'admin' ? 'Administrator' : 'Familienmitglied'}
+                {#if !user.in_rotation}· nicht reihum{/if}
                 {#if user.pin_is_default}· <span class="text-amber-600 dark:text-amber-400">Standard-PIN</span>{/if}
               </p>
             </div>
@@ -700,6 +832,18 @@
           />
         </label>
 
+        {#if hostWarnung}
+          <p class="flex items-start gap-2 rounded-lg bg-amber-500/10 px-3 py-2 text-sm text-amber-700 dark:text-amber-400">
+            <TriangleAlert class="mt-0.5 h-4 w-4 shrink-0" />
+            <span>
+              Geprüft wird <strong>{hostWarnung.pruefung}</strong>, geöffnet wird
+              <strong>{hostWarnung.ziel}</strong>. Dann leuchtet die Kachel grün
+              und führt trotzdem woanders hin. Falls das Absicht ist, einfach
+              speichern.
+            </span>
+          </p>
+        {/if}
+
         <label class="flex items-center gap-2 text-sm">
           <input type="checkbox" class="h-4 w-4 rounded" bind:checked={deviceDraft.enabled} />
           Aktiv (wird geprüft und angezeigt)
@@ -790,6 +934,157 @@
           </li>
         {/each}
       </ul>
+    {/if}
+  </section>
+
+  <section class="card mb-4 p-5">
+    <header class="mb-4 flex items-center justify-between">
+      <h2 class="flex items-center gap-2 font-semibold">
+        <Music class="h-5 w-5" /> Musik
+      </h2>
+      {#if musik?.enabled && musik.available}
+        <button
+          class="btn-ghost shrink-0 rounded-full px-2 text-muted-foreground"
+          onclick={musikNeuEinlesen}
+          disabled={musik.progress.running}
+          title="Neu einlesen"
+          aria-label="Musikordner neu einlesen"
+        >
+          <RefreshCw class="h-4 w-4 {musik.progress.running ? 'animate-spin' : ''}" />
+        </button>
+      {/if}
+    </header>
+
+    {#if musikFehler}
+      <p class="mb-3 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
+        {musikFehler}
+      </p>
+    {/if}
+
+    {#if !musik}
+      <p class="py-4 text-center text-sm text-muted-foreground">Lade…</p>
+    {:else if !musik.enabled}
+      <p class="text-sm text-muted-foreground">
+        Es ist kein Ordner eingehängt. Dafür braucht es eine Zeile in der
+        <code>.env</code> und einen Neustart mit <code>make up</code>:
+      </p>
+      <pre class="mt-2 overflow-x-auto rounded-lg bg-muted/40 px-3 py-2 text-xs"><code
+          >MUSIC_HOST_DIR=/media/festplatte/AUDIO</code
+        ></pre>
+    {:else}
+      <!--
+        Der Unterschied, der hier erklärt werden muss: WELCHER Ordner des
+        Rechners hereingereicht wird, steht in der .env — ein Container sieht
+        nur, was in ihn eingehängt wurde, und daran ändert keine
+        Weboberfläche etwas. WELCHER Teil davon gehört wird, steht hier.
+      -->
+      <p class="mb-3 text-sm text-muted-foreground">
+        Eingehängt ist <code class="text-foreground">{musik.mount}</code>. Welcher
+        Ordner des Rechners das ist, steht in der <code>.env</code> unter
+        <code>MUSIC_HOST_DIR</code> — das lässt sich von hier aus nicht ändern.
+        Welchen Teil davon ihr hört, schon.
+      </p>
+
+      <div class="mb-3 rounded-xl bg-muted/30 p-3 text-sm">
+        <p>
+          <span class="text-muted-foreground">Es gilt:</span>
+          <strong>{musik.subdir || 'der ganze eingehängte Ordner'}</strong>
+        </p>
+        <p class="mt-0.5 text-xs text-muted-foreground">
+          {#if musik.progress.running}
+            Wird eingelesen… {musik.progress.scanned.toLocaleString('de-DE')} Dateien
+          {:else if !musik.available}
+            Gerade nicht erreichbar — ist die Festplatte angeschlossen?
+          {:else}
+            {musik.tracks.toLocaleString('de-DE')} Titel im Index
+          {/if}
+        </p>
+      </div>
+
+      {#if !musikOffen}
+        <button
+          class="btn-outline w-full text-sm"
+          onclick={() => {
+            musikOffen = true;
+            void musikBlaettern(musik?.subdir ?? '');
+          }}
+        >
+          <Folder class="h-4 w-4" /> Anderen Ordner wählen
+        </button>
+      {:else}
+        <div class="rounded-xl border border-border p-3">
+          <div class="mb-2 flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
+            <button class="rounded px-1.5 py-0.5 hover:bg-accent" onclick={() => musikBlaettern('')}>
+              Eingehängter Ordner
+            </button>
+            {#each musikPfadTeile as teil (teil.path)}
+              <ChevronRight class="h-3 w-3 shrink-0 opacity-50" />
+              <button
+                class="max-w-[10rem] truncate rounded px-1.5 py-0.5 hover:bg-accent"
+                onclick={() => musikBlaettern(teil.path)}
+              >
+                {teil.name}
+              </button>
+            {/each}
+          </div>
+
+          {#if musikOrdner}
+            <button
+              class="mb-2 w-full rounded-lg bg-primary/10 px-3 py-2 text-left text-sm text-primary transition-colors hover:bg-primary/15"
+              onclick={() => musikOrdnerWaehlen(musikOrdner?.path ?? '')}
+              disabled={busy}
+            >
+              Diesen Ordner verwenden
+              {#if musikOrdner.has_audio}
+                <span class="block text-xs opacity-80">Hier liegen Audiodateien</span>
+              {:else}
+                <span class="block text-xs opacity-80">
+                  Hier liegen keine Audiodateien — die Unterordner zählen mit
+                </span>
+              {/if}
+            </button>
+
+            <ul class="scrollbar-thin max-h-64 space-y-1 overflow-y-auto pr-1">
+              {#if musikOrdner.path}
+                <li>
+                  <button
+                    class="flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-left text-sm text-muted-foreground transition-colors hover:bg-accent"
+                    onclick={() => musikBlaettern(musikOrdner?.parent ?? '')}
+                  >
+                    <CornerLeftUp class="h-4 w-4 shrink-0" /> Eine Ebene höher
+                  </button>
+                </li>
+              {/if}
+              {#each musikOrdner.folders as eintrag (eintrag.path)}
+                <li>
+                  <button
+                    class="flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-left transition-colors hover:bg-accent"
+                    onclick={() => musikBlaettern(eintrag.path)}
+                    disabled={!eintrag.has_subfolders && !eintrag.has_audio}
+                  >
+                    <Folder class="h-4 w-4 shrink-0 text-muted-foreground" />
+                    <span class="min-w-0 flex-1 truncate text-sm">{eintrag.name}</span>
+                    {#if eintrag.has_audio}
+                      <Music class="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                    {/if}
+                  </button>
+                </li>
+              {/each}
+              {#if musikOrdner.folders.length === 0}
+                <li class="py-4 text-center text-xs text-muted-foreground">
+                  Keine Unterordner.
+                </li>
+              {/if}
+            </ul>
+          {:else}
+            <p class="py-4 text-center text-sm text-muted-foreground">Lade…</p>
+          {/if}
+
+          <button class="btn-ghost mt-2 w-full text-sm" onclick={() => (musikOffen = false)}>
+            Schließen
+          </button>
+        </div>
+      {/if}
     {/if}
   </section>
 

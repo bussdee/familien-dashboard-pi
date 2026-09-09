@@ -23,8 +23,13 @@ services:
       WEATHER_LON: ${WEATHER_LON:-16.3738}
       WEATHER_TZ: ${WEATHER_TZ:-Europe/Vienna}
       LOG_LEVEL: ${LOG_LEVEL:-debug}
+      # Nicht /app/audio wie in Produktion: Hier ist ./backend als Ganzes
+      # eingehängt, ein Einhängepunkt darunter würde einen Ordner
+      # backend/audio auf dem Rechner anlegen.
+      MUSIC_DIR: /audio
     volumes:
       - ./backend:/app
+      - ${MUSIC_HOST_DIR:-./backend/data/music}:/audio:ro
       - go-mod-cache:/go/pkg/mod
       - go-build-cache:/root/.cache/go-build
 

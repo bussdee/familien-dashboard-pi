@@ -4,6 +4,7 @@ go 1.25.0
 
 require (
 	github.com/alexedwards/argon2id v1.0.0
+	github.com/dhowden/tag v0.0.0-20240417053706-3d75831295e8
 	github.com/emersion/go-ical v0.0.0-20240127095438-fc1c9d8fb2b6
 	github.com/fsnotify/fsnotify v1.10.1
 	github.com/go-chi/chi/v5 v5.3.2

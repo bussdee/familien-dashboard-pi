@@ -4,18 +4,104 @@ Alle nennenswerten Änderungen an diesem Projekt.
 Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 Versionierung nach [SemVer](https://semver.org/lang/de/).
 
-## [1.4.5] — 2026-09-09
+Eine Version wird **gebündelt** eingetragen, nicht jeder Handgriff einzeln.
+Die 1.4.x-Reihe hat an einem einzigen Tag acht Einträge bekommen — das liest
+niemand, und es sagt auch nichts.
+
+## [1.5.0] — 2026-09-10
+
+### Hinzugefügt
+
+- **Ein MP3-Player für die eigene Sammlung.** Ein Ordner mit Musik wird
+  schreibgeschützt eingehängt — ein Verzeichnis auf dem Pi, eine Freigabe vom
+  NAS, eine angesteckte Festplatte. Neu sind eine Kachel *Musik* zum Stöbern
+  und eine schmale Leiste am unteren Rand, die auf **jeder** Seite sichtbar
+  bleibt. Das ist der Punkt: Das Audio-Element steht im Seitenlayout, deshalb
+  bricht die Musik nicht ab, wenn jemand auf „Rangliste" tippt. Auch in der
+  Diashow läuft sie weiter; dort blendet die Leiste mit den übrigen Knöpfen
+  aus und wieder ein.
+
+  Nur lokale Dateien: keine Radiosender, keine Podcasts, kein Plex — dafür
+  gibt es die Gerätekachel.
+
+  Zugeschnitten auf eine Sammlung, die zu zwei Dritteln aus Hörspielen
+  besteht:
+
+  - **Geblättert wird nach Ordnern**, nicht nach Interpret. Bei tausenden
+    Hörspieldateien ist die Ordnerstruktur die Gliederung, nicht das ID3-Feld.
+  - **Sortiert wird nach Dateiname.** Ein Hörspiel läuft von Teil 1 bis
+    Teil 12. Zufallswiedergabe gibt es, aber nicht als Voreinstellung.
+  - **Ein Titel startet seinen ganzen Ordner** ab dieser Stelle — Teil 2 läuft
+    danach von selbst weiter.
+  - **Der Index liegt in der Datenbank** und wird im Hintergrund aufgebaut.
+    Der Serverstart wartet nicht darauf. Ein zweiter Durchlauf öffnet nur noch
+    die Dateien, deren Grösse oder Änderungszeit sich geändert hat.
+  - **Suchen** über Titel, Interpret, Album und Dateiname.
+  - **Sperrbildschirm und Kopfhörer-Knöpfe** funktionieren über die Media
+    Session API.
+  - **Die Platte darf verschwinden.** Ist der Ordner nicht erreichbar, sagt
+    die Kachel das und der Index bleibt stehen, statt sich zu löschen.
+
+  Eingerichtet wird in zwei Schritten, weil zwei verschiedene Dinge
+  dahinterstecken: **Welcher Ordner des Rechners hereingereicht wird**, steht
+  in der `.env` unter `MUSIC_HOST_DIR` — ein Container sieht nur, was in ihn
+  eingehängt wurde, daran ändert keine Weboberfläche etwas. **Welcher Teil
+  davon gehört wird**, steht unter *Verwaltung → Musik*: dort lässt sich durch
+  die Ordner blättern und einer auswählen, ohne Neustart. Neu einlesen darf
+  ebenfalls nur ein Administrator — bei einer grossen Sammlung ist das
+  minutenlange Arbeit für die Platte. Der Service Worker nimmt Musik ausdrücklich vom
+  Zwischenspeicher aus, sonst füllte sich der Browserspeicher mit Hörspielen.
+
+  Was ich vorher sagen muss: **Ton startet nie von allein.** Browser verbieten
+  das. Nach einem Neustart des Wandtablets muss jemand einmal tippen; die
+  Leiste sagt es dann auch. Dagegen lässt sich nichts machen.
+
+- **Dateien zum Herunterladen.** Eine neue Kachel *Dateien*: Ein Administrator
+  legt dort ab, was die ganze Familie braucht — die Bedienungsanleitung der
+  Waschmaschine, den Elternbrief, das Formular fürs Ferienlager. Herunterladen
+  darf jeder, auch das Wandgerät im Flur; hochladen und löschen nur ein
+  Administrator.
+
+  Bis 100 MB je Datei, 300 MB je Vorgang. Dateitypen sind nicht eingeschränkt,
+  dafür wird jede Datei ausschliesslich als Anhang ausgeliefert und nie im
+  Browser dargestellt — sonst könnte eine abgelegte HTML-Datei unter der
+  Adresse des Dashboards laufen. Wird der Platz auf dem Datenträger knapp,
+  sagt es die Kachel.
+
+  Die Dateien liegen in `backend/data/files/` und werden **mitgesichert** —
+  im nächtlichen Backup und in `scripts/backup.sh`.
+
+- **Wer arbeitet, muss nicht mehr reihum drankommen.** In der Verwaltung hat
+  jede Person jetzt das Häkchen *nimmt an der Reihum-Verteilung teil*. Wer es
+  abwählt, steht bei „reihum" nicht mehr im Plan — feste Zuständigkeiten,
+  „alle" und „wer mag" bleiben davon unberührt. Aufgaben, die eine
+  abgemeldete Person gerade hält, wandern sofort weiter statt erst zur
+  nächsten Fälligkeit.
 
 ### Geändert
 
-- **Der Familien-Modus ist jetzt das erste Bild im README.** Bisher stand dort
-  die persönliche Ansicht mit Namen und Punkteband — also ausgerechnet nicht
-  das, was dieses Projekt von anderen Dashboards unterscheidet. Dazu neu: der
-  Dialog „Wer war das?" mit den drei Gesichtern.
-
-## Unveröffentlicht
+- **Die Beispielgeräte werden abgeschaltet ausgeliefert.** Sie zeigen auf
+  `192.168.1.20`, die Adresse aus der Vorlage. Bisher begrüsste eine frische
+  Installation ihren Besitzer deshalb mit drei roten Kacheln. Die Beispiele
+  stehen in `backend/config.yaml` jetzt auf `enabled: false`; wer Geräte will,
+  trägt seine Adressen ein und schaltet sie an. Fehlt das Feld ganz, gilt ein
+  Gerät weiterhin als aktiv — bestehende Installationen merken nichts davon.
 
 ### Behoben
+
+- **Grosse Downloads brachen nach 60 Sekunden ab.** Das Zeitlimit für Anfragen
+  galt auch für alles, was einen Datenstrom offen hält. Für eine Anfrage ist
+  es richtig, für ein Hörspiel von 80 Minuten oder eine Datei von 100 MB über
+  schwaches WLAN nicht. Musik und Familiendateien sind jetzt davon ausgenommen
+  — beim Server ebenso wie beim Proxy davor, dessen Obergrenze für Uploads
+  ausserdem unter der des Backends lag.
+
+- **Eine grüne Kachel konnte ins Leere führen.** Prüf-Adresse und Link zur
+  Oberfläche sind zwei Felder, und genau deshalb geraten sie auseinander: Wer
+  beim Umzug ins neue Netz nur die Prüfung anpasst, bekommt eine Kachel, die
+  „erreichbar" meldet und beim Antippen woanders hinführt. Das Geräteformular
+  weist jetzt darauf hin, wenn die beiden Felder auf verschiedene Hosts
+  zeigen. Kein Fehler, nur ein Hinweis — es kann gewollt sein.
 
 - **Der Wetterort war nicht mehr einstellbar.** Beim Umbau der Oberfläche in
   1.2.0 ist das kleine Wetter-Symbol dem grossen Wetterblock gewichen — nur
@@ -24,10 +110,14 @@ Versionierung nach [SemVer](https://semver.org/lang/de/).
   gab es auf einem breiten Bildschirm überhaupt keinen Weg mehr dorthin.
   Der Wetterblock führt jetzt wieder auf die Wetterseite.
 
+## [1.4.5] — 2026-09-09
+
 ### Geändert
 
-- Im README steht der Familien-Modus als erstes Bild, dazu der Dialog
-  „Wer war das?".
+- **Der Familien-Modus ist jetzt das erste Bild im README.** Bisher stand dort
+  die persönliche Ansicht mit Namen und Punkteband — also ausgerechnet nicht
+  das, was dieses Projekt von anderen Dashboards unterscheidet. Dazu neu: der
+  Dialog „Wer war das?" mit den drei Gesichtern.
 
 ## [1.4.4] — 2026-09-09
 

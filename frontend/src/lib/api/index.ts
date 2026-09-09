@@ -2,8 +2,9 @@ import { browser } from '$app/environment';
 import { goto } from '$app/navigation';
 import type {
   Activity, BackupFile, CalendarEvent, Chore, DashboardLayout, DeviceStatus,
-  DeviceTarget, EventDraft, Link, LinkDraft, Note, Photo, PhotoUploadResult,
-  Score, ShoppingEvent, ShoppingItem, User, WeatherData, WeatherLocation,
+  DeviceTarget, EventDraft, FileListing, FileUploadResult, Link, LinkDraft,
+  MusicBrowse, MusicDirListing, MusicStatus, Note, Photo, PhotoUploadResult,
+  Score, ShoppingEvent, ShoppingItem, Track, User, WeatherData, WeatherLocation,
 } from '$lib/types';
 
 const BASE = '/api';
@@ -114,10 +115,14 @@ export const adminApi = {
   listUsers: () => request<User[]>('/admin/users'),
   createUser: (data: {
     name: string; color: string; pin: string; role: string; avatar_emoji: string;
+    in_rotation?: boolean;
   }) => request<User>('/admin/users', { method: 'POST', ...json(data) }),
   updateUser: (
     id: number,
-    data: Partial<{ name: string; color: string; pin: string; role: string; avatar_emoji: string }>,
+    data: Partial<{
+      name: string; color: string; pin: string; role: string; avatar_emoji: string;
+      in_rotation: boolean;
+    }>,
   ) => request<void>(`/admin/users/${id}`, { method: 'PUT', ...json(data) }),
   deleteUser: (id: number) => request<void>(`/admin/users/${id}`, { method: 'DELETE' }),
 
@@ -150,6 +155,21 @@ export const adminApi = {
   /** userId 0 resets the whole family. */
   resetPoints: (userId: number) =>
     request<{ removed: number }>('/admin/points/reset', { method: 'POST', ...json({ user_id: userId }) }),
+
+  /** Derselbe Endpunkt wie für die Kachel — die Verwaltung braucht ihn auch. */
+  musicStatus: () => request<MusicStatus>('/music/status'),
+  rescanMusic: () => request<void>('/music/rescan', { method: 'POST' }),
+  /**
+   * Die echten Verzeichnisse im eingehängten Ordner. Beim Einrichten ist der
+   * Index noch leer, also wird hier das Dateisystem gezeigt, nicht der Index.
+   */
+  musicFolders: (path = '') =>
+    request<MusicDirListing>(`/admin/music/folders?path=${encodeURIComponent(path)}`),
+  setMusicDir: (path: string) =>
+    request<{ path: string; mount: string }>('/admin/music/dir', {
+      method: 'PUT',
+      ...json({ path }),
+    }),
 
   listBackups: () => request<BackupFile[]>('/admin/backups'),
   runBackup: () =>
@@ -242,40 +262,91 @@ export const photosApi = {
    * progress — a phone photo over Wi-Fi is slow enough to need it.
    */
   upload: (files: File[], onProgress?: (percent: number) => void) =>
-    new Promise<PhotoUploadResult>((resolve, reject) => {
-      const body = new FormData();
-      for (const file of files) body.append('photos', file);
+    uploadMitFortschritt<PhotoUploadResult>('/photos', 'photos', files, onProgress),
+};
 
-      const xhr = new XMLHttpRequest();
-      xhr.open('POST', `${BASE}/photos`);
-      xhr.withCredentials = true;
+/**
+ * Fotos und Dateien laden auf dieselbe Weise hoch: als Formular, über XHR,
+ * mit Fortschritt. fetch() kann keinen Fortschritt melden, und ohne
+ * Fortschritt sieht ein Upload über WLAN aus wie ein Absturz.
+ */
+function uploadMitFortschritt<T>(
+  pfad: string,
+  feld: string,
+  dateien: File[],
+  onProgress?: (percent: number) => void,
+): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const body = new FormData();
+    for (const datei of dateien) body.append(feld, datei);
 
-      xhr.upload.onprogress = (event) => {
-        if (event.lengthComputable) {
-          onProgress?.(Math.round((event.loaded / event.total) * 100));
-        }
-      };
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `${BASE}${pfad}`);
+    xhr.withCredentials = true;
 
-      xhr.onload = () => {
-        let payload: unknown = null;
-        try {
-          payload = JSON.parse(xhr.responseText);
-        } catch {
-          /* an empty or non-JSON body is handled below */
-        }
-        if (xhr.status >= 200 && xhr.status < 300) {
-          resolve(payload as PhotoUploadResult);
-        } else {
-          const message =
-            (payload as { message?: string } | null)?.message ?? `Fehler ${xhr.status}`;
-          reject(new ApiError(xhr.status, message));
-        }
-      };
-      xhr.onerror = () => reject(new ApiError(0, 'Upload fehlgeschlagen'));
-      xhr.onabort = () => reject(new ApiError(0, 'Upload abgebrochen'));
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable) {
+        onProgress?.(Math.round((event.loaded / event.total) * 100));
+      }
+    };
 
-      xhr.send(body);
-    }),
+    xhr.onload = () => {
+      let payload: unknown = null;
+      try {
+        payload = JSON.parse(xhr.responseText);
+      } catch {
+        /* an empty or non-JSON body is handled below */
+      }
+      if (xhr.status >= 200 && xhr.status < 300) {
+        resolve(payload as T);
+      } else {
+        const message =
+          (payload as { message?: string } | null)?.message ?? `Fehler ${xhr.status}`;
+        reject(new ApiError(xhr.status, message));
+      }
+    };
+    xhr.onerror = () => reject(new ApiError(0, 'Upload fehlgeschlagen'));
+    xhr.onabort = () => reject(new ApiError(0, 'Upload abgebrochen'));
+
+    xhr.send(body);
+  });
+}
+
+/**
+ * Die Familien-Ablage: Der Administrator lädt hoch, alle laden herunter — am
+ * Wandgerät ebenfalls, das sind Familiendateien.
+ */
+/**
+ * Musik. Hören darf jeder, auch das Wandgerät — es ist Familienmusik. Nur das
+ * Neu-Einlesen ist Adminsache.
+ */
+export const musicApi = {
+  status: () => request<MusicStatus>('/music/status'),
+  browse: (path = '') =>
+    request<MusicBrowse>(`/music/browse?path=${encodeURIComponent(path)}`),
+  search: (query: string) =>
+    request<{ tracks: Track[]; query: string }>(`/music/search?q=${encodeURIComponent(query)}`),
+  /**
+   * Angesprochen wird über die Kennung, nicht über den Pfad. Damit brauchen
+   * Ordner wie „Musik (Kinder)" mit Klammern, Leerzeichen und Umlauten gar
+   * keine Kodierung — genau daran wäre die Wiedergabe sonst gescheitert.
+   */
+  trackUrl: (id: number) => `${BASE}/music/track/${id}`,
+  rescan: () => request<void>('/music/rescan', { method: 'POST' }),
+};
+
+export const filesApi = {
+  list: () => request<FileListing>('/files'),
+  /**
+   * Bewusst eine Adresse statt eines Aufrufs: Der Browser soll die Datei
+   * selbst herunterladen, mit eigener Fortschrittsanzeige und ohne sie vorher
+   * komplett in den Arbeitsspeicher zu holen.
+   */
+  url: (name: string) => `${BASE}/files/${encodeURIComponent(name)}`,
+  upload: (files: File[], onProgress?: (percent: number) => void) =>
+    uploadMitFortschritt<FileUploadResult>('/files', 'files', files, onProgress),
+  remove: (name: string) =>
+    request<void>(`/files/${encodeURIComponent(name)}`, { method: 'DELETE' }),
 };
 
 /**

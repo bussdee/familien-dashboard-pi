@@ -32,7 +32,8 @@ Aktualisierung.
 | **Bleibt unberührt** | Alle anderen Dienste auf dem Zielgerät — Plex, Kavita, FileBrowser, SSH und so weiter |
 | **Kontakt zu anderen Diensten** | ausschließlich lesende Health-Checks alle 30 Sekunden |
 | **Wird übertragen** | Quellcode, Konfiguration, Skripte |
-| **Wird NICHT übertragen** | `.env` und `backend/data/` — Datenbank, Notizen, Fotos und Backups auf dem Pi bleiben, wie sie sind |
+| **Wird NICHT übertragen** | `.env` und `backend/data/` — Datenbank, Notizen, Fotos, Dateien und Backups auf dem Pi bleiben, wie sie sind |
+| **Musik** | wird **nur gelesen**, schreibgeschützt eingehängt und nie übertragen. Eine Sammlung von 200 GB hat in einem Deploy nichts verloren |
 
 Der Pi bekommt also seine **eigene Datenbank**. Die Aufgaben, Punkte, Fotos und
 Einstellungen von diesem Testrechner wandern **nicht** automatisch mit (wie du
@@ -106,7 +107,7 @@ make up
 make verify
 ```
 
-Erwartet: **40 Prüfungen bestanden.** Wenn hier etwas rot ist, wird nicht
+Erwartet: **52 Prüfungen bestanden.** Wenn hier etwas rot ist, wird nicht
 deployt — der Fehler wäre auf dem Pi derselbe.
 
 Zusätzlich einmal von Hand durchklicken: anmelden, eine Aufgabe abhaken, einen
@@ -209,7 +210,7 @@ make pi-status          # laufen alle drei Container und sind sie "healthy"?
 make pi-verify          # Smoke-Test gegen den Pi
 ```
 
-Erwartet: dreimal `healthy` und wieder **40 Prüfungen bestanden**.
+Erwartet: dreimal `healthy` und wieder **52 Prüfungen bestanden**.
 
 Dann im Browser `http://<ZIEL-IP>:8088` öffnen.
 
@@ -225,13 +226,67 @@ gelben Hinweis. Der verschwindet von selbst, sobald alle gewechselt haben.
 ### Danach einrichten
 
 - **Verwaltung → Geräte**: Adressen an den Pi anpassen und mit *Verbindung
-  testen* prüfen
+  testen* prüfen. Achte darauf, dass *Prüf-Adresse* und *Oberfläche zum
+  Antippen* denselben Rechner meinen — das Formular weist darauf hin, wenn
+  nicht. Eine Kachel, die grün leuchtet und beim Antippen woanders hinführt,
+  fällt sonst erst spät auf
+- **Verwaltung → Musik**: den Ordner wählen, aus dem gehört wird (siehe unten)
+- **Verwaltung → Familienmitglieder**: wer arbeitet, nimmt das Häkchen *nimmt
+  an der Reihum-Verteilung teil* heraus
 - **Aufgaben**: die Standard-Aufgaben durch eure echten ersetzen, Punkte ans
   Alter der Kinder anpassen
 - **Links**: was jeder oft braucht, anlegen und anpinnen
 - **Fotos**: über den Foto-Rahmen hochladen
+- **Dateien**: Anleitungen und Formulare über die Kachel *Dateien* ablegen
 - **Kalender**: Termine eintragen oder eine `.ics` nach
   `~/family-dashboard/backend/data/ics/` kopieren
+
+### Das Wandtablet im Flur
+
+Ein Tablet, das fest an der Wand hängt, wird zum **Familiengerät**: dauerhaft
+angemeldet, aber ohne persönliche Daten. Keine Rangliste, keine Einstellungen,
+keine eigenen Links. Wer eine Aufgabe abhakt, tippt kurz auf sein Gesicht —
+ohne PIN.
+
+Eingerichtet wird das **auf dem Tablet selbst**: dort als Administrator
+anmelden, dann *Verwaltung → Wandgerät → Dieses Gerät als Wandgerät
+einrichten*.
+
+Beim Einrichten wirst du auf diesem Gerät **abgemeldet**. Das ist Absicht:
+Sonst liefe alles, was jemand im Flur abhakt, auf dein Konto. Die Einstellung
+gilt nur für dieses eine Gerät; dein Handy bleibt unberührt.
+
+Nach fünf Minuten ohne Berührung wird aus dem Dashboard ein Bilderrahmen. Eine
+Berührung führt zurück in den Familien-Modus, nie in ein fremdes Konto.
+
+### Musik auf dem Pi
+
+Zwei Schritte, weil zwei verschiedene Dinge dahinterstecken:
+
+1. **Welcher Ordner des Pi hereingereicht wird**, steht in der `.env` **auf dem
+   Pi**. Der wird vom Deploy nicht überschrieben, muss dort also einmal von
+   Hand hinein:
+
+   ```bash
+   ssh <ZIEL>
+   cd ~/family-dashboard
+   echo 'MUSIC_HOST_DIR=/media/festplatte/AUDIO' >> .env
+   docker compose up -d
+   ```
+
+   Das lässt sich **nicht** über die Weboberfläche erledigen: Ein Container
+   sieht nur, was in ihn eingehängt wurde, und daran ändert keine Einstellung
+   in einer Webseite etwas.
+
+2. **Welcher Teil davon gehört wird**, steht in *Verwaltung → Musik*. Dort
+   lässt sich durch die Ordner blättern und einer auswählen — ohne Neustart.
+
+Der Ordner wird **schreibgeschützt** eingehängt. Das Dashboard soll abspielen,
+nicht löschen können. Der Benutzer aus `PUID` muss ihn lesen dürfen:
+
+```bash
+sudo -u "#$(grep ^PUID .env | cut -d= -f2)" ls /media/festplatte/AUDIO
+```
 
 ---
 

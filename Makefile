@@ -66,7 +66,7 @@ setup: init-data
 	@echo "Nächster Schritt:  make dev   (oder: make up)"
 
 init-data:
-	@mkdir -p backend/data/notes backend/data/ics backend/data/photos backend/data/backup
+	@mkdir -p backend/data/notes backend/data/ics backend/data/photos backend/data/files backend/data/music backend/data/backup
 	@bash scripts/init-data.sh
 
 # =============================================================================
@@ -174,7 +174,7 @@ _deploy_exec:
 	@$(MAKE) --no-print-directory _rsync
 	@echo "🔧 Baue und starte auf dem Pi..."
 	@ssh $(PI_HOST) "cd $(PI_PATH) && test -f .env || (echo '❌ .env fehlt auf dem Pi – dort einmalig \"make setup\" ausführen'; exit 1)"
-	@ssh $(PI_HOST) "cd $(PI_PATH) && mkdir -p backend/data/{notes,ics,photos,backup} && docker compose up -d --build"
+	@ssh $(PI_HOST) "cd $(PI_PATH) && mkdir -p backend/data/{notes,ics,photos,files,music,backup} && docker compose up -d --build"
 	@echo "✅ Deploy fertig — Dashboard auf dem Zielsystem, Port $${HTTP_PORT:-8088}"
 
 deploy:

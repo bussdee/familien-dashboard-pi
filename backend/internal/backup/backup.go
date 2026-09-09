@@ -120,7 +120,10 @@ func (s *Service) archiveData(target string) error {
 	tw := tar.NewWriter(gz)
 	defer tw.Close()
 
-	for _, sub := range []string{"notes", "ics", "photos"} {
+	// Wird hier ein Ordner vergessen, fehlt er im Backup, ohne dass irgendwo
+	// etwas rot wird. "files" ist beim Anlegen des Moduls genau deshalb sofort
+	// mit eingetragen worden.
+	for _, sub := range []string{"notes", "ics", "photos", "files"} {
 		root := filepath.Join(s.dataDir, sub)
 		if _, err := os.Stat(root); os.IsNotExist(err) {
 			continue

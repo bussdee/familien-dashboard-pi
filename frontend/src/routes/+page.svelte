@@ -18,6 +18,8 @@
   import DevicesWidget from '$lib/components/widgets/DevicesWidget.svelte';
   import CountdownWidget from '$lib/components/widgets/CountdownWidget.svelte';
   import PhotoWidget from '$lib/components/widgets/PhotoWidget.svelte';
+  import FilesWidget from '$lib/components/widgets/FilesWidget.svelte';
+  import MusicWidget from '$lib/components/widgets/MusicWidget.svelte';
   import LinksWidget from '$lib/components/widgets/LinksWidget.svelte';
   import { LayoutGrid } from 'lucide-svelte';
   import type {
@@ -260,6 +262,10 @@
             <NotesWidget bind:notes />
           {:else if widget.id === 'photos'}
             <PhotoWidget />
+          {:else if widget.id === 'music'}
+            <MusicWidget />
+          {:else if widget.id === 'files'}
+            <FilesWidget />
           {:else if widget.id === 'devices'}
             <DevicesWidget {devices} onRefresh={reloadDevices} />
           {/if}

@@ -58,6 +58,16 @@ worker.addEventListener('fetch', (event) => {
   }
 
   if (url.pathname.startsWith('/api/')) {
+    // Musik gehört unter keinen Umständen in den Zwischenspeicher: Ein
+    // einziges Hörspiel ist grösser als alles andere zusammen, und eine
+    // Sammlung würde den Browserspeicher in einem Nachmittag füllen. Dass
+    // /api/music ohnehin nicht in CACHEABLE_API steht, reicht als Begründung
+    // nicht — es steht hier ausdrücklich, damit niemand es versehentlich
+    // hinzufügt. Dasselbe gilt für die Familien-Dateien: bis 100 MB je Stück.
+    if (url.pathname.startsWith('/api/music/') || url.pathname.startsWith('/api/files/')) {
+      return;
+    }
+
     const cacheable = CACHEABLE_API.some((path) => url.pathname.startsWith(path));
     if (!cacheable) return; // writes and live data always go to the network
 

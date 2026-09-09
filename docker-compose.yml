@@ -56,9 +56,17 @@ services:
       WEATHER_LON: ${WEATHER_LON:-16.3738}
       WEATHER_TZ: ${WEATHER_TZ:-Europe/Vienna}
       LOG_LEVEL: ${LOG_LEVEL:-info}
+      # Leer = Musik aus. /app/audio schaltet sie an; der Ordner dahinter
+      # steht in MUSIC_HOST_DIR (siehe unten).
+      MUSIC_DIR: ${MUSIC_DIR:-/app/audio}
     volumes:
       - ./backend/config.yaml:/app/config.yaml:ro
       - ./backend/data:/app/data
+      # Musik, schreibgeschützt: Das Dashboard soll abspielen, nicht löschen.
+      # Voreinstellung ist ein leerer Ordner im Projekt — dann findet das Modul
+      # nichts und die Kachel erklärt, wie man Musik einrichtet. Wer eine
+      # Sammlung hat, trägt ihren Pfad in der .env unter MUSIC_HOST_DIR ein.
+      - ${MUSIC_HOST_DIR:-./backend/data/music}:/app/audio:ro
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/health"]
       interval: 30s

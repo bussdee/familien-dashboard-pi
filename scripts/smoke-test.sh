@@ -5,7 +5,7 @@ set -uo pipefail
 
 BASE="${BASE:-http://localhost:${HTTP_PORT:-8088}}"
 JAR="$(mktemp)"
-trap 'rm -f "$JAR"' EXIT
+trap 'rm -f "$JAR" "$JAR.txt"' EXIT
 
 pass=0
 fail=0
@@ -70,7 +70,8 @@ else
             scoreboard:/api/scoreboard history:/api/scoreboard/history \
             links:/api/links layout:/api/preferences/dashboard.layout \
             reward:/api/shopping/reward location:/api/weather/location \
-            devices:/api/devices photos:/api/photos; do
+            devices:/api/devices photos:/api/photos files:/api/files \
+            music:/api/music/status musikordner:/api/music/browse; do
     name="${ep%%:*}"; path="${ep#*:}"
     status="$(code -b "$JAR" "$BASE$path")"
     # Wetter darf 503 sein, wenn der Server (noch) kein Internet hatte.
@@ -130,6 +131,75 @@ for e in json.load(sys.stdin):
         "$(code -b "$JAR" -X DELETE "$BASE/api/admin/points/$PT_ID")"
     fi
     check "Aufgabe wieder löschen"       204 "$(code -b "$JAR" -X DELETE "$BASE/api/chores/$CHORE_ID")"
+  fi
+
+  echo ""
+  echo "Dateien"
+  # Eine hochgeladene Datei darf der Browser niemals anzeigen, sondern nur
+  # speichern. Sonst könnte eine abgelegte HTML-Datei unter der Adresse des
+  # Dashboards laufen und an die Sitzung der Familie kommen.
+  printf 'Rauchtest\n' > "$JAR.txt"
+  UP="$(code -b "$JAR" -F "files=@$JAR.txt;filename=rauchtest.txt" "$BASE/api/files")"
+  check "Datei hochladen (nur Admin)"   201 "$UP"
+  if [ "$UP" = "201" ]; then
+    HEADERS="$(curl -s -D - -o /dev/null -b "$JAR" "$BASE/api/files/rauchtest.txt")"
+    check "Datei wird ausgeliefert"     200 \
+      "$(printf '%s' "$HEADERS" | sed -n 's|^HTTP/[0-9.]* \([0-9]*\).*|\1|p' | head -1)"
+    check "Wird als Anhang geliefert"   ja \
+      "$(printf '%s' "$HEADERS" | grep -qi 'content-disposition: *attachment' && echo ja || echo nein)"
+    check "Kein Raten des Inhaltstyps"  ja \
+      "$(printf '%s' "$HEADERS" | grep -qi 'x-content-type-options: *nosniff' && echo ja || echo nein)"
+    check "Datei wieder löschen"        204 \
+      "$(code -b "$JAR" -X DELETE "$BASE/api/files/rauchtest.txt")"
+  fi
+  rm -f "$JAR.txt"
+
+  echo ""
+  echo "Musik"
+  # Der Index sagt selbst, ob überhaupt etwas eingerichtet ist. Ohne Ordner
+  # sind die folgenden Prüfungen sinnlos, also werden sie übersprungen.
+  MUSIK="$(curl -s -b "$JAR" "$BASE/api/music/status")"
+  MUSIK_AN="$(printf '%s' "$MUSIK" | python3 -c 'import json,sys
+d=json.load(sys.stdin); print("ja" if d.get("enabled") and d.get("available") else "nein")' 2>/dev/null || echo nein)"
+  check "Musikordner eingerichtet"      ja  "$MUSIK_AN"
+
+  if [ "$MUSIK_AN" = "ja" ]; then
+    # Die Wurzel enthält meist nur Ordner. Also so weit hinabsteigen, bis ein
+    # Titel auftaucht — höchstens vier Ebenen, dann ist etwas anderes falsch.
+    TRACK_ID="$(BASE="$BASE" JAR="$JAR" python3 - <<'PYEOF' 2>/dev/null || true
+import json, os, subprocess, urllib.parse
+
+base, jar = os.environ["BASE"], os.environ["JAR"]
+
+def browse(pfad):
+    url = f"{base}/api/music/browse?path=" + urllib.parse.quote(pfad)
+    roh = subprocess.run(["curl", "-s", "-b", jar, url], capture_output=True, text=True).stdout
+    return json.loads(roh)
+
+pfad = ""
+for _ in range(4):
+    d = browse(pfad)
+    if d["tracks"]:
+        print(d["tracks"][0]["id"])
+        break
+    if not d["folders"]:
+        break
+    pfad = d["folders"][0]["path"]
+PYEOF
+)"
+
+    if [ -n "$TRACK_ID" ]; then
+      check "Titel wird ausgeliefert"     200 \
+        "$(code -b "$JAR" "$BASE/api/music/track/$TRACK_ID")"
+      # Ohne Bereichsanfragen liesse sich in einem Hörspiel nicht spulen.
+      check "Spulen (Bereichsanfrage)"    206 \
+        "$(code -b "$JAR" -H 'Range: bytes=0-99' "$BASE/api/music/track/$TRACK_ID")"
+    else
+      printf '  \033[33m!\033[0m %-46s (kein Titel im Index)\n' "Wiedergabe"
+    fi
+    check "Unbekannter Titel"            404 "$(code -b "$JAR" "$BASE/api/music/track/999999")"
+  else
+    echo "  ⚠️  Kein Musikordner — Wiedergabe wird übersprungen."
   fi
 
   echo ""

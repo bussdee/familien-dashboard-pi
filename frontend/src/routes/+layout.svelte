@@ -6,6 +6,8 @@
   import { authApi } from '$lib/api';
   import { connection, oberflaeche, session, theme } from '$lib/stores';
   import { layout } from '$lib/stores/layout.svelte';
+  import { player } from '$lib/stores/player.svelte';
+  import { diashow } from '$lib/stores/diashow.svelte';
   import { board } from '$lib/stores/scores.svelte';
   import Header from '$lib/components/Header.svelte';
   import Footer from '$lib/components/Footer.svelte';
@@ -14,14 +16,44 @@
   import UpdatePrompt from '$lib/components/UpdatePrompt.svelte';
   import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
   import WerWarDas from '$lib/components/WerWarDas.svelte';
+  import PlayerBar from '$lib/components/PlayerBar.svelte';
 
   let { children } = $props();
 
   const isLogin = $derived($page.url.pathname.startsWith('/login'));
 
+  /**
+   * Das eine <audio>-Element der ganzen App. Es steht hier und nicht in der
+   * Musik-Kachel: Sonst bräche die Musik ab, sobald jemand auf „Rangliste"
+   * tippt — SvelteKit baut die Seite darunter neu auf, das Seitenlayout aber
+   * nicht.
+   */
+  let audioEl: HTMLAudioElement | null = $state(null);
+
+  /**
+   * Die Diashow bedient sich selbst: Dort verschwinden alle Knöpfe, solange
+   * niemand das Bild berührt. Die Leiste macht das mit, statt als heller
+   * Streifen unter dem Vollbild stehenzubleiben.
+   */
+  const inDiashow = $derived($page.url.pathname.startsWith('/diashow'));
+
+  const abstandUnten = $derived(
+    isLogin ? '' : player.aktiv ? 'pb-36 md:pb-24' : 'pb-20 md:pb-0',
+  );
+
+  // Die Diashow liegt als Vollbild über allem. Der Zustand wird beim Betreten
+  // und Verlassen hier gesetzt, damit die Seite selbst nichts davon wissen
+  // muss, wann sie verlassen wird.
+  $effect(() => {
+    if (inDiashow) diashow.betreten();
+    else diashow.verlassen();
+  });
+
   onMount(() => {
     theme.init();
     oberflaeche.init();
+    player.init();
+    if (audioEl) player.attach(audioEl);
 
     // Resolve the session once, then let each page render. Without this gate
     // the dashboard would flash before we know whether anyone is signed in.
@@ -74,8 +106,16 @@
     <Header />
   {/if}
 
-  <!-- pb-20 on phones keeps content clear of the bottom navigation bar. -->
-  <main class="flex-1 {isLogin ? '' : 'pb-20 md:pb-0'}">
+  <!--
+    pb-20 on phones keeps content clear of the bottom navigation bar. Läuft
+    Musik, kommt die Höhe der Abspielleiste dazu — sonst liegt sie über der
+    letzten Kachel.
+
+    Genau EINE Abstandsklasse, nicht zwei sich widersprechende: Welche von
+    "pb-20" und "pb-36" gewinnt, entscheidet sonst die Reihenfolge im
+    erzeugten Stylesheet und nicht diese Datei.
+  -->
+  <main class="flex-1 {abstandUnten}">
     {#if $session.ready || isLogin}
       {@render children()}
     {:else}
@@ -92,6 +132,17 @@
 
   {#if !isLogin}
     <Footer />
+  {/if}
+
+  <!--
+    Ein einziges Audio-Element für die ganze App. preload="none" ist Absicht:
+    Bei einer Sammlung mit Hörspielen soll der Browser nicht von sich aus
+    Megabytes ziehen, bevor jemand auf Abspielen tippt.
+  -->
+  <audio bind:this={audioEl} preload="none" class="hidden"></audio>
+
+  {#if !isLogin}
+    <PlayerBar gedimmt={inDiashow && !diashow.wach} ueberDiashow={inDiashow} />
   {/if}
 
   <!-- Outside the isLogin guard: a confirmation can be asked from anywhere. -->

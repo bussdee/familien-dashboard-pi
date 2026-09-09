@@ -23,6 +23,8 @@ export const WIDGETS: WidgetMeta[] = [
   { id: 'countdown', label: 'Countdowns', emoji: '⏰', hint: 'Geburtstage und Ferien' },
   { id: 'notes', label: 'Notizen', emoji: '📝', hint: 'Markdown-Notizen' },
   { id: 'photos', label: 'Foto-Rahmen', emoji: '🖼️', hint: 'Bilder der Familie' },
+  { id: 'music', label: 'Musik', emoji: '🎵', hint: 'MP3s und Hörspiele' },
+  { id: 'files', label: 'Dateien', emoji: '📎', hint: 'Anleitungen und Formulare' },
   { id: 'devices', label: 'Geräte', emoji: '📱', hint: 'Plex, Kavita und Co.' },
 ];
 

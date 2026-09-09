@@ -17,7 +17,9 @@ import (
 	"family-dashboard/backend/internal/chores"
 	"family-dashboard/backend/internal/config"
 	"family-dashboard/backend/internal/devices"
+	"family-dashboard/backend/internal/files"
 	"family-dashboard/backend/internal/links"
+	"family-dashboard/backend/internal/music"
 	"family-dashboard/backend/internal/notes"
 	"family-dashboard/backend/internal/photos"
 	"family-dashboard/backend/internal/points"
@@ -73,6 +75,8 @@ func main() {
 	}
 	linksSvc := links.NewService(sql)
 	photosSvc := photos.NewService(cfg.Photos.Dir)
+	filesSvc := files.NewService(cfg.Files.Dir)
+	musicSvc := music.NewService(sql, cfg.Music.Dir, db)
 	backupSvc := backup.NewService(sql, cfg.Database.Path, cfg.Database.BackupDir,
 		dataDir(cfg.Database.Path), cfg.Database.BackupRetention, cfg.Database.BackupCron)
 
@@ -83,14 +87,17 @@ func main() {
 	go choresSvc.Start(ctx)
 	go devicesSvc.Start(ctx)
 	go backupSvc.Start(ctx)
+	go musicSvc.Start(ctx)
 
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
 	r.Use(middleware.Recoverer)
 	r.Use(requestLogger)
-	// The WebSocket handshake must not inherit a 60s request deadline.
-	r.Use(skipFor("/api/shopping/ws", middleware.Timeout(60*time.Second)))
+	// Ein Zeitlimit von 60 Sekunden ist für Anfragen richtig und für alles
+	// falsch, was einen Datenstrom offen hält: den WebSocket, ein Hörspiel von
+	// 80 Minuten, eine Datei von 100 MB über schwaches WLAN.
+	r.Use(skipFor(langlaeufer, middleware.Timeout(60*time.Second)))
 
 	if len(cfg.Server.AllowedOrigins) > 0 {
 		r.Use(cors.Handler(cors.Options{
@@ -186,6 +193,19 @@ func main() {
 			r.Get("/photos/{name}", photosSvc.Serve)
 			r.Delete("/photos/{name}", photosSvc.Delete)
 
+			// Herunterladen darf jeder, auch das Wandgerät. Hochladen und
+			// Löschen stehen weiter unten im Adminbereich.
+			r.Get("/files", filesSvc.List)
+			r.Get("/files/{name}", filesSvc.Serve)
+
+			// Musik hören darf jeder, auch das Wandgerät — es ist Familienmusik
+			// und keine persönliche. Nur das Neu-Einlesen ist Adminsache: Bei
+			// einer grossen Sammlung ist das minutenlange Arbeit für die Platte.
+			r.Get("/music/status", musicSvc.Status)
+			r.Get("/music/browse", musicSvc.Browse)
+			r.Get("/music/search", musicSvc.Search)
+			r.Get("/music/track/{id}", musicSvc.Stream)
+
 			r.Group(func(r chi.Router) {
 				r.Use(authSvc.AdminMiddleware)
 				r.Post("/auth/device", authSvc.EnableDevice)
@@ -204,6 +224,14 @@ func main() {
 				r.Delete("/admin/devices/{id}", devicesSvc.Delete)
 				r.Post("/admin/devices/reorder", devicesSvc.Reorder)
 				r.Post("/admin/devices/test", devicesSvc.Test)
+				r.Post("/music/rescan", musicSvc.Rescan)
+				// Welcher Ordner eingehängt wird, steht in der .env — das kann
+				// keine Weboberfläche ändern. Welcher Teil davon gehört wird,
+				// schon.
+				r.Get("/admin/music/folders", musicSvc.AdminFolders)
+				r.Put("/admin/music/dir", musicSvc.SetDir)
+				r.Post("/files", filesSvc.Upload)
+				r.Delete("/files/{name}", filesSvc.Delete)
 				r.Get("/admin/backups", backupSvc.ListBackups)
 				r.Post("/admin/backup", backupSvc.TriggerBackup)
 				r.Get("/admin/backup/download", backupSvc.Download)
@@ -244,12 +272,30 @@ func main() {
 	log.Info().Msg("Server beendet")
 }
 
-// skipFor applies a middleware to every request except one exact path.
-func skipFor(path string, mw func(http.Handler) http.Handler) func(http.Handler) http.Handler {
+// langlaeufer sagt, welche Wege kein Zeitlimit vertragen.
+//
+// Der Schrägstrich am Ende ist wichtig: "/api/files/" trifft nur das
+// Herunterladen einer einzelnen Datei, nicht die Liste unter "/api/files" —
+// die soll ihr Zeitlimit behalten.
+func langlaeufer(pfad string) bool {
+	switch {
+	case pfad == "/api/shopping/ws":
+		return true
+	case strings.HasPrefix(pfad, "/api/music/track/"):
+		return true
+	case strings.HasPrefix(pfad, "/api/files/"):
+		return true
+	}
+	return false
+}
+
+// skipFor applies a middleware to every request except those the predicate
+// picks out.
+func skipFor(ausnahme func(string) bool, mw func(http.Handler) http.Handler) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		wrapped := mw(next)
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			if r.URL.Path == path {
+			if ausnahme(r.URL.Path) {
 				next.ServeHTTP(w, r)
 				return
 			}

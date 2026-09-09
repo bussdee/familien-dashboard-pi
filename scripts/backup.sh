@@ -30,7 +30,9 @@ else
   echo "⚠️  Keine Datenbank unter $DATA/db.sqlite gefunden."
 fi
 
-tar -czf "$BACKUP/files_${STAMP}.tar.gz" -C "$DATA" notes ics photos 2>/dev/null || true
+# Jeder Ordner, den ein Modul beschreibt, gehört in diese Zeile. Fehlt einer,
+# merkt es niemand — bis das Backup gebraucht wird.
+tar -czf "$BACKUP/files_${STAMP}.tar.gz" -C "$DATA" notes ics photos files 2>/dev/null || true
 echo "  + $BACKUP/files_${STAMP}.tar.gz"
 
 # Alte Backups aufräumen (7 Tage)

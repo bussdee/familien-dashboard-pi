@@ -38,8 +38,8 @@ docker ps && docker compose version
 ### Variante A – Archiv
 
 ```bash
-tar -xzf familien-dashboard-pi-1.4.5.tar.gz
-cd familien-dashboard-pi-1.4.5
+tar -xzf familien-dashboard-pi-1.5.0.tar.gz
+cd familien-dashboard-pi-1.5.0
 ```
 
 ### Variante B – Git
@@ -108,7 +108,7 @@ Prüfen, ob alles läuft:
 make verify
 ```
 
-Erwartet: **40 Prüfungen bestanden.**
+Erwartet: **52 Prüfungen bestanden.**
 
 ---
 
@@ -133,11 +133,134 @@ Solange jemand noch `1234` benutzt, weist das Dashboard oben darauf hin.
 **Danach einrichten:**
 
 - **Wetter** antippen → Ort suchen und auswählen
-- **Verwaltung → Geräte** → die Beispiele durch eure eigenen ersetzen und mit
-  *Verbindung testen* prüfen
+- **Verwaltung → Geräte** → die drei Beispiele stehen abgeschaltet da und
+  zeigen auf `192.168.1.20`, eine Adresse aus der Vorlage. Eigene Adressen
+  eintragen, mit *Verbindung testen* prüfen und dann auf **Aktiv** stellen.
+  Achte darauf, dass *Prüf-Adresse* und *Oberfläche zum Antippen* denselben
+  Rechner meinen — das Formular weist darauf hin, wenn nicht.
+- **Musik** → siehe unten, dafür ist ein Eintrag in der `.env` nötig
+- **Verwaltung → Familienmitglieder** → wer wenig Zeit hat, nimmt das Häkchen
+  *nimmt an der Reihum-Verteilung teil* heraus und steht dann bei „reihum"
+  nicht mehr im Plan
 - **Aufgaben** → die Standardaufgaben ersetzen, Punkte ans Alter anpassen
 - **Links** → was jeder oft braucht, anlegen und anpinnen
 - **Ansicht anpassen** → Fenster in die Reihenfolge bringen, die zu euch passt
+
+---
+
+## Das Wandtablet im Flur
+
+Ein Tablet, das fest an der Wand hängt, wird zum **Familiengerät**: dauerhaft
+angemeldet, aber ohne persönliche Daten. Keine Rangliste, keine Einstellungen,
+keine eigenen Links. Wer eine Aufgabe abhakt, tippt kurz auf sein Gesicht —
+**ohne PIN**, und die Punkte landen trotzdem beim Richtigen.
+
+Eingerichtet wird das **auf dem Tablet selbst**: dort als Administrator
+anmelden, dann **Verwaltung → Wandgerät → Dieses Gerät als Wandgerät
+einrichten**.
+
+Beim Einrichten wirst du auf diesem Gerät **abgemeldet**. Das ist Absicht —
+sonst liefe alles, was jemand im Flur abhakt, auf dein Konto. Die Einstellung
+gilt nur für **dieses** Gerät; dein Handy bleibt unberührt.
+
+Was danach anders ist:
+
+- Nach fünf Minuten ohne Berührung wird aus dem Dashboard ein Bilderrahmen.
+  Eine Berührung führt zurück in den Familien-Modus, nie in ein fremdes Konto.
+- Musik hören und Dateien herunterladen gehen weiterhin — das sind
+  Familiendinge, keine persönlichen.
+- Wer das Tablet mit aufs Sofa nimmt, meldet sich oben rechts an und bekommt
+  seine persönliche Ansicht. Nach dem Abmelden ist es wieder das Familiengerät.
+
+Rückgängig geht es über **Verwaltung → Wandgerät → Wieder aufheben**.
+
+---
+
+## Wie es aussehen soll
+
+Zwei Dinge lassen sich unabhängig voneinander einstellen, jede Person für
+sich, unter **Einstellungen**:
+
+- **Hell, dunkel oder wie das System** — die Farbstimmung.
+- **Nachtlicht oder Glas** — die Oberfläche. *Nachtlicht* stellt die Fenster
+  ohne Rahmen nebeneinander und trennt sie mit Haarlinien; *Glas* legt sie als
+  milchige Scheiben übereinander. Beides funktioniert hell wie dunkel.
+
+Unter **Ansicht anpassen** ordnet jeder die Fenster selbst an und blendet aus,
+was er nicht braucht.
+
+---
+
+## Musik einrichten
+
+Die Musik-Kachel spielt Dateien aus **einem** Ordner. Woher der kommt, ist dem
+Dashboard gleich: ein Verzeichnis auf dem Server, eine eingebundene Festplatte
+oder eine Freigabe vom NAS.
+
+Das geht in zwei Schritten, weil zwei verschiedene Dinge dahinterstecken.
+
+**Schritt 1 — welcher Ordner hereingereicht wird.** Das steht in der `.env`:
+
+```bash
+MUSIC_HOST_DIR=/media/festplatte/AUDIO
+```
+
+Danach `make up`. Der Ordner wird **schreibgeschützt** eingehängt — das
+Dashboard soll abspielen, nicht löschen können.
+
+Warum das nicht in der Weboberfläche geht: Das Backend läuft in einem
+Container, und ein Container sieht nur, was in ihn eingehängt wurde. Was nicht
+eingehängt ist, existiert für ihn nicht — daran ändert keine Einstellung in
+einer Webseite etwas.
+
+**Schritt 2 — welcher Teil davon gehört wird.** Das steht unter
+**Verwaltung → Musik**. Dort lässt sich durch die Ordner blättern und einer
+auswählen. Wer die ganze Platte einhängt, aber nur die Hörspiele im Dashboard
+haben will, stellt das hier ein — ohne `.env`, ohne Neustart.
+
+Beim Wechsel wird der alte Index verworfen und neu aufgebaut.
+
+Was dann passiert:
+
+- Im Hintergrund wird eingelesen. Der Start wartet nicht darauf. Bei
+  zwanzigtausend Dateien auf einer USB-Platte dauert der erste Durchlauf
+  einige Minuten; die Kachel zeigt, wie weit sie ist.
+- Danach wird nur noch gelesen, was sich geändert hat. Alle sechs Stunden
+  wird nachgesehen, und ein Administrator kann es über das Kreis-Symbol in der
+  Kachel jederzeit anstossen.
+- Erkannt werden `.mp3`, `.m4a`, `.m4b`, `.ogg`, `.opus`, `.flac`, `.wav`,
+  `.aac` und `.wma`. Alles andere im Ordner wird übergangen.
+
+**Der Benutzer, unter dem das Backend läuft, muss den Ordner lesen dürfen.**
+Das ist die Kennung aus `PUID` in der `.env`. Nachsehen mit:
+
+```bash
+sudo -u "#$(grep ^PUID .env | cut -d= -f2)" ls /media/festplatte/AUDIO
+```
+
+Zwei Dinge, die keine Fehler sind:
+
+- **Ton startet nie von allein.** Browser verbieten das. Nach einem Neustart
+  des Wandtablets muss jemand einmal auf ▶ tippen.
+- **Ist die Platte abgemeldet**, sagt die Kachel das und der Index bleibt
+  stehen. Sobald sie wieder da ist, geht es weiter — ohne neu einzulesen.
+
+Ganz abschalten lässt sich das Modul, indem `MUSIC_DIR` in der `.env` leer
+bleibt. Dann wird auch nichts im Hintergrund eingelesen.
+
+---
+
+## Dateien zum Herunterladen
+
+Die Kachel *Dateien* ist die Ablage für alles, was die ganze Familie braucht:
+Bedienungsanleitungen, Elternbriefe, Formulare.
+
+- Hochladen und löschen darf nur ein **Administrator**
+- Herunterladen darf **jeder**, auch das Wandgerät im Flur
+- Bis 100 MB je Datei, 300 MB je Vorgang
+- Abgelegt unter `backend/data/files/` und **im Backup enthalten**
+
+Wird der Platz auf dem Datenträger knapp, weist die Kachel darauf hin.
 
 ---
 
@@ -159,7 +282,14 @@ Solange jemand noch `1234` benutzt, weist das Dashboard oben darauf hin.
 ## Sicherung
 
 Automatisch jede Nacht um 3 Uhr, sieben Tage Aufbewahrung, abgelegt unter
-`backend/data/backup/`. Manuell über **Verwaltung → Jetzt sichern** oder:
+`backend/data/backup/`. Gesichert werden die Datenbank sowie die Ordner
+`notes`, `ics`, `photos` und `files`.
+
+**Musik ist bewusst nicht dabei.** Sie liegt ausserhalb des Datenordners, wird
+nur schreibgeschützt eingehängt und kann Hunderte Gigabyte gross sein — die
+gehört in deine übliche Datensicherung, nicht in die des Dashboards.
+
+Manuell über **Verwaltung → Jetzt sichern** oder:
 
 ```bash
 make backup      # Sicherung erstellen
@@ -195,7 +325,7 @@ make setup       Einrichten (einmalig)
 make up          Starten
 make down        Stoppen
 make logs        Logs verfolgen
-make verify      35 automatische Prüfungen
+make verify      52 automatische Prüfungen
 make check       Nur kompilieren und typprüfen, ohne zu starten
 
 make dev         Entwicklungsmodus mit Hot-Reload → http://localhost:5173
@@ -259,7 +389,11 @@ offene Internet.
   jemanden, der es ernsthaft versucht.
 - Wer von unterwegs zugreifen will, nimmt ein VPN (WireGuard, Tailscale).
 - Die `.env` bleibt geheim. Wer sie hat, kann Anmeldungen fälschen.
-- Sicherungen enthalten alle Notizen und Fotos im Klartext.
+- Sicherungen enthalten alle Notizen, Fotos und Familiendateien im Klartext.
+- Die Ablage *Dateien* nimmt jeden Dateityp an. Ausgeliefert wird sie
+  ausschliesslich als Anhang und nie zur Anzeige im Browser — sonst könnte
+  eine hochgeladene HTML-Datei unter der Adresse des Dashboards laufen.
+  Hochladen darf trotzdem nur ein Administrator.
 
 ---
 

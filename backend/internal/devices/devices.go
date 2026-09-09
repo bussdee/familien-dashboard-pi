@@ -91,10 +91,11 @@ func (s *Service) Seed(targets []config.DeviceTarget) error {
 	}
 
 	for i, t := range targets {
+		enabled := t.Enabled == nil || *t.Enabled
 		if _, err := s.db.Exec(`
-			INSERT INTO devices (name, type, url, link, host, port, expect_status, position)
-			VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-			t.Name, t.Type, t.URL, t.Link, t.Host, t.Port, t.ExpectStatus, i); err != nil {
+			INSERT INTO devices (name, type, url, link, host, port, expect_status, position, enabled)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+			t.Name, t.Type, t.URL, t.Link, t.Host, t.Port, t.ExpectStatus, i, enabled); err != nil {
 			return err
 		}
 	}

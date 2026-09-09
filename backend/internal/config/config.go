@@ -19,6 +19,8 @@ type Config struct {
 	Calendar Calendar `mapstructure:"calendar"`
 	Notes    Notes    `mapstructure:"notes"`
 	Photos   Photos   `mapstructure:"photos"`
+	Files    Files    `mapstructure:"files"`
+	Music    Music    `mapstructure:"music"`
 	Devices  Devices  `mapstructure:"devices"`
 }
 
@@ -66,6 +68,18 @@ type Photos struct {
 	Dir string `mapstructure:"dir"`
 }
 
+// Files ist die Ablage für Familiendateien: Der Administrator lädt hoch, alle
+// laden herunter.
+type Files struct {
+	Dir string `mapstructure:"dir"`
+}
+
+// Music ist der schreibgeschützt eingehängte Ordner mit den Audiodateien. Ein
+// leerer Pfad schaltet das Modul ab.
+type Music struct {
+	Dir string `mapstructure:"dir"`
+}
+
 type Devices struct {
 	CheckInterval time.Duration  `mapstructure:"check_interval"`
 	Timeout       time.Duration  `mapstructure:"timeout"`
@@ -83,6 +97,12 @@ type DeviceTarget struct {
 	Host         string `mapstructure:"host" json:"host,omitempty"`
 	Port         int    `mapstructure:"port" json:"port,omitempty"`
 	ExpectStatus int    `mapstructure:"expect_status" json:"expect_status,omitempty"`
+	// Enabled ist ein Zeiger, damit "gar nicht angegeben" und "ausdrücklich
+	// aus" unterscheidbar bleiben. Fehlt der Eintrag, ist das Gerät aktiv —
+	// so wie es vor diesem Feld war. Die mitgelieferten Beispiele stehen
+	// dagegen ausdrücklich auf false: Eine Neuinstallation soll nicht mit
+	// drei roten Kacheln beginnen, die auf fremde Adressen zeigen.
+	Enabled *bool `mapstructure:"enabled" json:"enabled,omitempty"`
 }
 
 // Load reads config.yaml and then lets a small set of environment variables win.
@@ -113,6 +133,8 @@ func Load(path string) (*Config, error) {
 	v.SetDefault("notes.dir", "/app/data/notes")
 	v.SetDefault("notes.watch", true)
 	v.SetDefault("photos.dir", "/app/data/photos")
+	v.SetDefault("files.dir", "/app/data/files")
+	v.SetDefault("music.dir", "/app/audio")
 	v.SetDefault("devices.check_interval", "30s")
 	v.SetDefault("devices.timeout", "5s")
 
@@ -127,6 +149,7 @@ func Load(path string) (*Config, error) {
 		"weather.longitude":     "WEATHER_LON",
 		"weather.timezone":      "WEATHER_TZ",
 		"database.path":         "DB_PATH",
+		"music.dir":             "MUSIC_DIR",
 		"server.port":           "SERVER_PORT",
 		"server.secure_cookies": "SECURE_COOKIES",
 	} {

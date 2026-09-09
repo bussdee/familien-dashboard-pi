@@ -125,6 +125,11 @@ func (s *Service) rotateDue() {
 		id      int
 		current sql.NullInt64
 	}
+	// Wer noch mitmacht — nachschlagbar, ohne die Liste jedes Mal zu durchlaufen.
+	imKreis := make(map[int]bool, len(users))
+	for _, uid := range users {
+		imKreis[uid] = true
+	}
 	now := time.Now()
 	var todo []pending
 	for rows.Next() {
@@ -138,7 +143,10 @@ func (s *Service) rotateDue() {
 			faellig = &due.Time
 		}
 		// Weitergereicht wird nur, was niemandem gehört oder wirklich ansteht.
-		if p.current.Valid && !isDue(now, faellig) {
+		// Ausnahme: Wer aus der Reihum-Verteilung genommen wurde, gibt die
+		// Aufgabe sofort ab. Sonst stünde die Person noch bis zur nächsten
+		// Fälligkeit im Plan — also genau so lange, wie es stört.
+		if p.current.Valid && imKreis[int(p.current.Int64)] && !isDue(now, faellig) {
 			continue
 		}
 		todo = append(todo, p)
@@ -174,15 +182,20 @@ func (s *Service) rotateDue() {
 
 // rotationPool prefers members; if the family has none (everyone is an admin)
 // it falls back to all users so rotation still works.
+//
+// Ausgenommen ist, wer den Schalter "nimmt an der Reihum-Verteilung teil"
+// abgewählt hat. Nimmt niemand teil, bleibt die Liste leer und es wird gar
+// nicht verteilt — das ist gewollt und keine Notlage, die einen Ersatz braucht.
 func (s *Service) rotationPool() ([]int, error) {
-	ids, err := s.userIDs("SELECT id FROM users WHERE role = 'member' ORDER BY id")
+	ids, err := s.userIDs(
+		"SELECT id FROM users WHERE role = 'member' AND in_rotation = 1 ORDER BY id")
 	if err != nil {
 		return nil, err
 	}
 	if len(ids) > 0 {
 		return ids, nil
 	}
-	return s.userIDs("SELECT id FROM users ORDER BY id")
+	return s.userIDs("SELECT id FROM users WHERE in_rotation = 1 ORDER BY id")
 }
 
 func (s *Service) userIDs(query string) ([]int, error) {

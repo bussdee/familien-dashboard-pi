@@ -208,6 +208,28 @@ func (s *Store) Migrate() error {
 			updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 			FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
 		)`,
+		// Der Musik-Index. Er gehört in die Datenbank und nicht in den
+		// Arbeitsspeicher: 20 000 Dateien von einer USB-Platte zu lesen dauert
+		// beim ersten Mal Minuten, und das darf nach jedem Neustart nicht
+		// wieder von vorn losgehen.
+		//
+		// path ist der Pfad relativ zum Musikordner und eindeutig — daran
+		// erkennt der Durchlauf wieder, was er schon kennt. size und mod_time
+		// entscheiden, ob eine Datei überhaupt neu gelesen werden muss.
+		`CREATE TABLE IF NOT EXISTS music_tracks (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			path TEXT NOT NULL UNIQUE,
+			folder TEXT NOT NULL DEFAULT '',
+			filename TEXT NOT NULL,
+			title TEXT NOT NULL DEFAULT '',
+			artist TEXT NOT NULL DEFAULT '',
+			album TEXT NOT NULL DEFAULT '',
+			track_no INTEGER NOT NULL DEFAULT 0,
+			duration_sec INTEGER NOT NULL DEFAULT 0,
+			size INTEGER NOT NULL DEFAULT 0,
+			mod_time DATETIME NOT NULL,
+			indexed_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+		)`,
 		`CREATE TABLE IF NOT EXISTS login_attempts (
 			user_id INTEGER PRIMARY KEY,
 			failures INTEGER NOT NULL DEFAULT 0,
@@ -222,6 +244,9 @@ func (s *Store) Migrate() error {
 		`CREATE INDEX IF NOT EXISTS idx_points_user ON point_events(user_id, created_at)`,
 		`CREATE INDEX IF NOT EXISTS idx_links_owner ON links(owner_id, position)`,
 		`CREATE INDEX IF NOT EXISTS idx_devices_position ON devices(position)`,
+		// Geblättert wird nach Ordner, sortiert nach Dateiname — ein Hörspiel
+		// läuft von Teil 1 bis Teil 12.
+		`CREATE INDEX IF NOT EXISTS idx_music_folder ON music_tracks(folder, filename)`,
 	}
 
 	for _, m := range migrations {
@@ -234,6 +259,12 @@ func (s *Store) Migrate() error {
 	// bestehenden Datenbanken nicht, ALTER TABLE bricht ab, wenn die Spalte
 	// schon da ist — deshalb erst nachsehen.
 	if err := s.addColumn("chores", "assignment", "TEXT NOT NULL DEFAULT ''"); err != nil {
+		return err
+	}
+	// Wer arbeitet, steht durch die Reihum-Verteilung trotzdem überall im
+	// Plan. Der Schalter nimmt eine Person aus der Rotation, ohne ihr sonst
+	// etwas wegzunehmen. Voreinstellung 1: bestehende Familien merken nichts.
+	if err := s.addColumn("users", "in_rotation", "BOOLEAN NOT NULL DEFAULT 1"); err != nil {
 		return err
 	}
 	// Bestehende Aufgaben in die neue Schreibweise überführen. Läuft genau
