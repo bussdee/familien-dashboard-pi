@@ -4,6 +4,15 @@ Alle nennenswerten Änderungen an diesem Projekt.
 Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 Versionierung nach [SemVer](https://semver.org/lang/de/).
 
+## [1.4.1] — 2026-09-09
+
+### Behoben
+
+- Am Wandgerät fehlten die **geteilten Links**. Sie waren zusammen mit den
+  persönlichen ausgeblendet, obwohl sie der ganzen Familie gehören und genau
+  dorthin passen. Die Kachel zeigt sie jetzt wieder — ohne die Wege zum
+  Anlegen und Bearbeiten, die weiterhin eine Anmeldung brauchen.
+
 ## [1.4.0] — 2026-09-09
 
 ### Neu
@@ -222,6 +231,7 @@ Erste öffentliche Fassung.
 - Ein Punkt lässt sich nicht vom Benutzer selbst zurücknehmen, nur von einem
   Administrator
 
+[1.4.1]: https://github.com/bussdee/familien-dashboard-pi/releases/tag/v1.4.1
 [1.4.0]: https://github.com/bussdee/familien-dashboard-pi/releases/tag/v1.4.0
 [1.3.0]: https://github.com/bussdee/familien-dashboard-pi/releases/tag/v1.3.0
 [1.2.0]: https://github.com/bussdee/familien-dashboard-pi/releases/tag/v1.2.0

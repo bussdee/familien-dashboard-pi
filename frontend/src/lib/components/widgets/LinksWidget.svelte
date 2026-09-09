@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { session } from '$lib/stores';
   import { onMount } from 'svelte';
   import { ExternalLink, Link as LinkIcon, Plus, Users } from 'lucide-svelte';
   import { linksApi } from '$lib/api';
@@ -31,10 +32,18 @@
     <div>
       <h2 class="widget-title"><LinkIcon class="h-5 w-5 shrink-0" /> Links</h2>
       <p class="text-sm text-muted-foreground">
-        {links.length === 0 ? 'Nichts angepinnt' : `${links.length} angepinnt`}
+        {#if $session.device}
+          {links.length === 0 ? 'Keine geteilten Links' : `${links.length} für die Familie`}
+        {:else}
+          {links.length === 0 ? 'Nichts angepinnt' : `${links.length} angepinnt`}
+        {/if}
       </p>
     </div>
-    <a class="btn-ghost px-3 text-sm text-muted-foreground" href="/links">Alle</a>
+    <!-- Die Verwaltungsseite gehört einer Person — am Wandgerät führt sie
+         nur in eine Sperre. -->
+    {#if !$session.device}
+      <a class="btn-ghost px-3 text-sm text-muted-foreground" href="/links">Alle</a>
+    {/if}
   </header>
 
   {#if loading}
@@ -44,14 +53,20 @@
       {/each}
     </div>
   {:else if links.length === 0}
-    <a
-      href="/links"
-      class="flex flex-col items-center gap-2 rounded-xl py-8 text-center text-muted-foreground transition-colors hover:bg-accent/40"
-    >
-      <Plus class="h-8 w-8 opacity-40" />
-      <p class="text-sm font-medium">Links anpinnen</p>
-      <p class="text-xs">Was du oft brauchst, direkt auf der Übersicht</p>
-    </a>
+    {#if $session.device}
+      <p class="py-8 text-center text-sm text-muted-foreground">
+        Noch keine geteilten Links
+      </p>
+    {:else}
+      <a
+        href="/links"
+        class="flex flex-col items-center gap-2 rounded-xl py-8 text-center text-muted-foreground transition-colors hover:bg-accent/40"
+      >
+        <Plus class="h-8 w-8 opacity-40" />
+        <p class="text-sm font-medium">Links anpinnen</p>
+        <p class="text-xs">Was du oft brauchst, direkt auf der Übersicht</p>
+      </a>
+    {/if}
   {:else}
     <!-- Two columns from the smallest phone up: bookmarks are short. -->
     <div class="grid grid-cols-2 gap-2">

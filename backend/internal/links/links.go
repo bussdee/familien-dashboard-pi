@@ -51,11 +51,20 @@ var DefaultCategories = []string{
 
 // visible returns everything the caller may see: their own links plus the ones
 // shared with the family.
+// visible liefert die Links, die jemand sehen darf: die eigenen und die
+// geteilten. Mit userID = 0 (Wandgerät) bleiben nur die geteilten übrig —
+// die gehören der ganzen Familie und dürfen im Flur hängen.
 func (s *Service) visible(userID int, pinnedOnly bool) ([]Link, error) {
 	query := `SELECT ` + columns + `
 		FROM links l LEFT JOIN users u ON u.id = l.owner_id
 		WHERE l.owner_id = ? OR l.shared = 1`
 	args := []any{userID}
+	if userID <= 0 {
+		query = `SELECT ` + columns + `
+			FROM links l LEFT JOIN users u ON u.id = l.owner_id
+			WHERE l.shared = 1`
+		args = nil
+	}
 	if pinnedOnly {
 		query += ` AND l.pinned = 1`
 	}
@@ -102,7 +111,7 @@ func scan(row scanner) (Link, error) {
 
 func (s *Service) List(w http.ResponseWriter, r *http.Request) {
 	userID, ok := auth.GetUserID(r)
-	if !ok {
+	if !ok && !auth.IsDevice(r) {
 		auth.HTTPError(w, http.StatusUnauthorized, "Nicht angemeldet")
 		return
 	}

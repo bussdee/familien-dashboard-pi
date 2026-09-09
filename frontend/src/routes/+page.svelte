@@ -244,9 +244,7 @@
       default puts the two lists people act on first.
     -->
     <div class="widget-raster mt-2">
-      <!-- Links gehören einer Person. Am Wandgerät bliebe die Kachel leer
-           und würde nur Fragen aufwerfen. -->
-      {#each layout.visible.filter((w) => !($session.device && w.id === 'links')) as widget (widget.id)}
+      {#each layout.visible as widget (widget.id)}
         <div id={widget.id} class="scroll-mt-20">
           {#if widget.id === 'chores'}
             <ChoresWidget bind:chores {users} onRefresh={reloadChores} />

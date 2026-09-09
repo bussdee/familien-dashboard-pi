@@ -125,6 +125,9 @@ func main() {
 			// Administrator, ausschalten das Gerät selbst.
 			r.Delete("/auth/device", authSvc.DisableDevice)
 
+			// Lesen darf auch das Wandgerät: es sieht nur die geteilten Links.
+			r.Get("/links", linksSvc.List)
+
 			// Alles, was einer Person gehört: am Wandgerät gesperrt, dort ist
 			// niemand persönlich angemeldet.
 			r.Group(func(r chi.Router) {
@@ -134,7 +137,6 @@ func main() {
 				r.Get("/preferences/{key}", authSvc.GetPreference)
 				r.Put("/preferences/{key}", authSvc.SetPreference)
 
-				r.Get("/links", linksSvc.List)
 				r.Post("/links", linksSvc.Create)
 				r.Put("/links/{id}", linksSvc.Update)
 				r.Post("/links/{id}/pin", linksSvc.TogglePin)
