@@ -4,6 +4,16 @@ Alle nennenswerten Änderungen an diesem Projekt.
 Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 Versionierung nach [SemVer](https://semver.org/lang/de/).
 
+## [1.4.3] — 2026-09-09
+
+### Geändert
+
+- **Neue Screenshots im README.** Die alten zeigten noch die Fassung mit
+  Kästen und harten Rahmen — wer auf die Seite kam, sah etwas anderes als das,
+  was er herunterlud. Jetzt zu sehen: die Übersicht auf einem breiten
+  Bildschirm mit vier Spalten, dieselbe in drei Spalten, Anmeldung, Rangliste
+  und die Einstellungen samt Wahl der Oberfläche.
+
 ## [1.4.2] — 2026-09-09
 
 ### Geändert
@@ -244,6 +254,7 @@ Erste öffentliche Fassung.
 - Ein Punkt lässt sich nicht vom Benutzer selbst zurücknehmen, nur von einem
   Administrator
 
+[1.4.3]: https://github.com/bussdee/familien-dashboard-pi/releases/tag/v1.4.3
 [1.4.2]: https://github.com/bussdee/familien-dashboard-pi/releases/tag/v1.4.2
 [1.4.1]: https://github.com/bussdee/familien-dashboard-pi/releases/tag/v1.4.1
 [1.4.0]: https://github.com/bussdee/familien-dashboard-pi/releases/tag/v1.4.0

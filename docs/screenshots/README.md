@@ -5,21 +5,19 @@ aufnimmt, sollte die Dateinamen beibehalten.
 
 | Datei | Was drauf ist |
 |---|---|
-| `Dashboard.png` | Die Startseite mit allen Fenstern |
+| `Familien_Dashboard.png` | Die Übersicht auf einem breiten Bildschirm (vier Spalten) |
+| `Dashboard_Papa.png` | Dieselbe Übersicht in drei Spalten |
 | `LogIn.png` | Der Anmeldebildschirm |
-| `Rangliste.png` | Punkte, Level und Abzeichen |
-| `Links.png` | Lesezeichen mit Kategorien |
-| `Einstellungen.png` | Profil, Avatar, Darstellung, PIN |
-| `Admin-Verwaltung.png` | Mitglieder und Punkteverwaltung |
+| `Rangliste.png` | Siegertreppchen, Level, Abzeichen, Verlauf |
+| `Einstellungen.png` | Profil, Darstellung, Oberfläche, PIN |
 
 ## Was nicht drauf sein darf
 
 - **Keine echten Fotos.** Der Fotorahmen muss leer sein.
-- **Keine echten Namen.** Die Beispielbenutzer Papa, Mama und Kind sind in
-  Ordnung.
+- **Keine echten Namen.** Papa, Mama und Kind sind in Ordnung.
 - **Keine IP-Adresse aus dem eigenen Netz.** Betrifft vor allem den
-  Adminbereich mit der Geräteliste und die Adressleiste des Browsers.
-  Deshalb endet `Admin-Verwaltung.png` oberhalb der Geräte.
+  Adminbereich mit der Geräteliste und die Adressleiste des Browsers. Ein
+  Wetterort namens „Zuhause" statt der echten Stadt ist ein guter Trick.
 - **Keine echten Termine und Notizen.**
 
 PNG, bitte unter 500 KB je Bild.

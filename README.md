@@ -68,9 +68,10 @@ solange es im eigenen, vertrauenswürdigen Netz bleibt.
 
 ## So sieht es aus
 
-Die Startseite. Jeder ordnet sich die Fenster selbst an.
+Die Übersicht auf einem breiten Bildschirm. Wetter mit Regenzeit, Punktestand
+quer über der Seite, darunter die Fenster — jeder ordnet sie sich selbst an.
 
-![Die Startseite mit Aufgaben, Einkaufsliste, Kalender, Links, Notizen, Foto-Rahmen und Geräte-Status](docs/screenshots/Dashboard.png)
+![Die Übersicht mit Aufgaben, Einkaufsliste, Kalender, Countdowns, Notizen, Foto-Rahmen, Links und Geräte-Status](docs/screenshots/Familien_Dashboard.png)
 
 <table>
 <tr>
@@ -87,38 +88,35 @@ Antippen, PIN, fertig. Keine E-Mail, kein Konto.
 
 **Rangliste**
 
-Level, Serien und Abzeichen für erledigte Aufgaben.
+Siegertreppchen, Level, Abzeichen und wer zuletzt was erledigt hat.
 
-<img src="docs/screenshots/Rangliste.png" alt="Rangliste mit Punkten, Leveln und Abzeichen">
+<img src="docs/screenshots/Rangliste.png" alt="Rangliste mit Siegertreppchen, Punkten, Abzeichen und Verlauf">
 
 </td>
 </tr>
 <tr>
 <td width="50%">
 
-**Links**
+**Einstellungen**
 
-Lesezeichen mit Kategorien, angepinnte landen auf der Startseite.
+Name, Avatar, Farbe und PIN ändert jeder selbst. Dazu hell oder dunkel und
+die Wahl zwischen den Oberflächen *Nachtlicht* und *Glas*.
 
-<img src="docs/screenshots/Links.png" alt="Linkverwaltung mit Kategorien und Anpinn-Funktion">
+<img src="docs/screenshots/Einstellungen.png" alt="Einstellungen mit Profil, Avatarauswahl, Darstellung, Oberfläche und PIN-Änderung">
 
 </td>
 <td width="50%">
 
-**Einstellungen**
+**Auf einem schmaleren Bildschirm**
 
-Name, Avatar, Farbe und PIN ändert jeder selbst.
+Dieselbe Übersicht in drei Spalten. Auf dem Handy rutschen die Fenster
+untereinander.
 
-<img src="docs/screenshots/Einstellungen.png" alt="Einstellungen mit Profil, Avatarauswahl, Darstellung und PIN-Änderung">
+<img src="docs/screenshots/Dashboard_Papa.png" alt="Die Übersicht in drei Spalten">
 
 </td>
 </tr>
 </table>
-
-**Verwaltung** — Familienmitglieder anlegen, Punkte gutschreiben oder abziehen,
-wenn sich jemand verklickt hat.
-
-![Adminbereich mit Familienmitgliedern und Punkteverwaltung](docs/screenshots/Admin-Verwaltung.png)
 
 ---
 
