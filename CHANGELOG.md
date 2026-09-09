@@ -4,6 +4,20 @@ Alle nennenswerten Änderungen an diesem Projekt.
 Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 Versionierung nach [SemVer](https://semver.org/lang/de/).
 
+## [1.4.4] — 2026-09-09
+
+### Behoben
+
+- **Ein als Wandgerät eingerichtetes Tablet blieb persönlich angemeldet.** Der
+  Knopf versprach ein Familiengerät, das Tablet zeigte danach aber weiter
+  „Guten Abend, Papa" — und alles, was jemand abhakte, lief auf dessen Konto.
+  Genau der Fehler, den der Familien-Modus verhindern soll.
+
+  Ursache war meine Annahme, ein zusätzliches „bitte jetzt abmelden" reiche
+  aus. An einem Gerät, das an der Wand hängt, denkt daran niemand. Das
+  Einrichten beendet die persönliche Sitzung jetzt selbst und führt direkt
+  auf die Übersicht im Familien-Modus.
+
 ## [1.4.3] — 2026-09-09
 
 ### Geändert
@@ -254,6 +268,7 @@ Erste öffentliche Fassung.
 - Ein Punkt lässt sich nicht vom Benutzer selbst zurücknehmen, nur von einem
   Administrator
 
+[1.4.4]: https://github.com/bussdee/familien-dashboard-pi/releases/tag/v1.4.4
 [1.4.3]: https://github.com/bussdee/familien-dashboard-pi/releases/tag/v1.4.3
 [1.4.2]: https://github.com/bussdee/familien-dashboard-pi/releases/tag/v1.4.2
 [1.4.1]: https://github.com/bussdee/familien-dashboard-pi/releases/tag/v1.4.1

@@ -193,9 +193,14 @@ func (s *Service) Me(w http.ResponseWriter, r *http.Request) {
 	}{User: user, DeviceMode: geraet == nil})
 }
 
-// EnableDevice verwandelt genau diesen Browser in ein Wandgerät: die
-// persönliche Sitzung wird durch eine Geräte-Sitzung ersetzt. Nur ein
+// EnableDevice verwandelt genau diesen Browser in ein Wandgerät. Nur ein
 // Administrator darf das, und nur auf dem Gerät, an dem er gerade steht.
+//
+// Die persönliche Sitzung wird dabei sofort beendet. Anders wäre es eine
+// Falle: Der Knopf verspricht ein Familiengerät, das Tablet zeigte danach
+// aber weiter "Guten Abend, Papa" — und alles, was jemand abhakt, liefe auf
+// dessen Konto. Auf ein zusätzliches "bitte jetzt abmelden" ist kein
+// Verlass; an einem Gerät, das an der Wand hängt, denkt daran niemand.
 func (s *Service) EnableDevice(w http.ResponseWriter, r *http.Request) {
 	token, err := s.generateTokenTTL(0, RoleDevice, deviceTTL)
 	if err != nil {
@@ -203,6 +208,7 @@ func (s *Service) EnableDevice(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.setDeviceCookie(w, token, int(deviceTTL.Seconds()))
+	s.setCookie(w, "", -1)
 	writeJSON(w, map[string]any{"device": true})
 }
 

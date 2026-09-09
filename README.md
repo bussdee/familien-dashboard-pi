@@ -370,7 +370,8 @@ Wenn ein Tablet fest im Flur oder in der Küche hängt, gehört es niemandem —
 es gehört allen. Genau dafür gibt es den **Familien-Modus**:
 
 Auf diesem Tablet einmal als Administrator anmelden, dann **Verwaltung →
-Wandgerät → Dieses Gerät als Wandgerät einrichten**. Danach abmelden.
+Wandgerät → Dieses Gerät als Wandgerät einrichten**. Das Tablet meldet dich
+dabei ab und ist ab sofort das Familiengerät — mehr ist nicht zu tun.
 
 Ab jetzt ist das Tablet dauerhaft bereit und zeigt Aufgaben, Einkaufsliste,
 Termine, Wetter und die geteilten Links — aber nichts Persönliches: keine

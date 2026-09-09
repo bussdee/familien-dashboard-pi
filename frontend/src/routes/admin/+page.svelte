@@ -23,9 +23,14 @@
     try {
       await authApi.enableDevice();
       istWandgeraet = true;
+      // Der Server hat die persönliche Sitzung beendet. Auf der
+      // Verwaltungsseite zu bleiben, ginge nicht mehr — und wäre auch falsch:
+      // Das Gerät ist ab jetzt das Familiengerät, also gehört es auf die
+      // Übersicht.
+      session.setDevice();
+      await goto('/');
     } catch (e) {
       geraetFehler = e instanceof ApiError ? e.message : 'Konnte nicht einrichten';
-    } finally {
       busy = false;
     }
   }
@@ -832,8 +837,12 @@
       Ein Tablet, das fest an der Wand hängt, wird hier zum Familien-Gerät.
       Es bleibt dauerhaft angemeldet, zeigt aber keine persönlichen Daten:
       keine Rangliste, keine Einstellungen, keine eigenen Links. Wer eine
-      Aufgabe abhakt, wird kurz gefragt, wer er ist — ohne PIN. Diese
-      Einstellung gilt nur für <strong>dieses</strong> Gerät.
+      Aufgabe abhakt, wird kurz gefragt, wer er ist — ohne PIN.
+      <br /><br />
+      Beim Einrichten wirst du auf diesem Gerät <strong>abgemeldet</strong>,
+      damit nicht versehentlich alles auf dein Konto läuft. Diese Einstellung
+      gilt nur für <strong>dieses</strong> Gerät — dein Handy bleibt
+      unberührt.
     </p>
 
     {#if geraetFehler}
