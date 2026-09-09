@@ -4,7 +4,7 @@
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
   import { authApi } from '$lib/api';
-  import { connection, session, theme } from '$lib/stores';
+  import { connection, oberflaeche, session, theme } from '$lib/stores';
   import { layout } from '$lib/stores/layout.svelte';
   import { board } from '$lib/stores/scores.svelte';
   import Header from '$lib/components/Header.svelte';
@@ -20,6 +20,7 @@
 
   onMount(() => {
     theme.init();
+    oberflaeche.init();
 
     // Resolve the session once, then let each page render. Without this gate
     // the dashboard would flash before we know whether anyone is signed in.

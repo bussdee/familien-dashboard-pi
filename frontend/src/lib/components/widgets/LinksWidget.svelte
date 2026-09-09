@@ -26,7 +26,7 @@
   });
 </script>
 
-<section class="card p-5">
+<section class="flaeche">
   <header class="mb-4 flex items-center justify-between">
     <div>
       <h2 class="widget-title"><LinkIcon class="h-5 w-5 shrink-0" /> Links</h2>
@@ -60,7 +60,7 @@
           href={link.url}
           target="_blank"
           rel="noopener noreferrer"
-          class="group flex items-center gap-2.5 rounded-xl bg-muted/40 p-2.5 transition-colors hover:bg-accent"
+          class="group flex items-center gap-2.5 rounded-xl border border-[color:var(--haarlinie)] p-2.5 transition-colors hover:bg-muted/25"
         >
           <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-card text-lg">
             {link.emoji}

@@ -1,10 +1,10 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import {
-    Check, KeyRound, LayoutGrid, Monitor, Moon, Palette, Sun, User as UserIcon,
+    Check, KeyRound, LayoutGrid, Layers, Minus, Monitor, Moon, Palette, Sun, User as UserIcon,
   } from 'lucide-svelte';
   import { ApiError, authApi } from '$lib/api';
-  import { session, theme, type Theme } from '$lib/stores';
+  import { oberflaeche, session, theme, type Oberflaeche, type Theme } from '$lib/stores';
   import { board } from '$lib/stores/scores.svelte';
 
   let currentPin = $state('');
@@ -18,6 +18,11 @@
     { value: 'light', label: 'Hell', hint: 'Immer hell', icon: Sun },
     { value: 'dark', label: 'Dunkel', hint: 'Immer dunkel', icon: Moon },
     { value: 'system', label: 'System', hint: 'Folgt dem Gerät', icon: Monitor },
+  ];
+
+  const oberflaechen: { value: Oberflaeche; label: string; hint: string; icon: typeof Sun }[] = [
+    { value: 'nachtlicht', label: 'Nachtlicht', hint: 'Offen, mit feinen Linien', icon: Minus },
+    { value: 'glas', label: 'Glas', hint: 'Fenster als Scheiben', icon: Layers },
   ];
 
   const user = $derived($session.user);
@@ -232,6 +237,27 @@
         </button>
       {/each}
     </div>
+
+    <h3 class="mb-3 mt-6 text-sm font-medium text-muted-foreground">Oberfläche</h3>
+    <div class="grid grid-cols-2 gap-2">
+      {#each oberflaechen as option}
+        <button
+          class="flex flex-col items-center gap-2 rounded-lg border p-4 transition-colors
+            {$oberflaeche === option.value
+            ? 'border-primary bg-primary/5'
+            : 'border-border hover:bg-accent'}"
+          onclick={() => oberflaeche.set(option.value)}
+        >
+          <option.icon class="h-6 w-6" />
+          <span class="text-sm font-medium">{option.label}</span>
+          <span class="text-center text-[11px] text-muted-foreground">{option.hint}</span>
+        </button>
+      {/each}
+    </div>
+    <p class="mt-3 text-[11px] text-muted-foreground">
+      Glas sieht auf einem hellen Hintergrund am besten aus. Auf sehr alten
+      Geräten kann das Weichzeichnen ruckeln — dann lieber Nachtlicht.
+    </p>
   </section>
 
   <section class="card p-5">

@@ -47,6 +47,10 @@ func (l Location) label() string {
 
 const forecastDays = 5
 
+// So viele Stunden zeigt die Kurve auf der Übersicht: gut ein halber Tag,
+// genug für "reicht es noch für eine Runde vor dem Regen?".
+const hourlyHours = 14
+
 type apiResponse struct {
 	Current struct {
 		Temperature float64 `json:"temperature_2m"`
@@ -66,10 +70,23 @@ type apiResponse struct {
 		Sunrise     []string  `json:"sunrise"`
 		Sunset      []string  `json:"sunset"`
 	} `json:"daily"`
+	Hourly struct {
+		Time        []string  `json:"time"`
+		Temperature []float64 `json:"temperature_2m"`
+		PrecipProb  []int     `json:"precipitation_probability"`
+		Precip      []float64 `json:"precipitation"`
+		WeatherCode []int     `json:"weather_code"`
+	} `json:"hourly"`
+	Minutely15 struct {
+		Time   []string  `json:"time"`
+		Precip []float64 `json:"precipitation"`
+	} `json:"minutely_15"`
 }
 
 type Data struct {
 	Current  Current   `json:"current"`
+	Rain     *Rain     `json:"rain,omitempty"`
+	Hourly   []Hourly  `json:"hourly"`
 	Forecast []Daily   `json:"forecast"`
 	Location Location  `json:"location"`
 	Updated  time.Time `json:"updated"`
@@ -85,6 +102,32 @@ type Current struct {
 	IsDay       bool    `json:"is_day"`
 	Icon        string  `json:"icon"`
 	Description string  `json:"description"`
+}
+
+// Rain beantwortet die eine Frage, die vor einer Radtour zählt: wann fängt
+// es an, und wie lange bleibt es trocken. Ein Prozentwert allein tut das nicht.
+type Rain struct {
+	// Nass ist wahr, wenn es JETZT regnet.
+	Nass bool `json:"now"`
+	// StartsAt ist der nächste Zeitpunkt mit Niederschlag, leer wenn keiner
+	// in Sicht ist. EndsAt gilt nur, wenn es gerade regnet.
+	StartsAt string `json:"starts_at,omitempty"`
+	EndsAt   string `json:"ends_at,omitempty"`
+	// DryUntil ist das Ende des betrachteten Zeitraums, wenn es durchgehend
+	// trocken bleibt.
+	DryUntil string `json:"dry_until,omitempty"`
+	// Fein sagt, ob die Angabe aus Viertelstundenwerten stammt.
+	Fein bool `json:"fine_grained"`
+}
+
+// Hourly trägt nur, was die Kurve auf der Übersicht braucht.
+type Hourly struct {
+	Time              string  `json:"time"`
+	Temperature       float64 `json:"temperature"`
+	PrecipProbability int     `json:"precip_probability"`
+	Precipitation     float64 `json:"precipitation"`
+	WeatherCode       int     `json:"weather_code"`
+	Icon              string  `json:"icon"`
 }
 
 type Daily struct {
@@ -187,6 +230,14 @@ func (s *Service) endpoint(loc Location) string {
 	q.Set("longitude", fmt.Sprintf("%.4f", loc.Longitude))
 	q.Set("current", "temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_speed_10m,is_day")
 	q.Set("daily", "weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset")
+	// Stundenwerte für die nächsten Stunden: entscheidend, wenn jemand
+	// gleich aufs Rad steigen will. Der Tageswert "98 % Regen" sagt nicht,
+	// ob es um 15 oder um 21 Uhr losgeht.
+	q.Set("hourly", "temperature_2m,precipitation_probability,precipitation,weather_code")
+	// Viertelstundenwerte: für Mitteleuropa rechnet Open-Meteo mit dem
+	// DWD-Modell und kann sagen, ob es um 17:15 oder erst um 18:00 losgeht.
+	// Das ist der Unterschied zwischen "Runde geht noch" und "besser nicht".
+	q.Set("minutely_15", "precipitation")
 	q.Set("timezone", loc.Timezone)
 	q.Set("forecast_days", fmt.Sprint(forecastDays))
 	return "https://api.open-meteo.com/v1/forecast?" + q.Encode()
@@ -235,6 +286,8 @@ func (s *Service) fetch(ctx context.Context) {
 			Icon:        CodeToIcon(api.Current.WeatherCode),
 			Description: CodeToDescription(api.Current.WeatherCode),
 		},
+		Hourly:   hourlyFromNow(api.Hourly.Time, api.Hourly.Temperature, api.Hourly.PrecipProb, api.Hourly.Precip, api.Hourly.WeatherCode, loc.Timezone),
+		Rain:     rainWindow(api.Minutely15.Time, api.Minutely15.Precip, api.Hourly.Time, api.Hourly.Precip, loc.Timezone),
 		Forecast: make([]Daily, 0, len(api.Daily.Time)),
 		Location: loc,
 		Updated:  time.Now(),
@@ -514,4 +567,102 @@ func CodeToDescription(code int) string {
 		return d
 	}
 	return "Unbekannt"
+}
+
+// hourlyFromNow schneidet aus den Tageswerten die kommenden Stunden heraus.
+// Open-Meteo liefert ab Mitternacht; interessant ist nur, was noch bevorsteht.
+func hourlyFromNow(times []string, temps []float64, prob []int, precip []float64, codes []int, tz string) []Hourly {
+	loc, err := time.LoadLocation(tz)
+	if err != nil {
+		loc = time.Local
+	}
+	jetzt := time.Now().In(loc)
+
+	out := make([]Hourly, 0, hourlyHours)
+	for i, t := range times {
+		// Open-Meteo gibt lokale Zeit ohne Zeitzonenangabe zurück.
+		stunde, err := time.ParseInLocation("2006-01-02T15:04", t, loc)
+		if err != nil {
+			continue
+		}
+		// Die angebrochene Stunde gehört noch dazu.
+		if stunde.Before(jetzt.Truncate(time.Hour)) {
+			continue
+		}
+		code := at(codes, i)
+		out = append(out, Hourly{
+			Time:              stunde.Format(time.RFC3339),
+			Temperature:       at(temps, i),
+			PrecipProbability: at(prob, i),
+			Precipitation:     at(precip, i),
+			WeatherCode:       code,
+			Icon:              CodeToIcon(code),
+		})
+		if len(out) >= hourlyHours {
+			break
+		}
+	}
+	return out
+}
+
+// nassSchwelle: darunter ist es Nieselei, die niemanden vom Rad holt.
+const nassSchwelle = 0.1
+
+// rainWindow sucht den nächsten Regen und, falls es gerade regnet, sein Ende.
+// Bevorzugt werden Viertelstundenwerte; wo es die nicht gibt (außerhalb
+// Mitteleuropas liefert Open-Meteo sie nicht), treten die Stundenwerte an.
+func rainWindow(m15Times []string, m15Precip []float64, hTimes []string, hPrecip []float64, tz string) *Rain {
+	loc, err := time.LoadLocation(tz)
+	if err != nil {
+		loc = time.Local
+	}
+	jetzt := time.Now().In(loc)
+
+	times, werte, fein := m15Times, m15Precip, true
+	if len(times) == 0 || len(werte) == 0 {
+		times, werte, fein = hTimes, hPrecip, false
+	}
+	if len(times) == 0 {
+		return nil
+	}
+
+	type punkt struct {
+		zeit time.Time
+		nass bool
+	}
+	var reihe []punkt
+	for i, t := range times {
+		zeit, err := time.ParseInLocation("2006-01-02T15:04", t, loc)
+		if err != nil || zeit.Before(jetzt.Add(-time.Hour)) {
+			continue
+		}
+		reihe = append(reihe, punkt{zeit: zeit, nass: at(werte, i) >= nassSchwelle})
+		// Weiter als einen Tag vorauszuschauen hilft beim Losfahren nicht.
+		if zeit.After(jetzt.Add(24 * time.Hour)) {
+			break
+		}
+	}
+	if len(reihe) == 0 {
+		return nil
+	}
+
+	r := &Rain{Fein: fein, Nass: reihe[0].nass}
+	if r.Nass {
+		// Es regnet: wann hört es auf?
+		for _, p := range reihe {
+			if !p.nass {
+				r.EndsAt = p.zeit.Format(time.RFC3339)
+				break
+			}
+		}
+		return r
+	}
+	for _, p := range reihe {
+		if p.nass {
+			r.StartsAt = p.zeit.Format(time.RFC3339)
+			return r
+		}
+	}
+	r.DryUntil = reihe[len(reihe)-1].zeit.Format(time.RFC3339)
+	return r
 }

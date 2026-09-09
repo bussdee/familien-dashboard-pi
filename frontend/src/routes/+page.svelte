@@ -8,7 +8,8 @@
   import { connection, session } from '$lib/stores';
   import { board } from '$lib/stores/scores.svelte';
   import { layout } from '$lib/stores/layout.svelte';
-  import WeatherChip from '$lib/components/WeatherChip.svelte';
+  import WeatherHero from '$lib/components/WeatherHero.svelte';
+  import PointsBand from '$lib/components/PointsBand.svelte';
   import CalendarWidget from '$lib/components/widgets/CalendarWidget.svelte';
   import ShoppingWidget from '$lib/components/widgets/ShoppingWidget.svelte';
   import ChoresWidget from '$lib/components/widgets/ChoresWidget.svelte';
@@ -139,63 +140,51 @@
 
 <svelte:head><title>Familien Dashboard</title></svelte:head>
 
-<div class="mx-auto max-w-7xl px-3 py-4 sm:px-5 sm:py-6">
-  <!-- Greeting + the two numbers that decide whether you need to do anything -->
-  <header class="mb-5 flex flex-wrap items-start justify-between gap-3">
+<!-- Volle Breite: auf einem großen Monitor bleibt sonst links und rechts
+     Rand stehen, und der Flurbildschirm verschenkt die Hälfte der Fläche. -->
+<div class="w-full px-4 py-5 sm:px-7 sm:py-7 2xl:px-10">
+  <!-- Begrüßung links, Wetter rechts — beides ohne Kasten -->
+  <header class="mb-6 flex flex-wrap items-start justify-between gap-x-10 gap-y-6">
     <div class="min-w-0">
-      <h1 class="text-2xl font-semibold sm:text-3xl">
-        {greeting}{$session.user ? `, ${$session.user.name}` : ''}
-        <span class="ml-1">{$session.user?.avatar_emoji ?? ''}</span>
+      <p class="text-[11px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
+        {today}
+      </p>
+      <h1 class="mt-2 font-display text-[2.5rem] font-light leading-[1.05] tracking-tight sm:text-5xl">
+        {greeting}{$session.user ? ',' : ''}
+        {#if $session.user}
+          <span class="font-medium italic">{$session.user.name}</span>
+        {/if}
       </h1>
-      <div class="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1">
-        <p class="text-sm capitalize text-muted-foreground">{today}</p>
-        <WeatherChip {weather} />
-      </div>
+      {#if !loading}
+        <p class="mt-3 text-sm font-light text-muted-foreground">
+          <a href="#chores" class="transition-colors hover:text-foreground">
+            {openTasks}
+            {openTasks === 1 ? 'Aufgabe' : 'Aufgaben'} offen
+          </a>
+          <span class="mx-2 opacity-40">·</span>
+          <a href="#shopping" class="transition-colors hover:text-foreground">
+            {openItems} auf der Einkaufsliste
+          </a>
+        </p>
+      {/if}
     </div>
 
-    <div class="flex items-center gap-2">
-      {#if !loading}
-        <div class="flex gap-2">
-          <a
-            href="#chores"
-            class="rounded-xl bg-muted px-3 py-2 text-center transition-colors hover:bg-accent"
-          >
-            <span class="block text-lg font-bold tabular-nums {openTasks > 0 ? 'text-primary' : ''}">
-              {openTasks}
-            </span>
-            <span class="block text-[11px] text-muted-foreground">Aufgaben</span>
-          </a>
-          <a
-            href="#shopping"
-            class="rounded-xl bg-muted px-3 py-2 text-center transition-colors hover:bg-accent"
-          >
-            <span class="block text-lg font-bold tabular-nums">{openItems}</span>
-            <span class="block text-[11px] text-muted-foreground">Einkauf</span>
-          </a>
-          {#if me}
-            <a
-              href="/rangliste"
-              class="rounded-xl bg-muted px-3 py-2 text-center transition-colors hover:bg-accent"
-            >
-              <span class="block text-lg font-bold tabular-nums text-amber-500">
-                {me.total_points}
-              </span>
-              <span class="block text-[11px] text-muted-foreground">Punkte</span>
-            </a>
-          {/if}
-        </div>
-      {/if}
-      <button
-        class="btn-ghost rounded-xl px-2"
-        onclick={manualRefresh}
-        disabled={refreshing}
-        aria-label="Alles aktualisieren"
-        title="Alles aktualisieren"
-      >
-        <RefreshCw class="h-5 w-5 {refreshing ? 'animate-spin' : ''}" />
-      </button>
+    <div class="min-w-0 flex-1 sm:max-w-2xl">
+      <WeatherHero {weather} />
     </div>
+
+    <button
+      class="btn-ghost shrink-0 rounded-full px-2 text-muted-foreground"
+      onclick={manualRefresh}
+      disabled={refreshing}
+      aria-label="Alles aktualisieren"
+      title="Alles aktualisieren"
+    >
+      <RefreshCw class="h-5 w-5 {refreshing ? 'animate-spin' : ''}" />
+    </button>
   </header>
+
+  <PointsBand {me} total={board.scores.length} />
 
   {#if $session.user?.pin_is_default}
     <a
@@ -215,9 +204,9 @@
   {/if}
 
   {#if loading}
-    <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+    <div class="widget-raster">
       {#each Array(6) as _, i (i)}
-        <div class="card h-56 animate-pulse bg-muted/40"></div>
+        <div class="h-56 animate-pulse rounded-xl bg-muted/30"></div>
       {/each}
     </div>
   {:else}
@@ -225,7 +214,7 @@
       Order and visibility come from the person's own layout preference; the
       default puts the two lists people act on first.
     -->
-    <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+    <div class="widget-raster mt-2">
       {#each layout.visible as widget (widget.id)}
         <div id={widget.id} class="scroll-mt-20">
           {#if widget.id === 'chores'}

@@ -4,6 +4,40 @@ Alle nennenswerten Änderungen an diesem Projekt.
 Format nach [Keep a Changelog](https://keepachangelog.com/de/1.1.0/),
 Versionierung nach [SemVer](https://semver.org/lang/de/).
 
+## [1.2.0] — 2026-09-09
+
+### Neu
+
+- **Die Übersicht ist neu gestaltet.** Statt gleich großer Kästen, die auf
+  verschiedenen Höhen enden, stehen die Fenster jetzt als Flächen
+  nebeneinander, getrennt durch feine Linien. Eigene Schriften (Fraunces für
+  große Zahlen und Namen, Manrope daneben), ein weicher Lichtschein im
+  Hintergrund. Gedacht für ein Tablet, das im Flur an der Wand hängt.
+- **Zwei Oberflächen zur Wahl** in den Einstellungen: *Nachtlicht* (offen, mit
+  feinen Linien) und *Glas* (die Fenster als milchige Scheiben). Beide
+  funktionieren hell wie dunkel; hell und Glas ist die freundlichste
+  Kombination.
+- **Wetter mit Regenzeiten.** Neu sind Stundenwerte als Kurve und ein klarer
+  Satz statt einer Prozentzahl: „Regen ab 18:30" oder „Trocken bis 23:00".
+  Grundlage sind Viertelstundenwerte, wo Open-Meteo sie liefert — für
+  Mitteleuropa aus dem DWD-Modell. Die Stundenwerte allein hätten den
+  Regenbeginn um bis zu einer Stunde verfehlt.
+- **Der Punktestand steht jetzt quer über der Seite** statt klein in der
+  Aufgaben-Kachel: Punkte, Level, Fortschritt, Serie und Abzeichen. Aus zwei
+  Metern Entfernung lesbar.
+
+### Geändert
+
+- Die Übersicht nutzt die **volle Bildschirmbreite**; ab 1536 px kommt eine
+  vierte Spalte dazu, statt drei Spalten in die Länge zu ziehen.
+- Die Trennlinien sitzen nach Reihenposition, nicht nach „alle außer dem
+  ersten". Fenster ausblenden und umsortieren funktioniert dadurch weiterhin,
+  ohne dass eine Linie ins Leere zeigt.
+- Das Formular zum Anlegen einer Aufgabe öffnet sich als Fenster über der
+  Seite. Vorher wuchs die Kachel dabei um die halbe Höhe.
+- Schriften liegen im Projekt (163 KB) und werden nicht von Google nachgeladen
+   — das Dashboard bleibt ohne Internet vollständig.
+
 ## [1.1.0] — 2026-09-09
 
 ### Neu
@@ -129,6 +163,7 @@ Erste öffentliche Fassung.
 - Ein Punkt lässt sich nicht vom Benutzer selbst zurücknehmen, nur von einem
   Administrator
 
+[1.2.0]: https://github.com/bussdee/familien-dashboard-pi/releases/tag/v1.2.0
 [1.1.0]: https://github.com/bussdee/familien-dashboard-pi/releases/tag/v1.1.0
 [1.0.2]: https://github.com/bussdee/familien-dashboard-pi/releases/tag/v1.0.2
 [1.0.1]: https://github.com/bussdee/familien-dashboard-pi/releases/tag/v1.0.1

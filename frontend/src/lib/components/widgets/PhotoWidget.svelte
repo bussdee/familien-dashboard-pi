@@ -109,7 +109,7 @@
   });
 </script>
 
-<section class="card overflow-hidden">
+<section class="flaeche overflow-hidden">
   <header class="flex items-center justify-between gap-2 p-5 pb-3">
     <div class="min-w-0">
       <h2 class="flex items-center gap-2 text-lg font-semibold">

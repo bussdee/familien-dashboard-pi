@@ -34,7 +34,7 @@
     days === 0 ? 'Heute!' : days === 1 ? 'Morgen' : `in ${days} Tagen`;
 </script>
 
-<section class="card p-5">
+<section class="flaeche">
   <header class="mb-4 flex items-center justify-between">
     <div>
       <h2 class="text-lg font-semibold">Countdowns</h2>
@@ -55,7 +55,7 @@
     <div class="space-y-2">
       {#each countdowns as item (item.event.id)}
         {@const Icon = item.icon}
-        <div class="flex items-center gap-3 rounded-lg bg-muted/30 p-3">
+        <div class="flex items-center gap-3 rounded-lg px-1 py-2.5">
           <div
             class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"
             style="background-color: {item.color}1a"

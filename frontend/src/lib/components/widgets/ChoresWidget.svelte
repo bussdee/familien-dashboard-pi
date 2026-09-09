@@ -1,13 +1,13 @@
 <script lang="ts">
   import {
-    CalendarClock, Check, CircleAlert, Flame, ListChecks, Pencil, Plus, Trash2, Trophy, X,
+    CalendarClock, Check, CircleAlert, ListChecks, Pencil, Plus, Trash2,
   } from 'lucide-svelte';
   import { format, parseISO } from 'date-fns';
   import { de } from 'date-fns/locale';
   import { ApiError, choresApi } from '$lib/api';
   import { session } from '$lib/stores';
   import { board } from '$lib/stores/scores.svelte';
-  import LevelBar from '$lib/components/LevelBar.svelte';
+  import Modal from '$lib/components/Modal.svelte';
   import type { Chore, User } from '$lib/types';
   import { confirmAction } from '$lib/stores/confirm.svelte';
 
@@ -34,7 +34,6 @@
   let draft = $state(emptyDraft());
 
   const isAdmin = $derived($session.user?.role === 'admin');
-  const me = $derived(board.for($session.user?.id));
 
   const overdue = $derived(chores.filter((c) => c.is_overdue));
   const dueToday = $derived(chores.filter((c) => c.is_due && !c.is_overdue));
@@ -168,7 +167,7 @@
   }
 </script>
 
-<section class="card p-5">
+<section class="flaeche">
   <header class="mb-4 flex items-start justify-between gap-2">
     <div class="min-w-0">
       <h2 class="flex items-center gap-2 text-lg font-semibold">
@@ -188,47 +187,23 @@
     {#if isAdmin}
       <button
         class="btn-primary shrink-0 px-3"
-        onclick={() => (showForm ? (showForm = false) : startNew())}
+        onclick={startNew}
         aria-label="Aufgabe hinzufügen"
       >
-        {#if showForm}<X class="h-5 w-5" />{:else}<Plus class="h-5 w-5" />{/if}
+        <Plus class="h-5 w-5" />
       </button>
     {/if}
   </header>
 
-  {#if me}
-    <!-- Your own progress sits above the list: the reason to tap a checkmark. -->
-    <div class="mb-4 rounded-xl bg-muted/40 p-3">
-      <div class="mb-2 flex items-center gap-2">
-        <span class="text-xl">{me.avatar_emoji}</span>
-        <div class="min-w-0 flex-1">
-          <p class="flex items-center gap-1.5 text-sm font-medium">
-            Platz {me.rank}
-            {#if me.rank === 1 && me.total_points > 0}
-              <Trophy class="h-3.5 w-3.5 text-amber-500" />
-            {/if}
-            {#if me.streak_days >= 3}
-              <span class="flex items-center gap-0.5 text-[11px] text-orange-500">
-                <Flame class="h-3 w-3" />{me.streak_days}
-              </span>
-            {/if}
-          </p>
-          <p class="text-[11px] text-muted-foreground">
-            {me.total_points} Punkte · diese Woche {me.this_week}
-          </p>
-        </div>
-        <a href="/rangliste" class="shrink-0 text-xs text-primary hover:underline">Rangliste</a>
-      </div>
-      <LevelBar score={me} />
-    </div>
-  {/if}
 
   {#if error}
     <p class="mb-3 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>
   {/if}
 
-  {#if showForm}
-    <form class="mb-4 space-y-2 rounded-xl border border-border p-3" onsubmit={save}>
+  <!-- Das Formular liegt als Fenster über der Seite. Inline würde es die
+       Kachel bei jedem Anlegen um die halbe Höhe aufblähen. -->
+  <Modal bind:open={showForm} title={editingId !== null ? 'Aufgabe bearbeiten' : 'Neue Aufgabe'}>
+    <form class="space-y-2" onsubmit={save}>
       <input class="input" placeholder="Was ist zu tun?" bind:value={draft.title} maxlength="80" />
       <input class="input" placeholder="Beschreibung (optional)" bind:value={draft.description} />
       <!-- Zwei Zahlen nebeneinander, die Zuständigkeit auf voller Breite:
@@ -255,11 +230,16 @@
             {/each}
           </select>
       </label>
-      <button class="btn-primary w-full" disabled={!draft.title.trim()}>
-        {editingId !== null ? 'Änderungen speichern' : 'Anlegen'}
-      </button>
+      <div class="flex gap-2 pt-1">
+        <button type="button" class="btn-outline flex-1" onclick={() => (showForm = false)}>
+          Abbrechen
+        </button>
+        <button class="btn-primary flex-1" disabled={!draft.title.trim()}>
+          {editingId !== null ? 'Änderungen speichern' : 'Anlegen'}
+        </button>
+      </div>
     </form>
-  {/if}
+  </Modal>
 
   {#if chores.length === 0}
     <div class="py-8 text-center text-muted-foreground">
@@ -270,14 +250,11 @@
       {/if}
     </div>
   {:else}
-    <ul class="scrollbar-thin max-h-[300px] space-y-2 overflow-y-auto pr-1">
+    <ul class="scrollbar-thin max-h-[320px] overflow-y-auto pr-1">
       {#each [...overdue, ...dueToday, ...later] as chore (chore.id)}
         <li
-          class="group flex items-center gap-3 rounded-xl p-3 transition-colors {chore.is_overdue
-            ? 'bg-destructive/5 ring-1 ring-destructive/20'
-            : chore.is_due
-              ? 'bg-muted/30'
-              : 'bg-muted/10'}"
+          class="group flex items-center gap-3 rounded-lg px-1 py-2.5 transition-colors
+                 [&+li]:border-t [&+li]:border-[color:var(--haarlinie)] hover:bg-muted/25"
         >
           {#if chore.is_due}
             <button

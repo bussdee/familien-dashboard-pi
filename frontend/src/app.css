@@ -2,6 +2,53 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ---------------------------------------------------------------------------
+   Schriften liegen im Projekt, nicht bei Google. Das Dashboard soll ohne
+   Internet vollständig funktionieren — eine nachgeladene Schrift wäre die
+   einzige Ausnahme davon, und ausgerechnet die fällt sofort auf.
+   Fraunces und Manrope stehen beide unter der SIL Open Font License.
+--------------------------------------------------------------------------- */
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 200 600;
+  font-display: swap;
+  src: url('/fonts/manrope-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Manrope';
+  font-style: normal;
+  font-weight: 200 600;
+  font-display: swap;
+  src: url('/fonts/manrope-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF,
+    U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020,
+    U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Fraunces';
+  font-style: normal;
+  font-weight: 300 500;
+  font-display: swap;
+  src: url('/fonts/fraunces-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Fraunces';
+  font-style: normal;
+  font-weight: 300 500;
+  font-display: swap;
+  src: url('/fonts/fraunces-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF,
+    U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020,
+    U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
 @layer base {
   :root {
     --background: 210 40% 98%;
@@ -24,6 +71,21 @@
     --input: 214 32% 88%;
     --ring: 173 80% 36%;
     --radius: 0.85rem;
+
+    /* Nachtlicht: Trennung durch Haarlinien statt durch Rahmen. */
+    --haarlinie: rgba(15, 23, 41, 0.10);
+    --haarlinie-stark: rgba(15, 23, 41, 0.16);
+    /* Ein weicher Lichtschein statt einer flachen Fläche. */
+    --schein:
+      radial-gradient(64% 30% at 16% -4%, rgba(18, 165, 148, 0.10), transparent 66%),
+      radial-gradient(56% 26% at 94% 22%, rgba(140, 90, 190, 0.07), transparent 70%),
+      radial-gradient(80% 26% at 50% 102%, rgba(224, 144, 44, 0.07), transparent 68%);
+
+    /* Milchglas hell: die Scheibe ist heller als der Grund, nicht dunkler. */
+    --glas-flaeche: linear-gradient(150deg, rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0.62));
+    --glas-rand: rgba(255, 255, 255, 0.9);
+    --glas-schatten: 0 1px 2px rgba(15, 23, 41, 0.04), 0 14px 34px rgba(15, 23, 41, 0.08);
+    --glas-kante: inset 0 1px 0 rgba(255, 255, 255, 0.9);
   }
 
   .dark {
@@ -46,6 +108,18 @@
     --border: 222 30% 24%;
     --input: 222 30% 24%;
     --ring: 173 70% 45%;
+
+    --haarlinie: rgba(255, 255, 255, 0.07);
+    --haarlinie-stark: rgba(255, 255, 255, 0.13);
+    --schein:
+      radial-gradient(64% 30% at 16% -4%, rgba(127, 216, 200, 0.17), transparent 66%),
+      radial-gradient(56% 26% at 94% 22%, rgba(180, 120, 220, 0.12), transparent 70%),
+      radial-gradient(80% 26% at 50% 102%, rgba(232, 150, 80, 0.10), transparent 68%);
+
+    --glas-flaeche: linear-gradient(150deg, rgba(255, 255, 255, 0.085), rgba(255, 255, 255, 0.028));
+    --glas-rand: rgba(255, 255, 255, 0.12);
+    --glas-schatten: 0 22px 50px rgba(0, 0, 0, 0.34);
+    --glas-kante: inset 0 1px 0 rgba(255, 255, 255, 0.14);
   }
 
   * {
@@ -56,6 +130,12 @@
   body {
     @apply bg-background text-foreground;
     -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    background-image: var(--schein);
+    background-attachment: fixed;
+    background-repeat: no-repeat;
   }
 
   /* A wall tablet should never rubber-band or select text on a long press. */
@@ -104,6 +184,104 @@
      and push the whole column past the viewport on a phone. */
   .card {
     @apply min-w-0 rounded-2xl border border-border bg-card text-card-foreground shadow-sm;
+  }
+
+  /* ---------------------------------------------------------------------
+     Die Übersicht kommt ohne Kästen aus: die Fenster stehen als Flächen
+     nebeneinander, getrennt durch Haarlinien.
+
+     Die Linie darf nicht "alle außer dem ersten" sein — die Fenster lassen
+     sich umsortieren und ausblenden, und dann bekäme das erste Fenster der
+     zweiten Reihe eine Linie ins Leere. Deshalb wird pro Bildschirmbreite
+     gezielt der Reihenanfang ausgenommen.
+  --------------------------------------------------------------------- */
+  .flaeche {
+    @apply flex h-full min-w-0 flex-col;
+  }
+
+  .widget-raster {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .widget-raster > * {
+    min-width: 0;
+    padding: 1.5rem 0;
+  }
+
+  /* Einspaltig: nur waagerechte Linien. */
+  .widget-raster > *:nth-child(n + 2) {
+    border-top: 1px solid var(--haarlinie);
+  }
+
+  @media (min-width: 768px) {
+    .widget-raster { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .widget-raster > * { padding: 1.75rem; border-top: 0; border-left: 1px solid var(--haarlinie); }
+    .widget-raster > *:nth-child(2n + 1) { padding-left: 0; border-left: 0; }
+    .widget-raster > *:nth-child(2n) { padding-right: 0; }
+    .widget-raster > *:nth-child(n + 3) { border-top: 1px solid var(--haarlinie); }
+  }
+
+  @media (min-width: 1280px) {
+    .widget-raster { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .widget-raster > * { padding: 1.75rem; border-top: 0; border-left: 1px solid var(--haarlinie); }
+    .widget-raster > *:nth-child(2n + 1) { padding-left: 1.75rem; }
+    .widget-raster > *:nth-child(2n) { padding-right: 1.75rem; }
+    .widget-raster > *:nth-child(3n + 1) { padding-left: 0; border-left: 0; }
+    .widget-raster > *:nth-child(3n) { padding-right: 0; }
+    .widget-raster > *:nth-child(n + 4) { border-top: 1px solid var(--haarlinie); }
+  }
+
+  /* Auf sehr breiten Monitoren eine vierte Spalte, statt drei zu strecken. */
+  @media (min-width: 1536px) {
+    .widget-raster { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .widget-raster > * { padding: 1.75rem; border-top: 0; border-left: 1px solid var(--haarlinie); }
+    .widget-raster > *:nth-child(3n + 1) { padding-left: 1.75rem; }
+    .widget-raster > *:nth-child(3n) { padding-right: 1.75rem; }
+    .widget-raster > *:nth-child(4n + 1) { padding-left: 0; border-left: 0; }
+    .widget-raster > *:nth-child(4n) { padding-right: 0; }
+    .widget-raster > *:nth-child(n + 5) { border-top: 1px solid var(--haarlinie); }
+  }
+
+  /* ---------------------------------------------------------------------
+     Oberfläche "Glas": dieselbe Anordnung, aber die Fenster liegen als
+     milchige Scheiben auf dem Grund statt offen nebeneinander.
+
+     Steht bewusst NACH den Haarlinien-Regeln — beide haben dieselbe
+     Spezifität, also gewinnt die spätere. Alle vier Kanten werden
+     zurückgesetzt, sonst bliebe an manchen Scheiben eine Linie kleben.
+  --------------------------------------------------------------------- */
+  [data-oberflaeche='glas'] .widget-raster {
+    gap: 1rem;
+  }
+
+  [data-oberflaeche='glas'] .widget-raster > * {
+    padding: 1.25rem 1.35rem;
+    border: 1px solid var(--glas-rand);
+    border-radius: 1.35rem;
+    background-image: var(--glas-flaeche);
+    box-shadow: var(--glas-schatten), var(--glas-kante);
+  }
+
+  /* Weichzeichnen kostet Rechenleistung. Nur dort einschalten, wo der
+     Browser es kann und der Nutzer keine Rücksicht angefordert hat. */
+  @supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+    @media (prefers-reduced-transparency: no-preference) {
+      [data-oberflaeche='glas'] .widget-raster > * {
+        -webkit-backdrop-filter: blur(22px) saturate(140%);
+        backdrop-filter: blur(22px) saturate(140%);
+      }
+    }
+  }
+
+  /* Auch das Punkteband wird zur Scheibe, sonst schwebt es ohne Bezug. */
+  [data-oberflaeche='glas'] .punkte-band {
+    border: 1px solid var(--glas-rand);
+    border-radius: 1.35rem;
+    background-image: var(--glas-flaeche);
+    box-shadow: var(--glas-schatten), var(--glas-kante);
+    padding-left: 1.35rem;
+    padding-right: 1.35rem;
   }
 
   /* 44px is the smallest comfortable touch target on a phone or tablet. */

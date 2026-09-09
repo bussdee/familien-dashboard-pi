@@ -72,6 +72,49 @@ function createTheme() {
 
 export const theme = createTheme();
 
+/**
+ * Die Oberfläche ist unabhängig von hell/dunkel: "nachtlicht" stellt die
+ * Fenster ohne Rahmen nebeneinander und trennt sie mit Haarlinien, "glas"
+ * legt sie als milchige Scheiben übereinander. Beides funktioniert in beiden
+ * Farbstimmungen — hell + Glas ist die freundlichste Kombination.
+ */
+export type Oberflaeche = 'nachtlicht' | 'glas';
+
+function createOberflaeche() {
+  const { subscribe, set } = writable<Oberflaeche>('nachtlicht');
+
+  function apply(wahl: Oberflaeche) {
+    if (!browser) return;
+    document.documentElement.dataset.oberflaeche = wahl;
+    try {
+      localStorage.setItem('oberflaeche', wahl);
+    } catch {
+      /* private mode */
+    }
+  }
+
+  return {
+    subscribe,
+    set: (wahl: Oberflaeche) => {
+      set(wahl);
+      apply(wahl);
+    },
+    init: () => {
+      if (!browser) return;
+      let gespeichert: Oberflaeche = 'nachtlicht';
+      try {
+        gespeichert = (localStorage.getItem('oberflaeche') as Oberflaeche) ?? 'nachtlicht';
+      } catch {
+        /* private mode */
+      }
+      set(gespeichert);
+      apply(gespeichert);
+    },
+  };
+}
+
+export const oberflaeche = createOberflaeche();
+
 function createConnection() {
   const { subscribe, update } = writable({
     online: browser ? navigator.onLine : true,

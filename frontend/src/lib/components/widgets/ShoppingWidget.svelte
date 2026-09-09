@@ -91,7 +91,7 @@
   }
 </script>
 
-<section class="card p-5">
+<section class="flaeche">
   <header class="mb-4 flex items-center justify-between">
     <div>
       <h2 class="flex items-center gap-2 text-lg font-semibold">
@@ -162,7 +162,7 @@
   {:else}
     <ul class="scrollbar-thin max-h-[300px] space-y-1.5 overflow-y-auto pr-1">
       {#each open as item (item.id)}
-        <li class="group flex items-center gap-3 rounded-lg bg-muted/30 p-2.5">
+        <li class="group flex items-center gap-3 rounded-lg px-1 py-2.5 transition-colors hover:bg-muted/25">
           <button
             class="touch-target shrink-0"
             onclick={() => toggle(item)}

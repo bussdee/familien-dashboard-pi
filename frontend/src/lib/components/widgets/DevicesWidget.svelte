@@ -39,7 +39,7 @@
   }
 </script>
 
-<section class="card p-5">
+<section class="flaeche">
   <header class="mb-4 flex items-center justify-between">
     <div>
       <h2 class="flex items-center gap-2 text-lg font-semibold">
@@ -76,7 +76,7 @@
             href={reachable ? device.link : undefined}
             target={reachable ? '_blank' : undefined}
             rel={reachable ? 'noopener noreferrer' : undefined}
-            class="group flex items-center gap-3 rounded-lg bg-muted/30 p-3 transition-colors
+            class="group flex items-center gap-3 rounded-lg px-1 py-2.5 transition-colors
               {reachable ? 'hover:bg-accent' : ''}"
           >
             <div

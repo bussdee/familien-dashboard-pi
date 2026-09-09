@@ -41,8 +41,29 @@ export interface WeatherLocation {
   timezone: string;
 }
 
+export interface WeatherHour {
+  time: string;
+  temperature: number;
+  precip_probability: number;
+  precipitation: number;
+  weather_code: number;
+  icon: string;
+}
+
+/** Wann fängt es an, wann hört es auf — die Frage vor jeder Radtour. */
+export interface WeatherRain {
+  now: boolean;
+  starts_at?: string;
+  ends_at?: string;
+  dry_until?: string;
+  /** true, wenn die Angabe aus Viertelstundenwerten stammt. */
+  fine_grained: boolean;
+}
+
 export interface WeatherData {
   current: WeatherCurrent;
+  rain?: WeatherRain;
+  hourly?: WeatherHour[];
   forecast: WeatherDay[];
   location: WeatherLocation;
   updated: string;

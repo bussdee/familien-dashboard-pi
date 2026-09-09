@@ -48,7 +48,9 @@ export default {
         sm: 'calc(var(--radius) - 4px)',
       },
       fontFamily: {
-        sans: ['system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'Helvetica Neue', 'sans-serif'],
+        sans: ['Manrope', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'sans-serif'],
+        // Für große Zahlen und Namen: gibt der Übersicht ihren Charakter.
+        display: ['Fraunces', 'Georgia', 'Times New Roman', 'serif'],
       },
       animation: {
         'fade-in': 'fadeIn 0.25s ease-out',

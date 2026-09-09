@@ -149,7 +149,7 @@
   }
 </script>
 
-<section class="card p-5">
+<section class="flaeche">
   <header class="mb-4 flex items-center justify-between">
     <div>
       <h2 class="text-lg font-semibold">Kalender</h2>
@@ -256,7 +256,7 @@
             {#each group.events as event (event.id)}
               {@const open = selectedId === event.id}
               <article
-                class="rounded-xl border-l-4 bg-muted/30 transition-colors {open
+                class="rounded-r-xl border-l-2 bg-muted/15 transition-colors {open
                   ? 'bg-accent/60'
                   : ''}"
                 style="border-left-color: {event.color}"
