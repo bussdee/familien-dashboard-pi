@@ -8,6 +8,10 @@ Eine Version wird **gebündelt** eingetragen, nicht jeder Handgriff einzeln.
 Die 1.4.x-Reihe hat an einem einzigen Tag acht Einträge bekommen — das liest
 niemand, und es sagt auch nichts.
 
+Deshalb gibt es hier **keine 1.4.5**. Sie stand eine Weile in dieser Datei,
+wurde aber nie veröffentlicht: Auf GitHub steht v1.4.4, und der Pi läuft
+darauf. Was unter 1.4.5 gesammelt war, ist in 1.5.0 aufgegangen.
+
 ## [1.5.0] — 2026-09-10
 
 ### Hinzugefügt
@@ -80,6 +84,11 @@ niemand, und es sagt auch nichts.
 
 ### Geändert
 
+- **Der Familien-Modus ist jetzt das erste Bild im README.** Bisher stand dort
+  die persönliche Ansicht mit Namen und Punkteband — also ausgerechnet nicht
+  das, was dieses Projekt von anderen Dashboards unterscheidet. Dazu neu: der
+  Dialog „Wer war das?" mit den drei Gesichtern.
+
 - **Die Beispielgeräte werden abgeschaltet ausgeliefert.** Sie zeigen auf
   `192.168.1.20`, die Adresse aus der Vorlage. Bisher begrüsste eine frische
   Installation ihren Besitzer deshalb mit drei roten Kacheln. Die Beispiele
@@ -109,15 +118,6 @@ niemand, und es sagt auch nichts.
   Kopfleiste bewusst nicht auftaucht (sie war ja über das Symbol erreichbar),
   gab es auf einem breiten Bildschirm überhaupt keinen Weg mehr dorthin.
   Der Wetterblock führt jetzt wieder auf die Wetterseite.
-
-## [1.4.5] — 2026-09-09
-
-### Geändert
-
-- **Der Familien-Modus ist jetzt das erste Bild im README.** Bisher stand dort
-  die persönliche Ansicht mit Namen und Punkteband — also ausgerechnet nicht
-  das, was dieses Projekt von anderen Dashboards unterscheidet. Dazu neu: der
-  Dialog „Wer war das?" mit den drei Gesichtern.
 
 ## [1.4.4] — 2026-09-09
 
