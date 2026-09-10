@@ -154,6 +154,14 @@ pi-init:
 	@echo ""
 	@echo "   Danach von hier:  make deploy"
 
+# Was NICHT auf das Zielgerät geht. Zwei Einträge sind dabei wichtiger als
+# die anderen:
+#
+#   traefik/certs  — dort liegen private Schlüssel. Sie entstehen beim
+#                    Einrichten auf dem jeweiligen Gerät und gehören genau
+#                    dorthin, nicht in eine Übertragung.
+#   .env.*         — Sicherungskopien der .env auf dem Zielgerät. Ohne diese
+#                    Zeile löscht --delete sie, weil es sie hier nicht gibt.
 _rsync:
 	@rsync -az --delete \
 		--exclude '.git' \
@@ -164,7 +172,9 @@ _rsync:
 		--exclude 'backend/tmp' \
 		--exclude 'backend/data' \
 		--exclude '.env' \
+		--exclude '.env.*' \
 		--exclude '.local' \
+		--exclude 'traefik/certs' \
 		--exclude 'dist' \
 		--exclude '*.log' \
 		./ $(PI_HOST):$(PI_PATH)/

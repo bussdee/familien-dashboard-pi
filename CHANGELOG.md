@@ -96,6 +96,13 @@ darauf. Was unter 1.4.5 gesammelt war, ist in 1.5.0 aufgegangen.
 
 ### Behoben
 
+- **Der Deploy hätte Zertifikate mit übertragen.** Die Ausschlussliste von
+  `rsync` kennt `.gitignore` nicht — `traefik/certs/` stand nicht darin und
+  wäre samt privater Schlüssel auf das Zielgerät gewandert. Zertifikate
+  entstehen beim Einrichten auf dem jeweiligen Gerät und gehören genau
+  dorthin. Ebenfalls neu in der Liste: `.env.*`, damit `--delete` keine
+  Sicherungskopien der `.env` auf dem Zielgerät wegräumt.
+
 - **Die Wetterseite stand in keinem Menü.** Sie war nur über den Wetterblock
   auf der Übersicht erreichbar — wer den Ort einstellen wollte, suchte sie
   vergeblich in der Leiste. Jetzt steht sie dort, zusammen mit *Arbeit &
