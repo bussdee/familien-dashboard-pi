@@ -3,6 +3,8 @@
     Activity, ExternalLink, HardDrive, RefreshCw, Server, Wifi, WifiOff,
   } from 'lucide-svelte';
   import { format, parseISO } from 'date-fns';
+  import Kachel from './Kachel.svelte';
+  import KachelLeer from './KachelLeer.svelte';
   import type { DeviceStatus } from '$lib/types';
 
   let {
@@ -39,27 +41,27 @@
   }
 </script>
 
-<section class="flaeche">
-  <header class="mb-4 flex items-center justify-between">
-    <div>
-      <h2 class="flex items-center gap-2 text-lg font-semibold">
-        <Wifi class="h-5 w-5" /> Geräte
-      </h2>
-      <p class="text-sm text-muted-foreground">
-        {online} von {devices.length} erreichbar
-      </p>
-    </div>
-    <button class="btn-ghost px-2" onclick={refresh} aria-label="Status aktualisieren">
-      <RefreshCw class="h-5 w-5 {refreshing ? 'animate-spin' : ''}" />
-    </button>
-  </header>
-
+{#snippet zeile()}
   {#if devices.length === 0}
-    <div class="py-8 text-center text-muted-foreground">
-      <WifiOff class="mx-auto mb-2 h-10 w-10 opacity-40" />
-      <p class="text-sm">Keine Geräte konfiguriert</p>
-      <p class="mt-1 text-xs">Siehe <code>backend/config.yaml</code></p>
-    </div>
+    Keine Geräte eingerichtet
+  {:else}
+    {online} von {devices.length} erreichbar
+  {/if}
+{/snippet}
+
+{#snippet aktionen()}
+  <button class="btn-ghost px-2" onclick={refresh} aria-label="Status aktualisieren">
+    <RefreshCw class="h-5 w-5 {refreshing ? 'animate-spin' : ''}" />
+  </button>
+{/snippet}
+
+<Kachel titel="Geräte" icon={Wifi} {zeile} {aktionen}>
+  {#if devices.length === 0}
+    <KachelLeer
+      icon={WifiOff}
+      titel="Keine Geräte eingerichtet"
+      hinweis="Unter Verwaltung → Geräte anlegen. Die mitgelieferten Beispiele stehen dort abgeschaltet bereit."
+    />
   {:else}
     <ul class="space-y-2">
       {#each devices as device (device.name)}
@@ -124,4 +126,4 @@
       Antippen öffnet die Oberfläche des Geräts in einem neuen Tab.
     </p>
   {/if}
-</section>
+</Kachel>

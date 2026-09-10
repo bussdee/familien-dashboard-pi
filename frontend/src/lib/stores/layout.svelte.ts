@@ -21,6 +21,7 @@ export const WIDGETS: WidgetMeta[] = [
   { id: 'calendar', label: 'Kalender', emoji: '📅', hint: 'Termine der nächsten Tage' },
   { id: 'links', label: 'Links', emoji: '🔗', hint: 'Angepinnte Lesezeichen' },
   { id: 'countdown', label: 'Countdowns', emoji: '⏰', hint: 'Geburtstage und Ferien' },
+  { id: 'times', label: 'Arbeit & Schule', emoji: '🕗', hint: 'Wer wann weg ist' },
   { id: 'notes', label: 'Notizen', emoji: '📝', hint: 'Markdown-Notizen' },
   { id: 'photos', label: 'Foto-Rahmen', emoji: '🖼️', hint: 'Bilder der Familie' },
   { id: 'music', label: 'Musik', emoji: '🎵', hint: 'MP3s und Hörspiele' },

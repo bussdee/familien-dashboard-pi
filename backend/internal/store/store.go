@@ -230,6 +230,50 @@ func (s *Store) Migrate() error {
 			mod_time DATETIME NOT NULL,
 			indexed_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 		)`,
+		// Zeiten, zu denen jemand nicht da ist. Zwei Tabellen, weil zwei
+		// verschiedene Leben abgebildet werden müssen:
+		//
+		// Ein Kind hat einen Stundenplan, der sich ein- bis zweimal im Jahr
+		// ändert. Das ist ein Wochenmuster: montags 8 bis 13, jede Woche.
+		//
+		// Eltern arbeiten jede Woche anders und tragen einmal im Monat die
+		// nächsten vier Wochen ein. Das sind konkrete Tage mit Datum.
+		//
+		// Ein Wochenmuster in konkrete Tage aufzulösen hiesse, für das Kind
+		// jedes Jahr 250 Zeilen zu schreiben. Konkrete Tage als Wochenmuster
+		// zu zwingen ginge gar nicht. Also beides.
+		`CREATE TABLE IF NOT EXISTS weekly_times (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			user_id INTEGER NOT NULL,
+			-- 0 = Montag ... 6 = Sonntag. Nicht die Zählung von SQLite oder
+			-- JavaScript, sondern die, die man im Kalender liest.
+			weekday INTEGER NOT NULL,
+			start_time TEXT NOT NULL,
+			end_time TEXT NOT NULL,
+			-- arbeit | schule | sonstiges
+			kind TEXT NOT NULL DEFAULT 'schule',
+			note TEXT NOT NULL DEFAULT '',
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+		)`,
+		// Konkrete Tage. Sie gehen dem Wochenmuster vor: Wer für einen Tag
+		// hier etwas stehen hat, für den gilt an diesem Tag nur das.
+		`CREATE TABLE IF NOT EXISTS day_times (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			user_id INTEGER NOT NULL,
+			-- JJJJ-MM-TT. Als Text, damit ein Tag ein Tag bleibt und nicht in
+			-- einer Zeitzone verrutscht.
+			day TEXT NOT NULL,
+			start_time TEXT NOT NULL DEFAULT '',
+			end_time TEXT NOT NULL DEFAULT '',
+			-- arbeit | schule | frei | urlaub | krank | sonstiges
+			kind TEXT NOT NULL DEFAULT 'arbeit',
+			note TEXT NOT NULL DEFAULT '',
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+		)`,
 		`CREATE TABLE IF NOT EXISTS login_attempts (
 			user_id INTEGER PRIMARY KEY,
 			failures INTEGER NOT NULL DEFAULT 0,
@@ -247,6 +291,8 @@ func (s *Store) Migrate() error {
 		// Geblättert wird nach Ordner, sortiert nach Dateiname — ein Hörspiel
 		// läuft von Teil 1 bis Teil 12.
 		`CREATE INDEX IF NOT EXISTS idx_music_folder ON music_tracks(folder, filename)`,
+		`CREATE INDEX IF NOT EXISTS idx_weekly_times_user ON weekly_times(user_id, weekday)`,
+		`CREATE INDEX IF NOT EXISTS idx_day_times_day ON day_times(day, user_id)`,
 	}
 
 	for _, m := range migrations {

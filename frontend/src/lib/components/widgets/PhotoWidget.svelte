@@ -7,6 +7,7 @@
   import { session } from '$lib/stores';
   import type { Photo } from '$lib/types';
   import { confirmAction } from '$lib/stores/confirm.svelte';
+  import Kachel from './Kachel.svelte';
 
   const ROTATE_MS = 20_000;
   const ACCEPT = 'image/jpeg,image/png,image/webp,image/gif,image/avif';
@@ -109,18 +110,11 @@
   });
 </script>
 
-<section class="flaeche overflow-hidden">
-  <header class="flex items-center justify-between gap-2 p-5 pb-3">
-    <div class="min-w-0">
-      <h2 class="flex items-center gap-2 text-lg font-semibold">
-        <Image class="h-5 w-5 shrink-0" /> Foto-Rahmen
-      </h2>
-      <p class="truncate text-sm text-muted-foreground">
-        {photos.length === 0 ? 'Keine Fotos' : `${index + 1} von ${photos.length}`}
-      </p>
-    </div>
+{#snippet zeile()}
+  {photos.length === 0 ? 'Noch keine Fotos' : `${index + 1} von ${photos.length}`}
+{/snippet}
 
-    <div class="flex shrink-0 items-center gap-1">
+{#snippet aktionen()}
       {#if photos.length > 0}
         <!-- Vollbild: dafür hängt das Tablet schließlich an der Wand. -->
         <a
@@ -149,9 +143,9 @@
       >
         <Upload class="h-5 w-5" />
       </button>
-    </div>
-  </header>
+{/snippet}
 
+<Kachel titel="Foto-Rahmen" icon={Image} {zeile} {aktionen} randlos>
   <input
     bind:this={fileInput}
     type="file"
@@ -180,8 +174,14 @@
   {/if}
 
   <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <!--
+    max-h-80 ist der Deckel. Ohne ihn wächst die Höhe mit der Breite: Auf
+    einem breiten Bildschirm wurde die Kachel dadurch so hoch, dass sie die
+    ganze Rasterzeile mitzog und die Nachbarkacheln in der Luft hingen.
+    Auf dem Handy greift der Deckel nicht, dort ist 4:3 flacher als 320px.
+  -->
   <div
-    class="relative aspect-[4/3] bg-muted/40 transition-colors {dragging
+    class="relative aspect-[4/3] max-h-80 overflow-hidden bg-muted/40 transition-colors {dragging
       ? 'ring-2 ring-inset ring-primary'
       : ''}"
     ondragover={(e) => {
@@ -216,10 +216,22 @@
       </div>
     {:else if current}
       {#key current.name}
+        <!--
+          Weichgezeichneter Hintergrund plus vollständiges Bild davor — wie in
+          der Diashow. Mit object-cover blieb von einem Hochkantfoto ein
+          Streifen aus der Bildmitte übrig.
+        -->
+        <img
+          src={photosApi.url(current.name)}
+          alt=""
+          aria-hidden="true"
+          class="absolute inset-0 h-full w-full scale-110 object-cover opacity-30 blur-2xl"
+          loading="lazy"
+        />
         <img
           src={photosApi.url(current.name)}
           alt={current.name}
-          class="h-full w-full animate-fade-in object-cover"
+          class="relative h-full w-full animate-fade-in object-contain"
           loading="lazy"
         />
       {/key}
@@ -263,4 +275,4 @@
       </button>
     {/if}
   </div>
-</section>
+</Kachel>

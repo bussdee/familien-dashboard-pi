@@ -3,8 +3,9 @@ import { goto } from '$app/navigation';
 import type {
   Activity, BackupFile, CalendarEvent, Chore, DashboardLayout, DeviceStatus,
   DeviceTarget, EventDraft, FileListing, FileUploadResult, Link, LinkDraft,
-  MusicBrowse, MusicDirListing, MusicStatus, Note, Photo, PhotoUploadResult,
-  Score, ShoppingEvent, ShoppingItem, Track, User, WeatherData, WeatherLocation,
+  DayTime, MusicBrowse, MusicDirListing, MusicStatus, Note, Photo,
+  PhotoUploadResult, Score, ShoppingEvent, ShoppingItem, TimeOverview, Track,
+  User, WeatherData, WeatherLocation, WeeklyTime,
 } from '$lib/types';
 
 const BASE = '/api';
@@ -320,6 +321,42 @@ function uploadMitFortschritt<T>(
  * Musik. Hören darf jeder, auch das Wandgerät — es ist Familienmusik. Nur das
  * Neu-Einlesen ist Adminsache.
  */
+/**
+ * Arbeits- und Schulzeiten. Lesen darf jeder, auch das Wandgerät — im Flur
+ * ist „ab wann sind alle da" gerade die nützliche Frage. Eintragen darf jeder
+ * für sich, ein Administrator für alle.
+ */
+export const timesApi = {
+  overview: (from?: string, days = 7) =>
+    request<TimeOverview>(
+      `/times?days=${days}${from ? `&from=${encodeURIComponent(from)}` : ''}`,
+    ),
+  weekly: () => request<WeeklyTime[]>('/times/weekly'),
+  createWeekly: (data: {
+    user_id: number; weekday: number; start_time: string; end_time: string;
+    kind: string; note?: string;
+  }) => request<WeeklyTime>('/times/weekly', { method: 'POST', ...json(data) }),
+  removeWeekly: (id: number) => request<void>(`/times/weekly/${id}`, { method: 'DELETE' }),
+
+  days: (from: string, to: string) =>
+    request<{ from: string; to: string; entries: DayTime[] }>(
+      `/times/days?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}`,
+    ),
+  /**
+   * Vier Wochen in einem Rutsch. Einzeln zu speichern hiesse, dass ein
+   * Aussetzer den Plan halb gefüllt zurücklässt.
+   */
+  saveDays: (
+    entries: {
+      user_id: number; day: string; start_time: string; end_time: string;
+      kind: string; note?: string;
+    }[],
+  ) => request<{ saved: number; removed: number }>('/times/days', {
+    method: 'PUT',
+    ...json({ entries }),
+  }),
+};
+
 export const musicApi = {
   status: () => request<MusicStatus>('/music/status'),
   browse: (path = '') =>

@@ -12,6 +12,98 @@ Deshalb gibt es hier **keine 1.4.5**. Sie stand eine Weile in dieser Datei,
 wurde aber nie veröffentlicht: Auf GitHub steht v1.4.4, und der Pi läuft
 darauf. Was unter 1.4.5 gesammelt war, ist in 1.5.0 aufgegangen.
 
+## [1.6.0] — 2026-09-10
+
+### Hinzugefügt
+
+- **Arbeitszeiten und Schulzeiten.** Eine neue Kachel *Arbeit & Schule* und
+  die Seite dahinter beantworten die Frage, die am Küchentisch gestellt wird:
+  ab wann sind alle da.
+
+  Dahinter liegen zwei verschiedene Leben, deshalb zwei Wege, sie einzutragen:
+
+  - **Fester Wochenplan** für alles, was jede Woche gleich ist. Ein
+    Stundenplan wird ein- bis zweimal im Jahr angefasst und gilt bis dahin.
+  - **Nächste vier Wochen** als Kalenderblatt, für Schichten, die jede Woche
+    anders liegen. Vier Wochen am Stück, Uhrzeiten direkt in die Felder, ein
+    Knopf übernimmt die Woche darüber. Gespeichert wird alles auf einmal.
+
+  **Ein eingetragener Tag sticht den Wochenplan.** Ein Feiertag hebt den
+  Stundenplan für diesen einen Tag auf, ohne ihn zu löschen.
+
+  Jeder pflegt seine eigenen Zeiten, ein Administrator die aller. Am Wandgerät
+  wird nur gelesen — im Flur ist „ab 16:30 sind alle da" gerade die nützliche
+  Zeile.
+
+- **Ein Zertifikat, dem eure Geräte trauen.** `bash scripts/make-cert.sh`
+  legt eine kleine eigene Zertifizierungsstelle an und stellt damit ein
+  Zertifikat für eure LAN-Adresse aus. Wird die Stelle einmal pro Gerät
+  eingerichtet — das Skript sagt für Android, iPhone, Windows und Linux, wie —,
+  verschwindet die Browserwarnung, und **erst dann lässt sich die App wirklich
+  installieren**. Traefiks eingebautes Platzhalter-Zertifikat reicht dafür
+  nicht: Es trägt die eigene Adresse gar nicht, und ein weggeklickter
+  Zertifikatsfehler macht aus einer Seite keine sichere Herkunft.
+
+  Der Schlüssel der Stelle bleibt im Haus und ist von Git ausgenommen.
+
+- **Mehr Verknüpfungen im App-Symbol.** Langes Drücken bietet jetzt auch
+  *Musik*, *Diashow* und *Arbeit & Schule*. Sichtbar wird das allerdings erst,
+  wenn die App installiert ist — siehe oben.
+
+### Geändert
+
+- **Alle Kacheln haben denselben Rahmen bekommen.** Vorher hatte jede ihren
+  eigenen: mal mit Symbol im Titel, mal mit Symbol rechts, mal ganz ohne; mal
+  mit Innenabstand, mal ohne; Meldungen und leere Zustände jedes Mal anders
+  gebaut. Auf einer Übersicht aus elf Kacheln nebeneinander fällt das auf.
+
+  Jetzt gilt überall: Symbol und Titel links, darunter eine Zeile, die sagt
+  wie viel oder was los ist, Knöpfe rechts. Der Inhalt jeder Kachel ist
+  unverändert.
+
+- **Die Einkaufsliste klappt ihr Formular auf.** Eingabefeld, Mengenfeld und
+  Kategorieauswahl standen dauerhaft da und belegten den grössten Teil der
+  Kachel, auch wenn niemand etwas eintragen wollte. Jetzt öffnet ein Plus in
+  der Kopfzeile das Formular — wie bei Notizen und Kalender. Nach dem
+  Eintragen bleibt es offen: Eine Einkaufsliste füllt man in einem Rutsch.
+
+- **Leere Kacheln erklären sich.** Statt eines blassen Symbols mit zwei Worten
+  steht dort jetzt, was hier hingehört und wie es dorthin kommt — mit einem
+  Knopf, wo einer weiterhilft.
+
+### Behoben
+
+- **Der Kopfbereich verschob sich auf dem Handy.** Der Wetterblock wurde neben
+  die Begrüssung gequetscht statt darunter zu rutschen, und die grosse
+  Temperaturzahl schob die Seite dann seitwärts. Ursache war ein `flex-1` ohne
+  Basisbreite: So wickelt der Block nie um, er wird nur zusammengedrückt.
+
+- **Die Stundenzahlen unter der Wetterkurve klebten zusammen.** Sechs
+  Uhrzeiten in einer handybreiten Zeile ergaben „212301030507" statt sechs
+  Zahlen. Auf schmalen Bildschirmen steht jetzt nur noch jede zweite.
+
+- **Die Foto-Kachel zog die ganze Rasterzeile in die Höhe.** Ihre Höhe wuchs
+  mit der Breite mit; auf einem breiten Bildschirm hingen die Nachbarkacheln
+  dadurch in der Luft. Die Höhe ist jetzt gedeckelt.
+
+- **Hochkantfotos zeigten nur einen Streifen.** In der Kachel wie in der
+  Diashow schnitt `object-cover` alles bis auf die Bildmitte weg — man sah
+  Bauchnabel und Kinn, aber kein Gesicht. Jetzt steht das ganze Bild da, vor
+  einem weichgezeichneten Hintergrund aus sich selbst.
+
+- **Geburtstage aus dem nächsten Jahr fehlten im Countdown.** Die Kachel
+  bekam die Termine der nächsten 45 Tage gereicht — ein Geburtstag in acht
+  Monaten war darin gar nicht enthalten. Sie holt sich ihr Fenster jetzt
+  selbst, über gut ein Jahr, und schreibt bei langen Fristen die Monate dazu:
+  „in 250 Tagen · gut 8 Monate".
+
+- **`make pi-verify` konnte auf einem echten Pi nie durchlaufen.** Der
+  Rauchtest meldet sich mit der Standard-PIN an, und die ist auf jeder
+  benutzten Installation längst geändert. Er brach deshalb mit einem Fehler
+  ab, obwohl nichts kaputt war — das gewöhnt einem an, rote Ausgaben zu
+  übergehen. Jetzt wird sauber zwischen *übersprungen* und *fehlgeschlagen*
+  unterschieden. Mit `SMOKE_PIN=1234 make verify` läuft der volle Satz.
+
 ## [1.5.0] — 2026-09-10
 
 ### Hinzugefügt

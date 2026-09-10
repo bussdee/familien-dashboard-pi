@@ -51,3 +51,10 @@ Thumbs.db
 
 *.log
 coverage/
+
+# Eigene Zertifikate. Der Schlüssel der Zertifizierungsstelle darf das Haus
+# nicht verlassen — wer ihn hat, kann Zertifikate ausstellen, denen die
+# Geräte der Familie glauben.
+traefik/certs/*
+!traefik/certs/.gitkeep
+traefik/dynamic/certs.yml

@@ -20,6 +20,7 @@
   import PhotoWidget from '$lib/components/widgets/PhotoWidget.svelte';
   import FilesWidget from '$lib/components/widgets/FilesWidget.svelte';
   import MusicWidget from '$lib/components/widgets/MusicWidget.svelte';
+  import TimesWidget from '$lib/components/widgets/TimesWidget.svelte';
   import LinksWidget from '$lib/components/widgets/LinksWidget.svelte';
   import { LayoutGrid } from 'lucide-svelte';
   import type {
@@ -198,7 +199,14 @@
       {/if}
     </div>
 
-    <div class="min-w-0 flex-1 sm:max-w-2xl">
+    <!--
+      basis-full: Auf dem Handy gehört das Wetter UNTER die Begrüssung, nicht
+      daneben. Mit "flex-1" allein (Basis 0) wickelt der Block nie um — er
+      wird stattdessen zusammengedrückt, und die grosse Temperaturzahl darin
+      kann nicht schrumpfen. Ergebnis war eine Seite, die sich seitwärts
+      schieben liess.
+    -->
+    <div class="min-w-0 basis-full sm:basis-0 sm:flex-1 sm:max-w-2xl">
       <WeatherHero {weather} />
     </div>
 
@@ -258,6 +266,8 @@
             <LinksWidget />
           {:else if widget.id === 'countdown'}
             <CountdownWidget {events} />
+          {:else if widget.id === 'times'}
+            <TimesWidget />
           {:else if widget.id === 'notes'}
             <NotesWidget bind:notes />
           {:else if widget.id === 'photos'}

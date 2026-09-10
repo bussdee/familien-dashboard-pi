@@ -5,6 +5,8 @@
   import { session } from '$lib/stores';
   import type { FileListing, StoredFile } from '$lib/types';
   import { confirmAction } from '$lib/stores/confirm.svelte';
+  import Kachel from './Kachel.svelte';
+  import KachelLeer from './KachelLeer.svelte';
 
   let listing = $state<FileListing | null>(null);
   let loading = $state(true);
@@ -96,35 +98,40 @@
   });
 </script>
 
-<section class="flaeche overflow-hidden">
-  <header class="flex items-center justify-between gap-2 p-5 pb-3">
-    <div class="min-w-0">
-      <h2 class="flex items-center gap-2 text-lg font-semibold">
-        <FileText class="h-5 w-5 shrink-0" /> Dateien
-      </h2>
-      <p class="truncate text-sm text-muted-foreground">
-        {#if loading}
-          Lade…
-        {:else if dateien.length === 0}
-          Noch nichts abgelegt
-        {:else}
-          {dateien.length}
-          {dateien.length === 1 ? 'Datei' : 'Dateien'} · {groesse(listing?.used_bytes ?? 0)}
-        {/if}
-      </p>
-    </div>
+{#snippet zeile()}
+  {#if loading}
+    Lade…
+  {:else if dateien.length === 0}
+    Noch nichts abgelegt
+  {:else}
+    {dateien.length}
+    {dateien.length === 1 ? 'Datei' : 'Dateien'} · {groesse(listing?.used_bytes ?? 0)}
+  {/if}
+{/snippet}
 
-    {#if istAdmin}
-      <button
-        class="btn-primary shrink-0 px-3"
-        onclick={() => fileInput?.click()}
-        disabled={uploading}
-        aria-label="Dateien hochladen"
-      >
-        <Upload class="h-5 w-5" />
-      </button>
-    {/if}
-  </header>
+{#snippet aktionen()}
+  {#if istAdmin}
+    <button
+      class="btn-primary px-3"
+      onclick={() => fileInput?.click()}
+      disabled={uploading}
+      aria-label="Dateien hochladen"
+    >
+      <Upload class="h-5 w-5" />
+    </button>
+  {/if}
+{/snippet}
+
+<Kachel
+  titel="Dateien"
+  icon={FileText}
+  {zeile}
+  {aktionen}
+  randlos
+  hinweis={message}
+  fehler={error}
+  onFehlerZu={() => (error = '')}
+>
 
   <input
     bind:this={fileInput}
@@ -133,24 +140,6 @@
     class="hidden"
     onchange={(e) => upload((e.currentTarget as HTMLInputElement).files)}
   />
-
-  {#if message || error}
-    <div class="px-5 pb-2">
-      {#if message}
-        <p class="rounded-lg bg-success/10 px-3 py-2 text-sm text-success">{message}</p>
-      {/if}
-      {#if error}
-        <p
-          class="mt-1 flex items-start justify-between gap-2 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive"
-        >
-          <span class="min-w-0 flex-1">{error}</span>
-          <button onclick={() => (error = '')} aria-label="Schließen">
-            <X class="h-4 w-4 shrink-0" />
-          </button>
-        </p>
-      {/if}
-    </div>
-  {/if}
 
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
@@ -189,22 +178,25 @@
       </div>
     {:else if dateien.length === 0}
       {#if istAdmin}
-        <button
-          class="flex w-full flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border p-8 text-center text-muted-foreground transition-colors hover:bg-accent/40"
-          onclick={() => fileInput?.click()}
+        <KachelLeer
+          icon={Upload}
+          titel="Noch nichts abgelegt"
+          hinweis="Anleitungen, Formulare, Elternbriefe. Antippen, oder Dateien einfach hierher ziehen — bis {groesse(
+            listing?.max_file_bytes ?? 0,
+          )} je Datei."
         >
-          <Upload class="h-9 w-9 opacity-40" />
-          <span class="text-sm font-medium">Dateien hinzufügen</span>
-          <span class="text-xs">Antippen, oder Dateien einfach hierher ziehen</span>
-          <span class="text-xs">
-            Anleitungen, Formulare, Elternbriefe · bis
-            {groesse(listing?.max_file_bytes ?? 0)} je Datei
-          </span>
-        </button>
+          {#snippet aktion()}
+            <button class="btn-outline text-sm" onclick={() => fileInput?.click()}>
+              <Upload class="h-4 w-4" /> Dateien hinzufügen
+            </button>
+          {/snippet}
+        </KachelLeer>
       {:else}
-        <p class="py-8 text-center text-sm text-muted-foreground">
-          Hier legt ein Elternteil Anleitungen und Formulare ab.
-        </p>
+        <KachelLeer
+          icon={FileText}
+          titel="Noch nichts abgelegt"
+          hinweis="Hier legt ein Elternteil Anleitungen und Formulare ab."
+        />
       {/if}
     {:else}
       <ul class="scrollbar-thin max-h-80 space-y-1.5 overflow-y-auto pr-1">
@@ -265,4 +257,4 @@
       </p>
     {/if}
   </div>
-</section>
+</Kachel>

@@ -5,8 +5,8 @@
   import { connection, session, theme, type Theme } from '$lib/stores';
   import { board } from '$lib/stores/scores.svelte';
   import {
-    CloudSun, House, LayoutGrid, Link as LinkIcon, LogOut, Menu, Monitor, Moon,
-    Settings, Shield, Sun, Trophy, WifiOff, X, UserRound,
+    Clock, CloudSun, House, LayoutGrid, Link as LinkIcon, LogOut, Menu, Monitor,
+    Moon, Settings, Shield, Sun, Trophy, WifiOff, X, UserRound,
   } from 'lucide-svelte';
 
   let menuOpen = $state(false);
@@ -31,6 +31,7 @@
       { href: '/', label: 'Übersicht', icon: House, show: true },
       { href: '/wetter', label: 'Wetter', icon: CloudSun, show: true },
       { href: '/links', label: 'Links', icon: LinkIcon, show: !geraet },
+      { href: '/zeiten', label: 'Arbeit & Schule', icon: Clock, show: !geraet },
       { href: '/rangliste', label: 'Rangliste', icon: Trophy, show: !geraet },
       { href: '/ansicht', label: 'Ansicht anpassen', icon: LayoutGrid, show: !geraet },
       { href: '/settings', label: 'Einstellungen', icon: Settings, show: !geraet },
@@ -94,7 +95,7 @@
     </a>
 
     <nav class="hidden items-center gap-1 md:flex">
-      {#each nav.filter((i) => i.href !== '/ansicht' && i.href !== '/wetter') as item (item.href)}
+      {#each nav.filter((i) => !['/ansicht', '/wetter', '/zeiten'].includes(i.href)) as item (item.href)}
         <a
           href={item.href}
           class="touch-target gap-2 rounded-xl px-3 text-sm font-medium transition-colors

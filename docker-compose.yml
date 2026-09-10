@@ -22,6 +22,10 @@ services:
       # No Docker socket: routing comes from the static file below.
       - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro
       - ./traefik/dynamic:/etc/traefik/dynamic:ro
+      # Eigene Zertifikate, falls "bash scripts/make-cert.sh" gelaufen ist.
+      # Ohne sie nimmt Traefik seinen eingebauten Platzhalter — HTTPS läuft
+      # dann, aber jeder Browser warnt und die App ist nicht installierbar.
+      - ./traefik/certs:/etc/traefik/certs:ro
     healthcheck:
       test: ["CMD", "traefik", "healthcheck", "--ping"]
       interval: 30s

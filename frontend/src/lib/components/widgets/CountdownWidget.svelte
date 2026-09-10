@@ -1,10 +1,39 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import { Cake, CalendarHeart, PartyPopper, Plane, Timer } from 'lucide-svelte';
   import { differenceInCalendarDays, format, parseISO, startOfDay } from 'date-fns';
   import { de } from 'date-fns/locale';
+  import { calendarApi } from '$lib/api';
+  import Kachel from './Kachel.svelte';
+  import KachelLeer from './KachelLeer.svelte';
   import type { CalendarEvent } from '$lib/types';
 
+  /**
+   * Die Übersicht reicht dem Countdown ihre Termine der nächsten Wochen
+   * herein. Das genügt für „Ferien in drei Wochen", aber nicht für die Frage,
+   * die Kinder wirklich stellen: wie viele Tage noch bis zum Geburtstag. Der
+   * liegt fast immer Monate entfernt und stand deshalb nie in der Liste.
+   *
+   * Also holt sich diese Kachel ihr eigenes, weites Fenster. Die
+   * übergebenen Termine sind nur der Anfang, damit sofort etwas dasteht.
+   */
+  const FENSTER_TAGE = 400;
+
   let { events = [] }: { events?: CalendarEvent[] } = $props();
+
+  let weit = $state<CalendarEvent[] | null>(null);
+  const quelle = $derived(weit ?? events);
+
+  onMount(() => {
+    void (async () => {
+      try {
+        weit = (await calendarApi.events(FENSTER_TAGE)).events;
+      } catch {
+        // Bleibt bei den übergebenen Terminen — lieber die nächsten Wochen
+        // als eine leere Kachel.
+      }
+    })();
+  });
 
   // Keywords that turn an ordinary calendar entry into a countdown.
   const kinds = [
@@ -16,7 +45,7 @@
 
   const countdowns = $derived.by(() => {
     const today = startOfDay(new Date());
-    return events
+    return quelle
       .map((event) => {
         const title = event.title.toLowerCase();
         const kind = kinds.find((k) => k.match.some((m) => title.includes(m)));
@@ -26,31 +55,35 @@
         return { event, days, icon: kind.icon, color: kind.color };
       })
       .filter((x): x is NonNullable<typeof x> => x !== null)
+      // Ein jährlicher Termin kommt im weiten Fenster zweimal vor — einmal
+      // dieses Jahr, einmal nächstes. Nur der nächste zählt.
+      .filter((item, i, alle) => alle.findIndex((x) => x.event.title === item.event.title) === i)
       .sort((a, b) => a.days - b.days)
       .slice(0, 5);
   });
 
   const label = (days: number) =>
     days === 0 ? 'Heute!' : days === 1 ? 'Morgen' : `in ${days} Tagen`;
+
+  // Bei einem Geburtstag in acht Monaten ist die Tageszahl allein unhandlich.
+  const dazu = (days: number) => {
+    if (days < 31) return '';
+    const monate = Math.round(days / 30.44);
+    return monate === 1 ? 'gut ein Monat' : `gut ${monate} Monate`;
+  };
 </script>
 
-<section class="flaeche">
-  <header class="mb-4 flex items-center justify-between">
-    <div>
-      <h2 class="text-lg font-semibold">Countdowns</h2>
-      <p class="text-sm text-muted-foreground">Worauf wir uns freuen</p>
-    </div>
-    <Timer class="h-5 w-5 text-muted-foreground" />
-  </header>
+{#snippet zeile()}
+  {countdowns.length === 0 ? 'Worauf wir uns freuen' : `${countdowns.length} in Sicht`}
+{/snippet}
 
+<Kachel titel="Countdowns" icon={Timer} {zeile}>
   {#if countdowns.length === 0}
-    <div class="py-8 text-center text-muted-foreground">
-      <PartyPopper class="mx-auto mb-2 h-10 w-10 opacity-40" />
-      <p class="text-sm">Keine Countdowns</p>
-      <p class="mt-1 text-xs">
-        Termine mit „Geburtstag“, „Ferien“ oder „Feier“ erscheinen hier automatisch
-      </p>
-    </div>
+    <KachelLeer
+      icon={PartyPopper}
+      titel="Keine Countdowns"
+      hinweis="Termine mit „Geburtstag“, „Ferien“ oder „Feier“ erscheinen hier von selbst."
+    />
   {:else}
     <div class="space-y-2">
       {#each countdowns as item (item.event.id)}
@@ -73,9 +106,12 @@
               {item.days}
             </p>
             <p class="text-[11px] text-muted-foreground">{label(item.days)}</p>
+            {#if dazu(item.days)}
+              <p class="text-[10px] text-muted-foreground opacity-70">{dazu(item.days)}</p>
+            {/if}
           </div>
         </div>
       {/each}
     </div>
   {/if}
-</section>
+</Kachel>

@@ -410,9 +410,13 @@ func propValue(comp *ical.Component, name string) string {
 }
 
 func (s *Service) GetEvents(w http.ResponseWriter, r *http.Request) {
+	// 400 statt 365: Ein Countdown auf den nächsten Geburtstag braucht das
+	// volle Jahr, und im Schaltjahr sind es 366 Tage. Die Obergrenze muss
+	// darüber liegen, sonst fällt genau der Geburtstag heraus, der eben erst
+	// war — also der, bis zu dem es am längsten dauert.
 	days := 14
 	if d := r.URL.Query().Get("days"); d != "" {
-		if parsed, err := strconv.Atoi(d); err == nil && parsed > 0 && parsed <= 365 {
+		if parsed, err := strconv.Atoi(d); err == nil && parsed > 0 && parsed <= 400 {
 			days = parsed
 		}
 	}

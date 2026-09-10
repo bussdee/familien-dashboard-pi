@@ -38,8 +38,8 @@ docker ps && docker compose version
 ### Variante A – Archiv
 
 ```bash
-tar -xzf familien-dashboard-pi-1.5.0.tar.gz
-cd familien-dashboard-pi-1.5.0
+tar -xzf familien-dashboard-pi-1.6.0.tar.gz
+cd familien-dashboard-pi-1.6.0
 ```
 
 ### Variante B – Git
@@ -108,7 +108,7 @@ Prüfen, ob alles läuft:
 make verify
 ```
 
-Erwartet: **52 Prüfungen bestanden.**
+Erwartet: **55 Prüfungen bestanden.**
 
 ---
 
@@ -269,13 +269,76 @@ Wird der Platz auf dem Datenträger knapp, weist die Kachel darauf hin.
 - **Android/Chrome:** Menü (⋮) → „App installieren"
 - **iPhone/iPad:** Safari → Teilen → „Zum Home-Bildschirm"
 
-> **Wichtig:** Der Offline-Modus und der Installations-Vorschlag brauchen einen
-> *secure context*. Über `http://` funktioniert das nur auf `localhost`, **nicht**
-> über eine LAN-IP. Für beides den HTTPS-Zugang auf Port **8443** benutzen und
-> die Zertifikatswarnung einmalig pro Gerät bestätigen (selbstsigniert – im
-> eigenen Heimnetz in Ordnung).
+> **Wichtig:** Der Offline-Modus und „App installieren" brauchen einen
+> *secure context*. Über `http://` gibt es den nur auf `localhost`, **nicht**
+> über eine LAN-Adresse. Also den HTTPS-Zugang auf Port **8443** benutzen.
 >
-> Ohne HTTPS läuft die App ganz normal, nur ohne Offline-Cache.
+> Das allein reicht aber nicht: Traefik bringt ein Platzhalter-Zertifikat mit,
+> das nicht einmal eure Adresse enthält. Ein weggeklickter Zertifikatsfehler
+> macht aus einer Seite **keine** vertrauenswürdige Herkunft — Chrome
+> verweigert dann weiterhin Installation und Service Worker.
+>
+> Der Weg dahin steht unten unter *Ein eigenes Zertifikat*. Ohne das läuft
+> das Dashboard ganz normal im Browser, nur eben ohne Installation und ohne
+> Offline-Ansicht.
+
+---
+
+## Ein eigenes Zertifikat
+
+Nötig, wenn ihr das Dashboard als **App installieren** oder den Offline-Modus
+nutzen wollt. Zum reinen Aufrufen im Browser braucht es das nicht.
+
+```bash
+bash scripts/make-cert.sh 192.168.178.20
+make up
+```
+
+Das Skript legt eine kleine **eigene Zertifizierungsstelle** an — eine Datei,
+die sagt „diesen Zertifikaten glaube ich" — und stellt damit ein Zertifikat
+für eure Adresse aus. Es sagt anschliessend selbst, wie die Stelle auf
+Android, iPhone, Windows und Linux eingerichtet wird.
+
+Das ist **einmal pro Gerät** zu tun. Danach:
+
+- keine Zertifikatswarnung mehr
+- „App installieren" erscheint
+- Vollbild ohne Adressleiste
+- Offline-Ansicht
+
+Zwei Dinge dazu:
+
+- **Auf dem iPhone sind es zwei Schritte.** Das Profil zu installieren reicht
+  nicht; danach muss unter *Einstellungen → Allgemein → Info →
+  Zertifikatsvertrauenseinstellungen* noch ein Schalter umgelegt werden. Ohne
+  den zweiten Schritt bleibt die Warnung.
+- **Der Schlüssel der Stelle bleibt im Haus.** `traefik/certs/familie-ca.key`
+  ist von Git ausgenommen und gehört auf kein anderes Gerät. Wer ihn hat, kann
+  Zertifikate ausstellen, denen eure Geräte glauben.
+
+---
+
+## Arbeitszeiten und Schulzeiten
+
+Die Kachel *Arbeit & Schule* sagt, wer wann weg ist — und daraus, **ab wann
+alle da sind**. Eingetragen wird unter **Arbeit & Schule** im Menü, auf zwei
+Wegen:
+
+**Fester Wochenplan** für alles, was jede Woche gleich ist. Ein Stundenplan
+zum Beispiel: montags bis freitags 8:00 bis 13:00. Den fasst man ein- bis
+zweimal im Jahr an.
+
+**Nächste vier Wochen** für Zeiten, die jede Woche anders liegen. Vier Wochen
+als Kalenderblatt, Uhrzeiten direkt in die Felder, ein Knopf übernimmt die
+Woche darüber. Alles wird auf einmal gespeichert.
+
+**Ein eingetragener Tag sticht den Wochenplan.** Ein Feiertag wird als *Frei*
+eingetragen und hebt den Stundenplan für diesen einen Tag auf, ohne ihn zu
+löschen. Ein leeres Feld heisst „nichts Besonderes" — dann gilt wieder der
+Wochenplan.
+
+Jeder pflegt seine eigenen Zeiten, ein Administrator die aller. Am Wandgerät
+wird nur gelesen.
 
 ---
 
@@ -325,7 +388,7 @@ make setup       Einrichten (einmalig)
 make up          Starten
 make down        Stoppen
 make logs        Logs verfolgen
-make verify      52 automatische Prüfungen
+make verify      55 automatische Prüfungen
 make check       Nur kompilieren und typprüfen, ohne zu starten
 
 make dev         Entwicklungsmodus mit Hot-Reload → http://localhost:5173

@@ -3,6 +3,8 @@
   import { onMount } from 'svelte';
   import { ExternalLink, Link as LinkIcon, Plus, Users } from 'lucide-svelte';
   import { linksApi } from '$lib/api';
+  import Kachel from './Kachel.svelte';
+  import KachelLeer from './KachelLeer.svelte';
   import type { Link } from '$lib/types';
 
   let links = $state<Link[]>([]);
@@ -27,25 +29,23 @@
   });
 </script>
 
-<section class="flaeche">
-  <header class="mb-4 flex items-center justify-between">
-    <div>
-      <h2 class="widget-title"><LinkIcon class="h-5 w-5 shrink-0" /> Links</h2>
-      <p class="text-sm text-muted-foreground">
-        {#if $session.device}
-          {links.length === 0 ? 'Keine geteilten Links' : `${links.length} für die Familie`}
-        {:else}
-          {links.length === 0 ? 'Nichts angepinnt' : `${links.length} angepinnt`}
-        {/if}
-      </p>
-    </div>
-    <!-- Die Verwaltungsseite gehört einer Person — am Wandgerät führt sie
-         nur in eine Sperre. -->
-    {#if !$session.device}
-      <a class="btn-ghost px-3 text-sm text-muted-foreground" href="/links">Alle</a>
-    {/if}
-  </header>
+{#snippet zeile()}
+  {#if $session.device}
+    {links.length === 0 ? 'Keine geteilten Links' : `${links.length} für die Familie`}
+  {:else}
+    {links.length === 0 ? 'Nichts angepinnt' : `${links.length} angepinnt`}
+  {/if}
+{/snippet}
 
+<!-- Die Verwaltungsseite gehört einer Person — am Wandgerät führt sie nur in
+     eine Sperre. Deshalb dort kein Knopf. -->
+{#snippet aktionen()}
+  {#if !$session.device}
+    <a class="btn-ghost px-3 text-sm text-muted-foreground" href="/links">Alle</a>
+  {/if}
+{/snippet}
+
+<Kachel titel="Links" icon={LinkIcon} {zeile} {aktionen}>
   {#if loading}
     <div class="space-y-2">
       {#each Array(3) as _, i (i)}
@@ -54,18 +54,23 @@
     </div>
   {:else if links.length === 0}
     {#if $session.device}
-      <p class="py-8 text-center text-sm text-muted-foreground">
-        Noch keine geteilten Links
-      </p>
+      <KachelLeer
+        icon={LinkIcon}
+        titel="Noch keine geteilten Links"
+        hinweis="Wer sich anmeldet, kann einen Link mit der Familie teilen."
+      />
     {:else}
-      <a
-        href="/links"
-        class="flex flex-col items-center gap-2 rounded-xl py-8 text-center text-muted-foreground transition-colors hover:bg-accent/40"
+      <KachelLeer
+        icon={LinkIcon}
+        titel="Nichts angepinnt"
+        hinweis="Was du oft brauchst, direkt auf der Übersicht."
       >
-        <Plus class="h-8 w-8 opacity-40" />
-        <p class="text-sm font-medium">Links anpinnen</p>
-        <p class="text-xs">Was du oft brauchst, direkt auf der Übersicht</p>
-      </a>
+        {#snippet aktion()}
+          <a href="/links" class="btn-outline text-sm">
+            <Plus class="h-4 w-4" /> Links anpinnen
+          </a>
+        {/snippet}
+      </KachelLeer>
     {/if}
   {:else}
     <!-- Two columns from the smallest phone up: bookmarks are short. -->
@@ -94,4 +99,4 @@
       {/each}
     </div>
   {/if}
-</section>
+</Kachel>

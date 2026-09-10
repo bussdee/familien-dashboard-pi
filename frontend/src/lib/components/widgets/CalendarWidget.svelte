@@ -5,6 +5,8 @@
   import { differenceInCalendarDays, format, isToday, isTomorrow, parseISO } from 'date-fns';
   import { de } from 'date-fns/locale';
   import { ApiError, calendarApi } from '$lib/api';
+  import Kachel from './Kachel.svelte';
+  import KachelLeer from './KachelLeer.svelte';
   import type { CalendarEvent, EventDraft, EventRepeat } from '$lib/types';
   import { confirmAction } from '$lib/stores/confirm.svelte';
 
@@ -149,22 +151,21 @@
   }
 </script>
 
-<section class="flaeche">
-  <header class="mb-4 flex items-center justify-between">
-    <div>
-      <h2 class="text-lg font-semibold">Kalender</h2>
-      <p class="text-sm text-muted-foreground">
-        {events.length === 0 ? 'Keine Termine' : `${events.length} Termine`}
-      </p>
-    </div>
-    <button
-      class="btn-primary px-3"
-      onclick={() => (showForm ? (showForm = false) : startNew())}
-      aria-label="Termin hinzufügen"
-    >
-      {#if showForm}<X class="h-5 w-5" />{:else}<Plus class="h-5 w-5" />{/if}
-    </button>
-  </header>
+{#snippet zeile()}
+  {events.length === 0 ? 'Keine Termine' : `${events.length} Termine`}
+{/snippet}
+
+{#snippet aktionen()}
+  <button
+    class="btn-primary px-3"
+    onclick={() => (showForm ? (showForm = false) : startNew())}
+    aria-label={showForm ? 'Abbrechen' : 'Termin hinzufügen'}
+  >
+    {#if showForm}<X class="h-5 w-5" />{:else}<Plus class="h-5 w-5" />{/if}
+  </button>
+{/snippet}
+
+<Kachel titel="Kalender" icon={CalendarDays} {zeile} {aktionen}>
 
   {#if error}
     <p class="mb-3 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>
@@ -237,14 +238,11 @@
   {/if}
 
   {#if groups.length === 0}
-    <div class="py-8 text-center text-muted-foreground">
-      <CalendarDays class="mx-auto mb-2 h-10 w-10 opacity-40" />
-      <p class="text-sm">Keine Termine in nächster Zeit</p>
-      <p class="mt-1 text-xs">
-        Mit <strong>+</strong> eintragen – oder eine <code>.ics</code>-Datei in
-        <code>data/ics/</code> ablegen
-      </p>
-    </div>
+    <KachelLeer
+      icon={CalendarDays}
+      titel="Keine Termine in nächster Zeit"
+      hinweis="Mit + eintragen, oder eine .ics-Datei in data/ics/ ablegen."
+    />
   {:else}
     <div class="scrollbar-thin max-h-[340px] space-y-4 overflow-y-auto pr-1">
       {#each groups as group (group.label)}
@@ -332,4 +330,4 @@
       {/each}
     </div>
   {/if}
-</section>
+</Kachel>

@@ -42,7 +42,7 @@ die PIN `1234`.
 ```bash
 make check        # Backend baut und besteht go vet, Frontend typprüft
 make up           # produktionsnaher Stack
-make verify       # 52 Prüfungen gegen den laufenden Stack
+make verify       # 55 Prüfungen gegen den laufenden Stack
 ```
 
 Beides muss grün sein. Wenn du an der Oberfläche gearbeitet hast, sieh es

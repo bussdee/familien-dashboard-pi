@@ -107,7 +107,7 @@ make up
 make verify
 ```
 
-Erwartet: **52 Prüfungen bestanden.** Wenn hier etwas rot ist, wird nicht
+Erwartet: **55 Prüfungen bestanden.** Wenn hier etwas rot ist, wird nicht
 deployt — der Fehler wäre auf dem Pi derselbe.
 
 Zusätzlich einmal von Hand durchklicken: anmelden, eine Aufgabe abhaken, einen
@@ -210,7 +210,7 @@ make pi-status          # laufen alle drei Container und sind sie "healthy"?
 make pi-verify          # Smoke-Test gegen den Pi
 ```
 
-Erwartet: dreimal `healthy` und wieder **52 Prüfungen bestanden**.
+Erwartet: dreimal `healthy` und wieder **55 Prüfungen bestanden**.
 
 Dann im Browser `http://<ZIEL-IP>:8088` öffnen.
 

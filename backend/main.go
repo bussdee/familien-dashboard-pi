@@ -25,6 +25,7 @@ import (
 	"family-dashboard/backend/internal/points"
 	"family-dashboard/backend/internal/shopping"
 	"family-dashboard/backend/internal/store"
+	"family-dashboard/backend/internal/times"
 	"family-dashboard/backend/internal/weather"
 
 	"github.com/go-chi/chi/v5"
@@ -77,6 +78,7 @@ func main() {
 	photosSvc := photos.NewService(cfg.Photos.Dir)
 	filesSvc := files.NewService(cfg.Files.Dir)
 	musicSvc := music.NewService(sql, cfg.Music.Dir, db)
+	timesSvc := times.NewService(sql)
 	backupSvc := backup.NewService(sql, cfg.Database.Path, cfg.Database.BackupDir,
 		dataDir(cfg.Database.Path), cfg.Database.BackupRetention, cfg.Database.BackupCron)
 
@@ -144,6 +146,13 @@ func main() {
 				r.Get("/preferences/{key}", authSvc.GetPreference)
 				r.Put("/preferences/{key}", authSvc.SetPreference)
 
+				// Eintragen gehört einer Person: jeder seine eigenen Zeiten,
+				// ein Administrator die aller. Am Wandgerät steht niemand
+				// namentlich davor, dort wird nur gelesen.
+				r.Post("/times/weekly", timesSvc.CreateWeekly)
+				r.Delete("/times/weekly/{id}", timesSvc.DeleteWeekly)
+				r.Put("/times/days", timesSvc.SaveDays)
+
 				r.Post("/links", linksSvc.Create)
 				r.Put("/links/{id}", linksSvc.Update)
 				r.Post("/links/{id}/pin", linksSvc.TogglePin)
@@ -201,6 +210,12 @@ func main() {
 			// Musik hören darf jeder, auch das Wandgerät — es ist Familienmusik
 			// und keine persönliche. Nur das Neu-Einlesen ist Adminsache: Bei
 			// einer grossen Sammlung ist das minutenlange Arbeit für die Platte.
+			// Wer wann weg ist. Lesen darf jeder, auch das Wandgerät — im Flur
+			// ist „ab wann sind alle da" genau die nützliche Frage.
+			r.Get("/times", timesSvc.Overview)
+			r.Get("/times/weekly", timesSvc.ListWeekly)
+			r.Get("/times/days", timesSvc.ListDays)
+
 			r.Get("/music/status", musicSvc.Status)
 			r.Get("/music/browse", musicSvc.Browse)
 			r.Get("/music/search", musicSvc.Search)

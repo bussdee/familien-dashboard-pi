@@ -4,6 +4,8 @@
   import { session } from '$lib/stores';
   import { board } from '$lib/stores/scores.svelte';
   import { werWarDas } from '$lib/stores/werwardas.svelte';
+  import Kachel from './Kachel.svelte';
+  import KachelLeer from './KachelLeer.svelte';
   import type { ShoppingItem } from '$lib/types';
 
   let {
@@ -18,6 +20,20 @@
   let name = $state('');
   let quantity = $state('');
   let category = $state('');
+  /**
+   * Punkt 6: Bisher standen Eingabefeld, Mengenfeld und Kategorieauswahl
+   * dauerhaft in der Kachel — drei Zeilen, die den grössten Teil der Fläche
+   * belegten, auch wenn gerade niemand etwas eintragen wollte. Notizen und
+   * Kalender machen es seit jeher anders: ein Plus in der Kopfzeile klappt
+   * das Formular auf. Jetzt hier genauso.
+   */
+  let showForm = $state(false);
+
+  function startNew() {
+    showForm = true;
+    name = '';
+    quantity = '';
+  }
   let error = $state('');
   let busy = $state(false);
 
@@ -38,6 +54,9 @@
       await shoppingApi.create({ name: name.trim(), quantity, category });
       name = '';
       quantity = '';
+      // Das Formular bleibt bewusst offen — anders als bei Notizen und
+      // Kalender. Eine Einkaufsliste füllt man in einem Rutsch: Milch, Brot,
+      // Butter. Nach jedem Eintrag erneut auf Plus zu tippen wäre lästig.
     } catch (e) {
       error = e instanceof ApiError ? e.message : 'Konnte nicht hinzufügen';
     } finally {
@@ -101,17 +120,25 @@
   }
 </script>
 
-<section class="flaeche">
-  <header class="mb-4 flex items-center justify-between">
-    <div>
-      <h2 class="flex items-center gap-2 text-lg font-semibold">
-        <ShoppingCart class="h-5 w-5" /> Einkaufen
-      </h2>
-      <p class="text-sm text-muted-foreground">
-        {open.length} offen · {done.length} im Wagen
-      </p>
-    </div>
-  </header>
+{#snippet zeile()}
+  {#if items.length === 0}
+    Die Liste ist leer
+  {:else}
+    {open.length} offen · {done.length} im Wagen
+  {/if}
+{/snippet}
+
+{#snippet aktionen()}
+  <button
+    class="btn-primary px-3"
+    onclick={() => (showForm ? (showForm = false) : startNew())}
+    aria-label={showForm ? 'Abbrechen' : 'Eintrag hinzufügen'}
+  >
+    {#if showForm}<X class="h-5 w-5" />{:else}<Plus class="h-5 w-5" />{/if}
+  </button>
+{/snippet}
+
+<Kachel titel="Einkaufen" icon={ShoppingCart} {zeile} {aktionen}>
 
   {#if done.length > 0}
     <!-- Finishing the shop is the moment points are earned, so it gets a real
@@ -132,30 +159,35 @@
     </button>
   {/if}
 
-  <form class="mb-4 flex gap-2" onsubmit={add}>
-    <input
-      class="input flex-1"
-      placeholder="Was fehlt?"
-      bind:value={name}
-      maxlength="80"
-      onkeydown={onEnter}
-    />
-    <input
-      class="input w-24 shrink-0"
-      placeholder="Menge"
-      bind:value={quantity}
-      maxlength="20"
-      onkeydown={onEnter}
-    />
-    <button class="btn-primary shrink-0 px-3" disabled={!name.trim() || busy} aria-label="Hinzufügen">
-      <Plus class="h-5 w-5" />
-    </button>
-  </form>
-
-  <select class="input mb-4 text-sm" bind:value={category} aria-label="Kategorie">
-    <option value="">Ohne Kategorie</option>
-    {#each categories as cat}<option value={cat}>{cat}</option>{/each}
-  </select>
+  {#if showForm}
+    <form class="mb-4 space-y-2 rounded-xl border border-border p-3" onsubmit={add}>
+      <div class="flex gap-2">
+        <!-- svelte-ignore a11y_autofocus -->
+        <input
+          class="input flex-1"
+          placeholder="Was fehlt?"
+          bind:value={name}
+          maxlength="80"
+          onkeydown={onEnter}
+          autofocus
+        />
+        <input
+          class="input w-24 shrink-0"
+          placeholder="Menge"
+          bind:value={quantity}
+          maxlength="20"
+          onkeydown={onEnter}
+        />
+      </div>
+      <select class="input text-sm" bind:value={category} aria-label="Kategorie">
+        <option value="">Ohne Kategorie</option>
+        {#each categories as cat}<option value={cat}>{cat}</option>{/each}
+      </select>
+      <button class="btn-primary w-full" disabled={!name.trim() || busy}>
+        <Plus class="h-4 w-4" /> Auf die Liste
+      </button>
+    </form>
+  {/if}
 
   {#if error}
     <p class="mb-3 flex items-center justify-between rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
@@ -165,10 +197,11 @@
   {/if}
 
   {#if items.length === 0}
-    <div class="py-8 text-center text-muted-foreground">
-      <ShoppingCart class="mx-auto mb-2 h-10 w-10 opacity-40" />
-      <p class="text-sm">Die Liste ist leer</p>
-    </div>
+    <KachelLeer
+      icon={ShoppingCart}
+      titel="Die Liste ist leer"
+      hinweis="Mit + etwas eintragen. Was im Laden abgehakt wird, verschwindet sofort auf allen Geräten."
+    />
   {:else}
     <ul class="scrollbar-thin max-h-[300px] space-y-1.5 overflow-y-auto pr-1">
       {#each open as item (item.id)}
@@ -228,4 +261,4 @@
       {/if}
     </ul>
   {/if}
-</section>
+</Kachel>

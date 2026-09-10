@@ -3,6 +3,8 @@
   import { marked } from 'marked';
   import DOMPurify from 'dompurify';
   import { ApiError, notesApi } from '$lib/api';
+  import Kachel from './Kachel.svelte';
+  import KachelLeer from './KachelLeer.svelte';
   import type { Note } from '$lib/types';
   import { confirmAction } from '$lib/stores/confirm.svelte';
 
@@ -103,22 +105,23 @@
   }
 </script>
 
-<section class="flaeche">
-  <header class="mb-4 flex items-center justify-between">
-    <div>
-      <h2 class="flex items-center gap-2 text-lg font-semibold">
-        <FileText class="h-5 w-5" /> Notizen
-      </h2>
-      <p class="text-sm text-muted-foreground">{notes.length} Einträge</p>
-    </div>
-    <button
-      class="btn-primary px-3"
-      onclick={() => (showForm ? (showForm = false) : startNew())}
-      aria-label="Notiz hinzufügen"
-    >
-      {#if showForm}<X class="h-5 w-5" />{:else}<Plus class="h-5 w-5" />{/if}
-    </button>
-  </header>
+{#snippet zeile()}
+  {notes.length === 0
+    ? 'Noch nichts notiert'
+    : `${notes.length} ${notes.length === 1 ? 'Eintrag' : 'Einträge'}`}
+{/snippet}
+
+{#snippet aktionen()}
+  <button
+    class="btn-primary px-3"
+    onclick={() => (showForm ? (showForm = false) : startNew())}
+    aria-label={showForm ? 'Abbrechen' : 'Notiz hinzufügen'}
+  >
+    {#if showForm}<X class="h-5 w-5" />{:else}<Plus class="h-5 w-5" />{/if}
+  </button>
+{/snippet}
+
+<Kachel titel="Notizen" icon={FileText} {zeile} {aktionen}>
 
   {#if error}
     <p class="mb-3 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>
@@ -152,10 +155,11 @@
   {/if}
 
   {#if notes.length === 0}
-    <div class="py-8 text-center text-muted-foreground">
-      <FileText class="mx-auto mb-2 h-10 w-10 opacity-40" />
-      <p class="text-sm">Noch keine Notizen</p>
-    </div>
+    <KachelLeer
+      icon={FileText}
+      titel="Noch keine Notizen"
+      hinweis="Mit + eine anlegen. Notizen liegen als Markdown-Dateien auf dem Server und bleiben auch ohne dieses Programm lesbar."
+    />
   {:else}
     <ul class="scrollbar-thin max-h-[340px] space-y-2 overflow-y-auto pr-1">
       {#each sorted as note (note.id)}
@@ -219,7 +223,7 @@
       {/each}
     </ul>
   {/if}
-</section>
+</Kachel>
 
 <style>
   /* marked output needs a little structure back — Tailwind's preflight strips it. */

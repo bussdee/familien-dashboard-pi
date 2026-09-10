@@ -10,6 +10,8 @@
   import Modal from '$lib/components/Modal.svelte';
   import type { Chore, User } from '$lib/types';
   import { confirmAction } from '$lib/stores/confirm.svelte';
+  import Kachel from './Kachel.svelte';
+  import KachelLeer from './KachelLeer.svelte';
   import { werWarDas } from '$lib/stores/werwardas.svelte';
 
   let {
@@ -177,35 +179,30 @@
   }
 </script>
 
-<section class="flaeche">
-  <header class="mb-4 flex items-start justify-between gap-2">
-    <div class="min-w-0">
-      <h2 class="flex items-center gap-2 text-lg font-semibold">
-        <ListChecks class="h-5 w-5 shrink-0" /> Aufgaben
-      </h2>
-      <p class="text-sm text-muted-foreground">
-        {#if overdue.length > 0}
-          <span class="text-destructive">{overdue.length} überfällig</span>
-        {:else if dueToday.length > 0}
-          {dueToday.length} heute fällig
-        {:else}
-          Alles im Plan
-        {/if}
-        {#if mine.length > 0}· {mine.length} für dich{/if}
-      </p>
-    </div>
-    {#if isAdmin}
-      <button
-        class="btn-primary shrink-0 px-3"
-        onclick={startNew}
-        aria-label="Aufgabe hinzufügen"
-      >
-        <Plus class="h-5 w-5" />
-      </button>
+{#snippet zeile()}
+  {#if chores.length === 0}
+    Noch nichts angelegt
+  {:else}
+    {#if overdue.length > 0}
+      <span class="text-destructive">{overdue.length} überfällig</span>
+    {:else if dueToday.length > 0}
+      {dueToday.length} heute fällig
+    {:else}
+      Alles im Plan
     {/if}
-  </header>
+    {#if mine.length > 0}· {mine.length} für dich{/if}
+  {/if}
+{/snippet}
 
+{#snippet aktionen()}
+  {#if isAdmin}
+    <button class="btn-primary px-3" onclick={startNew} aria-label="Aufgabe hinzufügen">
+      <Plus class="h-5 w-5" />
+    </button>
+  {/if}
+{/snippet}
 
+<Kachel titel="Aufgaben" icon={ListChecks} {zeile} {aktionen}>
   {#if error}
     <p class="mb-3 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>
   {/if}
@@ -252,13 +249,13 @@
   </Modal>
 
   {#if chores.length === 0}
-    <div class="py-8 text-center text-muted-foreground">
-      <ListChecks class="mx-auto mb-2 h-10 w-10 opacity-40" />
-      <p class="text-sm">Noch keine Aufgaben angelegt</p>
-      {#if isAdmin}
-        <p class="mt-1 text-xs">Mit <strong>+</strong> die erste anlegen</p>
-      {/if}
-    </div>
+    <KachelLeer
+      icon={ListChecks}
+      titel="Noch keine Aufgaben angelegt"
+      hinweis={isAdmin
+        ? 'Mit + die erste anlegen. Jede Aufgabe hat ein Intervall und einen Punktwert.'
+        : 'Ein Elternteil legt die Aufgaben an.'}
+    />
   {:else}
     <ul class="scrollbar-thin max-h-[320px] overflow-y-auto pr-1">
       {#each [...overdue, ...dueToday, ...later] as chore (chore.id)}
@@ -348,4 +345,4 @@
       {/each}
     </ul>
   {/if}
-</section>
+</Kachel>

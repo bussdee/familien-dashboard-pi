@@ -9,6 +9,21 @@ trap 'rm -f "$JAR" "$JAR.txt"' EXIT
 
 pass=0
 fail=0
+skip=0
+
+# Übersprungen ist nicht dasselbe wie fehlgeschlagen. Auf einer echten
+# Installation ist die Standard-PIN längst geändert — dann kommt der Test
+# nicht hinein und kann die angemeldeten Prüfungen nicht laufen lassen. Das
+# als Fehlschlag zu melden, trainiert einem an, rote Ausgaben zu übergehen.
+# Und dann übersieht man das eine Mal, in dem es echt ist.
+uebersprungen() {
+  printf '  \033[33m—\033[0m %-46s %s\n' "$1" "${2:-übersprungen}"
+  skip=$((skip + 1))
+}
+
+# Die PIN lässt sich von aussen vorgeben, dann läuft der volle Satz:
+#   SMOKE_PIN=1234 make pi-verify
+PIN="${SMOKE_PIN:-1234}"
 
 check() {
   local label="$1" expected="$2" actual="$3"
@@ -34,6 +49,7 @@ check "SPA-Fallback für /rangliste"    200 "$(code "$BASE/rangliste")"
 check "SPA-Fallback für /links"        200 "$(code "$BASE/links")"
 check "SPA-Fallback für /ansicht"      200 "$(code "$BASE/ansicht")"
 check "SPA-Fallback für /wetter"       200 "$(code "$BASE/wetter")"
+check "SPA-Fallback für /zeiten"       200 "$(code "$BASE/zeiten")"
 check "Manifest"                       200 "$(code "$BASE/manifest.json")"
 check "Service Worker"                 200 "$(code "$BASE/service-worker.js")"
 check "App-Icon"                       200 "$(code "$BASE/icons/icon-192.png")"
@@ -55,13 +71,22 @@ admins = [u["id"] for u in users if u["role"] == "admin"]
 print((admins or [u["id"] for u in users] or [1])[0])
 ' 2>/dev/null || echo 1)"
 LOGIN="$(code -c "$JAR" -X POST -H 'Content-Type: application/json' \
-  -d "{\"user_id\":${USER_ID:-1},\"pin\":\"1234\"}" "$BASE/api/auth/login")"
-check "Login mit Standard-PIN"         200 "$LOGIN"
+  -d "{\"user_id\":${USER_ID:-1},\"pin\":\"$PIN\"}" "$BASE/api/auth/login")"
+
+if [ "$LOGIN" = "200" ]; then
+  check "Anmeldung"                    200 "$LOGIN"
+else
+  uebersprungen "Anmeldung" "PIN passt nicht — das ist auf einer benutzten Installation normal"
+fi
 
 if [ "$LOGIN" != "200" ]; then
   echo ""
-  echo "  ⚠️  Login fehlgeschlagen – die PIN wurde vermutlich schon geändert."
-  echo "     Die folgenden Prüfungen werden übersprungen."
+  echo "  Die angemeldeten Prüfungen brauchen eine gültige PIN. Mit der"
+  echo "  richtigen laufen sie mit:"
+  echo ""
+  echo "      SMOKE_PIN=<vierstellig> $0"
+  echo ""
+  echo "  Ohne sie werden sie übersprungen — das ist kein Fehlschlag."
 else
   echo ""
   echo "Daten-Endpunkte (angemeldet)"
@@ -71,7 +96,8 @@ else
             links:/api/links layout:/api/preferences/dashboard.layout \
             reward:/api/shopping/reward location:/api/weather/location \
             devices:/api/devices photos:/api/photos files:/api/files \
-            music:/api/music/status musikordner:/api/music/browse; do
+            music:/api/music/status musikordner:/api/music/browse \
+            zeiten:/api/times wochenplan:/api/times/weekly; do
     name="${ep%%:*}"; path="${ep#*:}"
     status="$(code -b "$JAR" "$BASE$path")"
     # Wetter darf 503 sein, wenn der Server (noch) kein Internet hatte.
@@ -225,7 +251,12 @@ fi
 
 echo ""
 if [ "$fail" -eq 0 ]; then
-  printf '\033[32m✅ %d Prüfungen bestanden.\033[0m\n\n' "$pass"
+  if [ "$skip" -gt 0 ]; then
+    printf '\033[32m✅ %d Prüfungen bestanden\033[0m, \033[33m%d übersprungen\033[0m (keine gültige PIN).\n\n' \
+      "$pass" "$skip"
+  else
+    printf '\033[32m✅ %d Prüfungen bestanden.\033[0m\n\n' "$pass"
+  fi
   exit 0
 fi
 printf '\033[31m❌ %d von %d Prüfungen fehlgeschlagen.\033[0m\n\n' "$fail" "$((pass + fail))"

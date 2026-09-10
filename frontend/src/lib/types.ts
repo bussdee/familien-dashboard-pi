@@ -270,6 +270,66 @@ export interface PhotoUploadResult {
   count: number;
 }
 
+/** Arbeit, Schule und was sonst jemanden aus dem Haus holt. */
+export type TimeKind = 'arbeit' | 'schule' | 'frei' | 'urlaub' | 'krank' | 'sonstiges';
+
+/** Ein Eintrag im Wochenmuster — gilt jede Woche, bis er geändert wird. */
+export interface WeeklyTime {
+  id: number;
+  user_id: number;
+  /** 0 = Montag … 6 = Sonntag. */
+  weekday: number;
+  start_time: string;
+  end_time: string;
+  kind: TimeKind;
+  note: string;
+}
+
+/** Ein konkreter Tag. Sticht das Wochenmuster. */
+export interface DayTime {
+  id: number;
+  user_id: number;
+  /** JJJJ-MM-TT */
+  day: string;
+  start_time: string;
+  end_time: string;
+  kind: TimeKind;
+  note: string;
+}
+
+/** Ein aufgelöster Block, egal ob aus Muster oder konkretem Tag. */
+export interface TimeBlock {
+  user_id: number;
+  user_name: string;
+  user_emoji: string;
+  user_color: string;
+  start_time: string;
+  end_time: string;
+  kind: TimeKind;
+  note: string;
+  /** true, wenn der Block aus dem Wochenmuster stammt. */
+  from_pattern: boolean;
+}
+
+export interface TimeDay {
+  date: string;
+  blocks: TimeBlock[];
+  /** Ab wann niemand mehr unterwegs ist; leer, wenn das nicht bestimmbar ist. */
+  all_home_from?: string;
+}
+
+export interface TimePerson {
+  id: number;
+  name: string;
+  avatar_emoji: string;
+  color: string;
+}
+
+export interface TimeOverview {
+  days: TimeDay[];
+  people: TimePerson[];
+}
+
 /** Ein Titel aus dem Musik-Index. */
 export interface Track {
   id: number;

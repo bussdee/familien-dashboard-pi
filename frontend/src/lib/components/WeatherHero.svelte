@@ -132,9 +132,21 @@
             />
           {/if}
         </svg>
+        <!--
+          Sechs Uhrzeiten in einer Handy-schmalen Zeile ergaben eine
+          zusammenhängende Ziffernfolge — „212301030507" statt sechs Zahlen.
+          Auf schmalen Bildschirmen bleiben deshalb nur jede zweite stehen,
+          und jede bekommt Mindestbreite und Mitte.
+        -->
         <div class="flex justify-between text-[11px] font-light tracking-wide text-muted-foreground">
-          {#each hours.filter((_, i) => i % 2 === 0) as h (h.time)}
-            <span>{format(parseISO(h.time), 'HH')}</span>
+          {#each hours.filter((_, i) => i % 2 === 0) as h, i (h.time)}
+            <span
+              class="min-w-[2ch] shrink-0 text-center tabular-nums {i % 2 === 1
+                ? 'hidden sm:inline'
+                : ''}"
+            >
+              {format(parseISO(h.time), 'HH')}
+            </span>
           {/each}
         </div>
       </div>

@@ -67,6 +67,7 @@ solange es im eigenen, vertrauenswürdigen Netz bleibt.
 | 🖼️ **Foto-Rahmen & Diashow** | Bilder hochladen, wechseln automatisch. Ein Knopf schaltet auf **Vollbild**: nur Foto, Uhrzeit, Wetter und was heute noch ansteht. |
 | 🎵 **Musik & Hörspiele** | Ein eigener Ordner voller MP3s — vom Pi, vom NAS oder von einer angesteckten Platte. Geblättert wird nach Ordnern, sortiert nach Dateiname: Ein Hörspiel läuft von Teil 1 bis Teil 12. Die Leiste unten bleibt beim Seitenwechsel stehen, die Musik läuft weiter. Titel und Knöpfe erscheinen auch auf dem Sperrbildschirm des Handys. |
 | 📎 **Dateien** | Bedienungsanleitung, Elternbrief, Formular fürs Ferienlager. Ein Elternteil legt ab, alle laden herunter — auch am Wandgerät. |
+| 🕗 **Arbeit & Schule** | Wer wann weg ist — und daraus: **ab wann sind alle da**. Das Kind trägt seinen Stundenplan als festen Wochenplan ein, die Eltern ihre Schichten als Kalenderblatt für vier Wochen. Ein eingetragener Tag sticht den Wochenplan, ein Feiertag hebt ihn also auf, ohne ihn zu löschen. |
 | 🏠 **Familien-Modus fürs Wandtablet** | Ein Tablet im Flur wird zum Familiengerät: dauerhaft angemeldet, aber ohne persönliche Daten. Wer abhakt, tippt kurz auf sein Gesicht — **keine PIN**, und die Punkte landen beim Richtigen. Wer es mit aufs Sofa nimmt, meldet sich an und ist danach wieder im Familien-Modus. |
 | 📱 **Geräte-Status** | Läuft Plex, Kavita, der NAS? Kachel antippen öffnet die Oberfläche. |
 | 🎛️ **Pro Person** | Jeder ordnet sich die Fenster selbst an und blendet aus, was er nicht braucht. Zwei Oberflächen zur Wahl — *Nachtlicht* (offen, mit feinen Linien) und *Glas* (Fenster als milchige Scheiben) — jeweils hell oder dunkel. |
@@ -365,7 +366,7 @@ make up
 make verify
 ```
 
-Erwartet: **52 Prüfungen bestanden.** Wenn hier etwas rot ist, hilft
+Erwartet: **55 Prüfungen bestanden.** Wenn hier etwas rot ist, hilft
 [INSTALL.md](INSTALL.md) weiter.
 
 **Im Browser öffnen** und anmelden. Es sind drei Benutzer angelegt — **Papa**,
@@ -443,7 +444,7 @@ Damit du nicht enttäuscht wirst:
 make setup       Einrichten (einmalig)
 make preflight   Prüfen, ob das Gerät passt (ändert nichts)
 make up          Starten                 make down     Stoppen
-make logs        Logs ansehen            make verify   52 Prüfungen
+make logs        Logs ansehen            make verify   55 Prüfungen
 make backup      Sichern                 make restore  Zurückspielen
 make dev         Entwicklungsmodus mit Hot-Reload
 make clean       Aufräumen

@@ -142,10 +142,25 @@
 >
   {#if aktuell}
     {#key aktuell.name}
+      <!--
+        Ein weichgezeichneter, formatfüllender Hintergrund — damit die Ränder
+        neben einem Hochkantbild nicht als schwarze Balken dastehen.
+      -->
       <img
         src={photosApi.url(aktuell.name)}
         alt=""
-        class="absolute inset-0 h-full w-full animate-fade-in object-cover"
+        aria-hidden="true"
+        class="absolute inset-0 h-full w-full scale-110 object-cover opacity-30 blur-2xl"
+      />
+      <!--
+        object-contain statt object-cover: Bei einem Hochkantfoto auf einem
+        querformatigen Bildschirm schnitt cover alles bis auf einen Streifen
+        aus der Bildmitte weg. Man sah Bauchnabel und Kinn, aber kein Gesicht.
+      -->
+      <img
+        src={photosApi.url(aktuell.name)}
+        alt=""
+        class="absolute inset-0 h-full w-full animate-fade-in object-contain"
       />
     {/key}
     <!-- Zwei Verläufe, damit die Schrift über jedem Bild lesbar bleibt -->
