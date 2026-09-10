@@ -96,6 +96,13 @@ darauf. Was unter 1.4.5 gesammelt war, ist in 1.5.0 aufgegangen.
 
 ### Behoben
 
+- **Der Zertifikatsordner gehörte nach dem ersten Start root.** Weil er nicht
+  mit übertragen wird, legte Docker ihn beim Einhängen selbst an — und das
+  geschieht als root. Danach konnte `make-cert.sh` dort nichts erzeugen und
+  scheiterte an einer nackten `chmod`-Fehlermeldung. Der Ordner wird jetzt vom
+  Deploy und von `init-data.sh` vorher angelegt, und das Skript sagt
+  verständlich, was zu tun ist, falls er trotzdem einmal fremd gehört.
+
 - **Der Deploy hätte Zertifikate mit übertragen.** Die Ausschlussliste von
   `rsync` kennt `.gitignore` nicht — `traefik/certs/` stand nicht darin und
   wäre samt privater Schlüssel auf das Zielgerät gewandert. Zertifikate

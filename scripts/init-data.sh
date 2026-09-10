@@ -7,6 +7,9 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DATA="$ROOT/backend/data"
 
 mkdir -p "$DATA"/{notes,ics,photos,files,music,backup}
+# Muss existieren, bevor Docker ihn beim Einhängen selbst anlegt — sonst
+# gehört er root und das Zertifikatsskript kann nichts hineinschreiben.
+mkdir -p "$ROOT/traefik/certs"
 
 # Der Backend-Container läuft als UID 1000. Statt 777 wird nur so weit
 # geöffnet, wie es dafür nötig ist.

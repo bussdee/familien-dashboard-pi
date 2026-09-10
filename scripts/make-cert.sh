@@ -40,8 +40,25 @@ fi
 
 command -v openssl >/dev/null || { echo "❌ openssl fehlt."; exit 1; }
 
+# Gehört der Ordner jemand anderem, hat ihn Docker beim Einhängen angelegt —
+# das passiert als root, wenn er beim ersten Start noch nicht da war. Dann hier
+# abbrechen mit einem Satz, der weiterhilft, statt an chmod zu scheitern.
+if [ -e "$CERTS" ] && [ ! -w "$CERTS" ]; then
+  echo ""
+  echo "❌ In $CERTS darf ich nicht schreiben."
+  echo "   Er gehört $(stat -c '%U:%G' "$CERTS"), du bist $(id -un)."
+  echo ""
+  echo "   Das passiert, wenn Docker den Ordner beim Einhängen selbst anlegen"
+  echo "   musste. So räumst du es auf:"
+  echo ""
+  echo "       rmdir $CERTS && mkdir -p $CERTS"
+  echo ""
+  echo "   Danach dieses Skript erneut aufrufen."
+  exit 1
+fi
+
 mkdir -p "$CERTS"
-chmod 700 "$CERTS"
+chmod 700 "$CERTS" 2>/dev/null || true
 
 # ── Die Zertifizierungsstelle ────────────────────────────────────────────────
 # Sie wird nur einmal erzeugt. Wird sie neu erzeugt, muss sie auf JEDEM Gerät

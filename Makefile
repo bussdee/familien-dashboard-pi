@@ -67,6 +67,8 @@ setup: init-data
 
 init-data:
 	@mkdir -p backend/data/notes backend/data/ics backend/data/photos backend/data/files backend/data/music backend/data/backup
+	@# Ebenso hier: sonst gehört der Ordner nach dem ersten Start root.
+	@mkdir -p traefik/certs
 	@bash scripts/init-data.sh
 
 # =============================================================================
@@ -190,7 +192,10 @@ _deploy_exec:
 	@$(MAKE) --no-print-directory _rsync
 	@echo "🔧 Baue und starte auf dem Pi..."
 	@ssh $(PI_HOST) "cd $(PI_PATH) && test -f .env || (echo '❌ .env fehlt auf dem Pi – dort einmalig \"make setup\" ausführen'; exit 1)"
-	@ssh $(PI_HOST) "cd $(PI_PATH) && mkdir -p backend/data/{notes,ics,photos,files,music,backup} && docker compose up -d --build"
+	@# traefik/certs muss VOR dem ersten "docker compose up" existieren. Fehlt
+	@# er, legt Docker ihn beim Einhängen selbst an — als root. Danach kann der
+	@# Benutzer, dem das Projekt gehört, dort kein Zertifikat mehr erzeugen.
+	@ssh $(PI_HOST) "cd $(PI_PATH) && mkdir -p backend/data/{notes,ics,photos,files,music,backup} traefik/certs && docker compose up -d --build"
 	@echo "✅ Deploy fertig — Dashboard auf dem Zielsystem, Port $${HTTP_PORT:-8088}"
 
 deploy:
