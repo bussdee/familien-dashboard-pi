@@ -100,8 +100,16 @@ darauf. Was unter 1.4.5 gesammelt war, ist in 1.5.0 aufgegangen.
   `rsync` kennt `.gitignore` nicht — `traefik/certs/` stand nicht darin und
   wäre samt privater Schlüssel auf das Zielgerät gewandert. Zertifikate
   entstehen beim Einrichten auf dem jeweiligen Gerät und gehören genau
-  dorthin. Ebenfalls neu in der Liste: `.env.*`, damit `--delete` keine
-  Sicherungskopien der `.env` auf dem Zielgerät wegräumt.
+  dorthin.
+
+  Dasselbe gilt für `traefik/dynamic/certs.yml`, die Datei, die Traefik auf
+  diese Zertifikate zeigen lässt. Sie muss mit ihnen zusammenbleiben: Wandert
+  sie allein auf ein Gerät, sucht Traefik dort Dateien, die es nicht gibt,
+  bricht beim Aufbau des Zertifikatspeichers ab und **bedient den HTTPS-Port
+  gar nicht mehr**. Beide stehen jetzt in der Liste.
+
+  Ebenfalls neu darin: `.env.*`, damit `--delete` keine Sicherungskopien der
+  `.env` auf dem Zielgerät wegräumt.
 
 - **Die Wetterseite stand in keinem Menü.** Sie war nur über den Wetterblock
   auf der Übersicht erreichbar — wer den Ort einstellen wollte, suchte sie

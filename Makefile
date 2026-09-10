@@ -160,6 +160,11 @@ pi-init:
 #   traefik/certs  — dort liegen private Schlüssel. Sie entstehen beim
 #                    Einrichten auf dem jeweiligen Gerät und gehören genau
 #                    dorthin, nicht in eine Übertragung.
+#   certs.yml      — die Datei, die Traefik auf diese Zertifikate zeigen
+#                    lässt. Sie muss mit ihnen zusammenbleiben. Wandert sie
+#                    allein auf ein Gerät, sucht Traefik dort Dateien, die es
+#                    nicht gibt, bricht beim Aufbau des Zertifikatspeichers ab
+#                    und bedient den HTTPS-Port gar nicht mehr.
 #   .env.*         — Sicherungskopien der .env auf dem Zielgerät. Ohne diese
 #                    Zeile löscht --delete sie, weil es sie hier nicht gibt.
 _rsync:
@@ -175,6 +180,7 @@ _rsync:
 		--exclude '.env.*' \
 		--exclude '.local' \
 		--exclude 'traefik/certs' \
+		--exclude 'traefik/dynamic/certs.yml' \
 		--exclude 'dist' \
 		--exclude '*.log' \
 		./ $(PI_HOST):$(PI_PATH)/
