@@ -62,9 +62,12 @@ darauf. Was unter 1.4.5 gesammelt war, ist in 1.5.0 aufgegangen.
 
   Jedes Fenster ist jetzt wieder ein eigener Block — Abstand rundum, Linie auf
   allen vier Seiten, runde Ecken, ein Hauch eigener Grund. Ruhig genug für
-  *Nachtlicht*, aber wieder ein Ding statt Teil eines Feldes. Und jedes endet,
-  wo sein Inhalt endet, statt vom höchsten der Reihe auf dessen Höhe gezogen
-  zu werden.
+  *Nachtlicht*, aber wieder ein Ding statt Teil eines Feldes.
+
+  Eine Reihe steht dabei auf einer Höhe. Sobald ein Block sichtbare Kanten
+  hat, ist seine Unterkante eine Linie, und die darf nicht woanders enden als
+  die daneben. Damit daraus keine leeren Kästen werden, füllt der Inhalt die
+  Höhe aus und ein leerer Zustand setzt sich in die Mitte.
 
   Nebenbei fällt eine fragile Stelle weg: Vorher musste pro Bildschirmbreite
   der Reihenanfang von der Linie ausgenommen werden. Da sich die Fenster
@@ -92,6 +95,13 @@ darauf. Was unter 1.4.5 gesammelt war, ist in 1.5.0 aufgegangen.
   Knopf, wo einer weiterhilft.
 
 ### Behoben
+
+- **Die Wetterseite stand in keinem Menü.** Sie war nur über den Wetterblock
+  auf der Übersicht erreichbar — wer den Ort einstellen wollte, suchte sie
+  vergeblich in der Leiste. Jetzt steht sie dort, zusammen mit *Arbeit &
+  Schule*. Damit die Leiste nicht über den Rand hinausläuft, klappt sie erst
+  ab 1024 Pixeln auf; darunter übernimmt der Menüknopf, der vorher schon bei
+  768 verschwand und die Seite dadurch seitwärts schiebbar machte.
 
 - **Der Kopfbereich verschob sich auf dem Handy.** Der Wetterblock wurde neben
   die Begrüssung gequetscht statt darunter zu rutschen, und die grosse
