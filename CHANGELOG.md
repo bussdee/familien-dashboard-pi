@@ -52,6 +52,26 @@ darauf. Was unter 1.4.5 gesammelt war, ist in 1.5.0 aufgegangen.
 
 ### Geändert
 
+- **Die Fenster der Übersicht sind wieder als einzelne Fenster zu erkennen.**
+  Seit dem Umbau der Oberfläche in 1.2.0 standen sie offen nebeneinander,
+  getrennt nur durch Haarlinien an den Zellkanten. Auf einem Handy mit einer
+  Spalte trägt das. Auf einem breiten Monitor mit vier Spalten und Inhalten
+  sehr unterschiedlicher Höhe nicht: Die Linien laufen durch, alles
+  verschwimmt zu einer Fläche, und man sieht nicht mehr, wo ein Fenster
+  aufhört und das nächste anfängt.
+
+  Jedes Fenster ist jetzt wieder ein eigener Block — Abstand rundum, Linie auf
+  allen vier Seiten, runde Ecken, ein Hauch eigener Grund. Ruhig genug für
+  *Nachtlicht*, aber wieder ein Ding statt Teil eines Feldes. Und jedes endet,
+  wo sein Inhalt endet, statt vom höchsten der Reihe auf dessen Höhe gezogen
+  zu werden.
+
+  Nebenbei fällt eine fragile Stelle weg: Vorher musste pro Bildschirmbreite
+  der Reihenanfang von der Linie ausgenommen werden. Da sich die Fenster
+  umsortieren und ausblenden lassen, war das eine Rechnung, die bei jeder
+  Änderung neu stimmen musste. *Glas* ist dadurch auf einen reinen
+  Materialwechsel geschrumpft.
+
 - **Alle Kacheln haben denselben Rahmen bekommen.** Vorher hatte jede ihren
   eigenen: mal mit Symbol im Titel, mal mit Symbol rechts, mal ganz ohne; mal
   mit Innenabstand, mal ohne; Meldungen und leere Zustände jedes Mal anders

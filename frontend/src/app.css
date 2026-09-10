@@ -208,13 +208,24 @@
   }
 
   /* ---------------------------------------------------------------------
-     Die Übersicht kommt ohne Kästen aus: die Fenster stehen als Flächen
-     nebeneinander, getrennt durch Haarlinien.
+     Die Fenster der Übersicht.
 
-     Die Linie darf nicht "alle außer dem ersten" sein — die Fenster lassen
-     sich umsortieren und ausblenden, und dann bekäme das erste Fenster der
-     zweiten Reihe eine Linie ins Leere. Deshalb wird pro Bildschirmbreite
-     gezielt der Reihenanfang ausgenommen.
+     Bis 1.6.0 standen sie offen nebeneinander und waren nur durch Haarlinien
+     an den Zellkanten getrennt. Auf einem Handy mit einer Spalte trägt das —
+     auf einem breiten Monitor mit vier Spalten und Inhalten sehr
+     unterschiedlicher Höhe nicht mehr: Die Linien laufen durch, die Fenster
+     verschwimmen zu einer einzigen Fläche, und man erkennt nicht mehr, wo
+     eines aufhört und das nächste anfängt.
+
+     Jedes Fenster ist deshalb wieder ein eigener Block: ein Abstand rundum,
+     eine Linie auf allen vier Seiten, runde Ecken und ein Hauch eigener
+     Grund. Ruhig genug für "Nachtlicht", aber jedes Fenster ist wieder ein
+     Ding und nicht Teil eines Feldes.
+
+     Nebenbei fällt eine fragile Stelle weg: Vorher musste pro Bildschirm-
+     breite der Reihenanfang von der Linie ausgenommen werden (:nth-child(3n+1)
+     und so weiter). Da die Fenster sich umsortieren und ausblenden lassen,
+     war das eine Rechnung, die bei jeder Änderung neu stimmen musste.
   --------------------------------------------------------------------- */
   .flaeche {
     @apply flex h-full min-w-0 flex-col;
@@ -223,63 +234,46 @@
   .widget-raster {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
+    gap: 1rem;
+    /* Jedes Fenster endet, wo sein Inhalt endet. Sonst zieht das höchste der
+       Reihe alle anderen auf seine Höhe, und ein Fenster mit drei Zeilen
+       steht als grosser leerer Kasten da. */
+    align-items: start;
   }
 
   .widget-raster > * {
     min-width: 0;
-    padding: 1.5rem 0;
-  }
-
-  /* Einspaltig: nur waagerechte Linien. */
-  .widget-raster > *:nth-child(n + 2) {
-    border-top: 1px solid var(--haarlinie);
+    padding: 1.25rem 1.35rem;
+    border: 1px solid var(--haarlinie-stark);
+    border-radius: 1.25rem;
+    background-color: hsl(var(--card) / 0.5);
   }
 
   @media (min-width: 768px) {
-    .widget-raster { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .widget-raster > * { padding: 1.75rem; border-top: 0; border-left: 1px solid var(--haarlinie); }
-    .widget-raster > *:nth-child(2n + 1) { padding-left: 0; border-left: 0; }
-    .widget-raster > *:nth-child(2n) { padding-right: 0; }
-    .widget-raster > *:nth-child(n + 3) { border-top: 1px solid var(--haarlinie); }
+    .widget-raster { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.1rem; }
   }
 
   @media (min-width: 1280px) {
     .widget-raster { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-    .widget-raster > * { padding: 1.75rem; border-top: 0; border-left: 1px solid var(--haarlinie); }
-    .widget-raster > *:nth-child(2n + 1) { padding-left: 1.75rem; }
-    .widget-raster > *:nth-child(2n) { padding-right: 1.75rem; }
-    .widget-raster > *:nth-child(3n + 1) { padding-left: 0; border-left: 0; }
-    .widget-raster > *:nth-child(3n) { padding-right: 0; }
-    .widget-raster > *:nth-child(n + 4) { border-top: 1px solid var(--haarlinie); }
   }
 
   /* Auf sehr breiten Monitoren eine vierte Spalte, statt drei zu strecken. */
   @media (min-width: 1536px) {
     .widget-raster { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-    .widget-raster > * { padding: 1.75rem; border-top: 0; border-left: 1px solid var(--haarlinie); }
-    .widget-raster > *:nth-child(3n + 1) { padding-left: 1.75rem; }
-    .widget-raster > *:nth-child(3n) { padding-right: 1.75rem; }
-    .widget-raster > *:nth-child(4n + 1) { padding-left: 0; border-left: 0; }
-    .widget-raster > *:nth-child(4n) { padding-right: 0; }
-    .widget-raster > *:nth-child(n + 5) { border-top: 1px solid var(--haarlinie); }
   }
 
   /* ---------------------------------------------------------------------
      Oberfläche "Glas": dieselbe Anordnung, aber die Fenster liegen als
-     milchige Scheiben auf dem Grund statt offen nebeneinander.
+     milchige Scheiben auf dem Grund statt als ruhige Blöcke.
 
-     Steht bewusst NACH den Haarlinien-Regeln — beide haben dieselbe
-     Spezifität, also gewinnt die spätere. Alle vier Kanten werden
-     zurückgesetzt, sonst bliebe an manchen Scheiben eine Linie kleben.
+     Seit 1.6.0 ist es nur noch ein Materialwechsel: Abstand, Innenabstand und
+     Blockform kommen schon von der Grundregel darüber. Hier wird bloss noch
+     gesagt, woraus die Scheiben sind.
   --------------------------------------------------------------------- */
-  [data-oberflaeche='glas'] .widget-raster {
-    gap: 1rem;
-  }
-
   [data-oberflaeche='glas'] .widget-raster > * {
-    padding: 1.25rem 1.35rem;
-    border: 1px solid var(--glas-rand);
+    border-color: var(--glas-rand);
     border-radius: 1.35rem;
+    background-color: transparent;
     background-image: var(--glas-flaeche);
     box-shadow: var(--glas-schatten), var(--glas-kante);
   }
