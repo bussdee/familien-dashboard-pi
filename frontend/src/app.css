@@ -235,10 +235,14 @@
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     gap: 1rem;
-    /* Jedes Fenster endet, wo sein Inhalt endet. Sonst zieht das höchste der
-       Reihe alle anderen auf seine Höhe, und ein Fenster mit drei Zeilen
-       steht als grosser leerer Kasten da. */
-    align-items: start;
+    /* Eine Reihe steht auf einer Höhe. Solange die Fenster randlos
+       nebeneinanderstanden, fiel ein ungleicher Abschluss nicht auf — mit
+       sichtbaren Blöcken schon: Die untere Kante jedes Blocks ist dann eine
+       Linie, die woanders endet als die daneben.
+
+       Damit das nicht zu grossen leeren Kästen führt, füllt der Inhalt die
+       Höhe aus (siehe Kachel.svelte) und ein leerer Zustand setzt sich in die
+       Mitte, statt oben zu kleben. */
   }
 
   .widget-raster > * {

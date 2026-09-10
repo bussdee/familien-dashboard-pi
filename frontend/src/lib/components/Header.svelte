@@ -79,9 +79,15 @@
 
 <header class="sticky top-0 z-40 border-b border-border bg-card/95 backdrop-blur">
   <div class="mx-auto flex max-w-7xl items-center gap-2 px-3 py-2 sm:px-4">
-    <!-- The menu button is the whole navigation on a phone. -->
+    <!--
+      Der Menüknopf ist die ganze Navigation, solange die Leiste nicht
+      hineinpasst. Die Grenze liegt bei lg und nicht bei md: Seit Wetter und
+      "Arbeit & Schule" mit in der Leiste stehen, braucht sie rund 1100 Pixel.
+      Bei md (768) stand sie über den Rand hinaus und die Seite liess sich
+      seitwärts schieben.
+    -->
     <button
-      class="btn-ghost shrink-0 rounded-xl px-2 md:hidden"
+      class="btn-ghost shrink-0 rounded-xl px-2 lg:hidden"
       onclick={() => (menuOpen = true)}
       aria-label="Menü öffnen"
       aria-expanded={menuOpen}
@@ -89,13 +95,21 @@
       <Menu class="h-6 w-6" />
     </button>
 
-    <a href="/" class="flex shrink-0 items-center gap-2 md:pr-2" aria-label="Startseite">
+    <a href="/" class="flex shrink-0 items-center gap-2 lg:pr-2" aria-label="Startseite">
       <span class="text-xl">🏠</span>
       <span class="hidden text-sm font-semibold sm:inline">Familie</span>
     </a>
 
-    <nav class="hidden items-center gap-1 md:flex">
-      {#each nav.filter((i) => !['/ansicht', '/wetter', '/zeiten'].includes(i.href)) as item (item.href)}
+    <nav class="hidden items-center gap-1 lg:flex">
+      <!--
+        Nur "Ansicht anpassen" fehlt hier: Der Weg dorthin steht unten auf der
+        Übersicht, direkt bei den Fenstern, die man ordnen will.
+
+        Wetter stand lange ebenfalls nicht hier, weil es über den Wetterblock
+        erreichbar war. Das reichte nicht — wer den Ort einstellen will, sucht
+        ihn im Menü.
+      -->
+      {#each nav.filter((i) => i.href !== '/ansicht') as item (item.href)}
         <a
           href={item.href}
           class="touch-target gap-2 rounded-xl px-3 text-sm font-medium transition-colors

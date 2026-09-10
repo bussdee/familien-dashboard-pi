@@ -22,7 +22,12 @@
   } = $props();
 </script>
 
-<div class="flex flex-col items-center justify-center gap-2 px-4 py-10 text-center">
+<!--
+  flex-1: Ein leerer Zustand setzt sich in die Mitte dessen, was das Fenster
+  an Höhe hat. Klebte er oben, sähe ein Fenster mit wenig Inhalt neben einem
+  vollen aus wie abgeschnitten.
+-->
+<div class="flex flex-1 flex-col items-center justify-center gap-2 px-4 py-10 text-center">
   <Icon class="h-10 w-10 text-muted-foreground opacity-40" />
   <p class="text-sm font-medium">{titel}</p>
   {#if hinweis}

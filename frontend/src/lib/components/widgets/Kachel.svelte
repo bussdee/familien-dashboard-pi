@@ -101,5 +101,16 @@
     </div>
   {/if}
 
-  {@render children()}
+  <!--
+    Der Inhalt füllt, was nach der Kopfzeile übrig bleibt. Ohne das säße er
+    oben und der Block hätte darunter Leerraum — bei gleich hohen Fenstern
+    einer Reihe fällt genau das auf.
+
+    min-h-0 gehört dazu: Ohne die Angabe kann ein Flex-Kind nicht kleiner
+    werden als sein Inhalt, und die inneren Rollbereiche der Listen würden
+    den Block aufblähen statt selbst zu rollen.
+  -->
+  <div class="flex min-h-0 flex-1 flex-col {randlos ? '' : ''}">
+    {@render children()}
+  </div>
 </section>
