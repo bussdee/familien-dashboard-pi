@@ -97,6 +97,11 @@ darauf. Was unter 1.4.5 gesammelt war, ist in 1.5.0 aufgegangen.
   selbst, über gut ein Jahr, und schreibt bei langen Fristen die Monate dazu:
   „in 250 Tagen · gut 8 Monate".
 
+- **Die Zeiten-Seite passte nicht auf ein Handy.** Vier Spalten nebeneinander
+  ergaben 509 Pixel auf einem 375er Bildschirm, die Seite liess sich seitwärts
+  schieben. Die Auswahl der Art rutscht auf schmalen Bildschirmen jetzt in
+  eine eigene Zeile.
+
 - **`make pi-verify` konnte auf einem echten Pi nie durchlaufen.** Der
   Rauchtest meldet sich mit der Standard-PIN an, und die ist auf jeder
   benutzten Installation längst geändert. Er brach deshalb mit einem Fehler

@@ -170,8 +170,13 @@
     }
   }
 
-  const tagKurz = (iso: string) =>
-    new Date(iso + 'T12:00:00').toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit' });
+  const tagKurz = (iso: string) => {
+    const d = new Date(iso + 'T12:00:00');
+    // Ohne Punkt und Komma hinter dem Wochentag — auf einem Handy zählt
+    // jedes Zeichen in dieser Spalte.
+    const tag = d.toLocaleDateString('de-DE', { weekday: 'short' }).replace('.', '');
+    return `${tag} ${d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })}`;
+  };
 
   const istWochenende = (iso: string) => {
     const t = new Date(iso + 'T12:00:00').getDay();
@@ -278,14 +283,14 @@
         </p>
 
         <form class="mb-5 grid gap-2 sm:grid-cols-[1fr_auto_auto_auto]" onsubmit={musterAnlegen}>
-          <select class="input" bind:value={neuerTag} aria-label="Wochentag">
+          <select class="input min-w-0" bind:value={neuerTag} aria-label="Wochentag">
             {#each WOCHENTAGE as tag, i (tag)}
               <option value={i}>{tag}</option>
             {/each}
           </select>
-          <input class="input sm:w-28" type="time" bind:value={neuVon} aria-label="Von" />
-          <input class="input sm:w-28" type="time" bind:value={neuBis} aria-label="Bis" />
-          <select class="input sm:w-36" bind:value={neuArt} aria-label="Art">
+          <input class="input min-w-0 sm:w-28" type="time" bind:value={neuVon} aria-label="Von" />
+          <input class="input min-w-0 sm:w-28" type="time" bind:value={neuBis} aria-label="Bis" />
+          <select class="input min-w-0 sm:w-36" bind:value={neuArt} aria-label="Art">
             {#each ARTEN.filter((a) => a.wert === 'schule' || a.wert === 'arbeit' || a.wert === 'sonstiges') as a (a.wert)}
               <option value={a.wert}>{a.label}</option>
             {/each}
@@ -354,30 +359,41 @@
 
             <div class="space-y-1">
               {#each tage.slice(woche * 7, woche * 7 + 7) as tag (tag)}
+                <!--
+                  Umbrechend statt starres Raster: Vier Spalten passen auf
+                  einem 375er Handy nicht nebeneinander — die Seite liess sich
+                  dann seitwärts schieben. Die Auswahl der Art ist auf schmalen
+                  Bildschirmen deshalb volle Breite und rutscht dadurch in eine
+                  eigene Zeile; ab sm steht wieder alles nebeneinander.
+                -->
                 <div
-                  class="grid grid-cols-[7rem_1fr_1fr_auto] items-center gap-2 rounded-lg px-2 py-1.5 {istWochenende(
+                  class="flex flex-wrap items-center gap-2 rounded-lg px-2 py-1.5 {istWochenende(
                     tag,
                   )
                     ? 'bg-muted/20'
                     : ''}"
                 >
-                  <span class="truncate text-sm {istWochenende(tag) ? 'text-muted-foreground' : ''}">
+                  <span
+                    class="w-[5.5rem] shrink-0 truncate text-sm sm:w-28 {istWochenende(tag)
+                      ? 'text-muted-foreground'
+                      : ''}"
+                  >
                     {tagKurz(tag)}
                   </span>
                   <input
-                    class="input py-1.5 text-sm"
+                    class="input min-w-0 flex-1 py-1.5 text-sm"
                     type="time"
                     bind:value={entwurf[tag].von}
                     aria-label="Von am {tag}"
                   />
                   <input
-                    class="input py-1.5 text-sm"
+                    class="input min-w-0 flex-1 py-1.5 text-sm"
                     type="time"
                     bind:value={entwurf[tag].bis}
                     aria-label="Bis am {tag}"
                   />
                   <select
-                    class="input w-28 py-1.5 text-sm"
+                    class="input w-full shrink-0 py-1.5 text-sm sm:w-28"
                     bind:value={entwurf[tag].art}
                     aria-label="Art am {tag}"
                   >
