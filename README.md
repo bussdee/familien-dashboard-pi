@@ -4,7 +4,8 @@
 
 **Ein gemeinsamer Bildschirm für den Familienalltag — auf einem Gerät bei dir zu Hause.**
 
-Wer bringt heute den Müll raus? Was fehlt beim Einkaufen? Wann ist der Elternabend?
+Wer bringt heute den Müll raus? Was fehlt beim Einkaufen? Wann ist der
+Elternabend? Und ab wann sind eigentlich alle zu Hause?
 
 [Was ist das?](#was-ist-das) · [Bilder](#so-sieht-es-aus) · [Installation](#installation) · [Erste Schritte](#erste-schritte-nach-der-installation) · [Ehrlich gesagt](#ehrlich-gesagt-die-grenzen)
 
@@ -394,8 +395,9 @@ Wandgerät → Dieses Gerät als Wandgerät einrichten**. Das Tablet meldet dich
 dabei ab und ist ab sofort das Familiengerät — mehr ist nicht zu tun.
 
 Ab jetzt ist das Tablet dauerhaft bereit und zeigt Aufgaben, Einkaufsliste,
-Termine, Wetter und die geteilten Links — aber nichts Persönliches: keine
-Rangliste, keine Einstellungen, keine privaten Lesezeichen. Hakt jemand eine
+Termine, Wetter, die geteilten Links, wer wann arbeitet — und spielt auf
+Wunsch Hörspiele ab. Aber nichts Persönliches: keine Rangliste, keine
+Einstellungen, keine privaten Lesezeichen. Hakt jemand eine
 Aufgabe ab, fragt es kurz **„Wer war das?"** und zeigt die Gesichter. Ein
 Tipp genügt, die Punkte landen beim Richtigen.
 
@@ -424,13 +426,25 @@ Damit du nicht enttäuscht wirst:
   sich anzumelden. Alles, was wehtut — Punkte korrigieren, Benutzer verwalten,
   PIN ändern — bleibt hinter der Anmeldung. Wer das nicht will, richtet den
   Familien-Modus einfach nicht ein.
-- **Offline-Modus und App-Installation brauchen HTTPS.** Über `http://` und eine
-  LAN-Adresse verweigern Browser den Service Worker. Ein HTTPS-Zugang liegt auf
-  Port **8443** bereit, mit selbstsigniertem Zertifikat — die Warnung muss man
-  einmal pro Gerät bestätigen. Ohne HTTPS läuft alles ganz normal, nur ohne
-  Offline-Ansicht.
+- **Offline-Modus und App-Installation brauchen ein Zertifikat, dem das Gerät
+  traut.** Über `http://` und eine LAN-Adresse verweigern Browser den Service
+  Worker. HTTPS liegt auf Port **8443** bereit, aber das mitgelieferte
+  Platzhalter-Zertifikat reicht nicht: Ein weggeklickter Zertifikatsfehler
+  macht aus einer Seite keine vertrauenswürdige Herkunft, und Chrome bietet
+  „App installieren" dann weiterhin nicht an.
+
+  `bash scripts/make-cert.sh <deine-adresse>` erzeugt ein passendes Zertifikat
+  und sagt, wie du die zugehörige Stelle einmal pro Gerät einrichtest. Danach
+  ist die Warnung weg und die App installierbar. Ohne das läuft alles ganz
+  normal im Browser, nur ohne Installation und ohne Offline-Ansicht.
 - **Wetter braucht Internet.** Ohne Verbindung zeigt es den letzten Stand und
   sagt dazu, dass er alt ist. Alles andere läuft weiter.
+- **Musik startet nie von allein.** Browser verbieten Ton ohne Berührung. Nach
+  einem Neustart des Wandtablets muss jemand einmal auf ▶ tippen. Dagegen
+  lässt sich nichts machen.
+- **Der Musikordner wird in der `.env` eingehängt**, nicht im Adminbereich.
+  Ein Container sieht nur, was in ihn eingehängt wurde. Welcher *Teil* davon
+  gehört wird, stellt man dann in der Verwaltung ein.
 - **Der erste Start dauert 10–20 Minuten.** Einmalig.
 - **Fenster sortiert man mit Pfeiltasten**, nicht per Ziehen.
 - **HEIC-Fotos vom iPhone** werden beim direkten Upload nicht unterstützt (beim

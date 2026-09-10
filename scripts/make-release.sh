@@ -74,6 +74,14 @@ for path in "${INCLUDE[@]}"; do
   cp -r "$path" "$STAGE/$(dirname "$path")/"
 done
 
+# Eigene Zertifikate gehören nicht ins Archiv. Sie entstehen erst beim
+# Einrichten auf dem Zielgerät (scripts/make-cert.sh) und gelten für genau
+# eine Installation.
+rm -rf "$STAGE/traefik/certs"
+rm -f "$STAGE/traefik/dynamic/certs.yml"
+mkdir -p "$STAGE/traefik/certs"
+touch "$STAGE/traefik/certs/.gitkeep"
+
 # Leere Datenverzeichnisse anlegen, damit der erste Start funktioniert
 mkdir -p "$STAGE"/backend/data/{notes,ics,photos,files,music,backup}
 for dir in "$STAGE"/backend/data "$STAGE"/backend/data/*/; do
@@ -101,12 +109,36 @@ fi
 if find "$STAGE" -type d -name node_modules | grep -q .; then
   echo "  ❌ node_modules im Archiv gefunden"; PROBLEME=1
 fi
+# Private Schlüssel und Zertifikate. Der Ordner traefik/ wird als Ganzes
+# kopiert, und dort können welche liegen — ein Archiv, das man weitergibt,
+# darf keine enthalten.
+SCHLUESSEL="$(find "$STAGE" \( -name '*.key' -o -name '*.pem' -o -name '*.crt' \
+  -o -name '*.p12' -o -name '*.pfx' \) 2>/dev/null)"
+if [ -n "$SCHLUESSEL" ]; then
+  echo "  ❌ Schlüssel oder Zertifikate im Archiv gefunden:"
+  echo "$SCHLUESSEL" | sed 's|'"$STAGE"'/|     |'
+  PROBLEME=1
+fi
 
 # Private IPv4-Adressen, die auf ein konkretes Heimnetz hindeuten. Die
 # Beispieladressen im 192.168.1.x-Bereich sind bewusst erlaubt.
-LEAKS="$(grep -rIn --exclude-dir=node_modules \
-  -E '\b(192\.168\.(?!1\.)[0-9]+\.[0-9]+|10\.[0-9]+\.[0-9]+\.[0-9]+)\b' -P "$STAGE" 2>/dev/null || true)"
-if [ -n "$LEAKS" ]; then
+#
+# Nur -P, niemals -E und -P zusammen: grep bricht dann mit "conflicting
+# matchers specified" ab. Und ein Fehlschlag von grep wird gemeldet statt
+# geschluckt — eine Prüfung, die im Fehlerfall schweigt, ist schlimmer als
+# gar keine.
+MUSTER='\b(192\.168\.(?!1\.)[0-9]+\.[0-9]+|10\.[0-9]+\.[0-9]+\.[0-9]+)\b'
+# Der Rückgabewert muss in derselben Zeile eingefangen werden. "set -e" oben
+# beendet das Skript sonst, sobald grep NICHTS findet — grep meldet dafür 1,
+# und das ist hier der gute Fall.
+LEAKS=""
+GREP_STATUS=0
+LEAKS="$(grep -rIn --exclude-dir=node_modules -P "$MUSTER" "$STAGE" 2>&1)" || GREP_STATUS=$?
+if [ "$GREP_STATUS" -gt 1 ]; then
+  echo "  ❌ Die Adressprüfung selbst ist fehlgeschlagen:"
+  echo "$LEAKS" | head -3 | sed 's/^/     /'
+  PROBLEME=1
+elif [ -n "$LEAKS" ]; then
   echo "  ⚠️  Möglicherweise private Adressen (bitte prüfen):"
   echo "$LEAKS" | sed 's|'"$STAGE"'/|     |' | head -10
 fi

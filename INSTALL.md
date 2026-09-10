@@ -290,7 +290,7 @@ Nötig, wenn ihr das Dashboard als **App installieren** oder den Offline-Modus
 nutzen wollt. Zum reinen Aufrufen im Browser braucht es das nicht.
 
 ```bash
-bash scripts/make-cert.sh 192.168.178.20
+bash scripts/make-cert.sh 192.168.1.20
 make up
 ```
 

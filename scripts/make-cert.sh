@@ -24,7 +24,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 CERTS="$ROOT/traefik/certs"
 
 # Die Adresse, unter der ihr das Dashboard aufruft. Mehrere sind erlaubt:
-#   bash scripts/make-cert.sh 192.168.178.20 dashboard.fritz.box
+#   bash scripts/make-cert.sh 192.168.1.20 dashboard.fritz.box
 ADRESSEN=("$@")
 if [ ${#ADRESSEN[@]} -eq 0 ]; then
   # Ohne Angabe: die LAN-Adresse dieses Rechners raten und nachfragen.
@@ -34,8 +34,8 @@ if [ ${#ADRESSEN[@]} -eq 0 ]; then
   echo "Das ist die Adresse, die ihr im Browser eintippt — ohne https:// und"
   echo "ohne Port."
   echo ""
-  read -r -p "Adresse [${GERATEN:-192.168.178.20}]: " EINGABE
-  ADRESSEN=("${EINGABE:-${GERATEN:-192.168.178.20}}")
+  read -r -p "Adresse [${GERATEN:-192.168.1.20}]: " EINGABE
+  ADRESSEN=("${EINGABE:-${GERATEN:-192.168.1.20}}")
 fi
 
 command -v openssl >/dev/null || { echo "❌ openssl fehlt."; exit 1; }

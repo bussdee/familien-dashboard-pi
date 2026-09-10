@@ -97,6 +97,12 @@ darauf. Was unter 1.4.5 gesammelt war, ist in 1.5.0 aufgegangen.
   selbst, über gut ein Jahr, und schreibt bei langen Fristen die Monate dazu:
   „in 250 Tagen · gut 8 Monate".
 
+- **Das Release-Archiv wird strenger geprüft.** Es packt keine Zertifikate
+  mehr ein, und die Prüfung auf persönliche Daten sucht jetzt auch nach
+  Schlüsseldateien. Die Prüfung auf private Netzadressen läuft wieder und
+  meldet auch, wenn sie selbst scheitert — statt still ein leeres Ergebnis zu
+  liefern.
+
 - **Die Zeiten-Seite passte nicht auf ein Handy.** Vier Spalten nebeneinander
   ergaben 509 Pixel auf einem 375er Bildschirm, die Seite liess sich seitwärts
   schieben. Die Auswahl der Art rutscht auf schmalen Bildschirmen jetzt in
