@@ -91,6 +91,15 @@ type Block struct {
 	// AusMuster sagt, ob der Block aus dem Wochenplan kommt. Die Oberfläche
 	// darf das leiser darstellen als einen ausdrücklich eingetragenen Tag.
 	AusMuster bool `json:"from_pattern"`
+
+	// Eine Nachtschicht läuft über Mitternacht und gehört deshalb in ZWEI
+	// Tage der Übersicht: abends in den einen, morgens in den anderen. Diese
+	// beiden Angaben sagen der Oberfläche, welches Ende sie gerade sieht.
+	//
+	//   GehtWeiter  — der Block endet nicht an diesem Tag, sondern morgen
+	//   KommtVonGestern — der Block hat gestern begonnen
+	GehtWeiter      bool `json:"continues_tomorrow"`
+	KommtVonGestern bool `json:"from_yesterday"`
 }
 
 type Day struct {
@@ -141,7 +150,11 @@ func (s *Service) Overview(w http.ResponseWriter, r *http.Request) {
 		auth.HTTPError(w, http.StatusInternalServerError, "Server-Fehler")
 		return
 	}
-	konkret, err := s.tageZwischen(von, bis)
+	// Einen Tag früher anfangen: Eine Nachtschicht, die am Vortag begonnen
+	// hat, ragt in den ersten angezeigten Tag hinein. Ohne den Vortag fehlte
+	// sie dort.
+	vortag := start.AddDate(0, 0, -1).Format("2006-01-02")
+	konkret, err := s.tageZwischen(vortag, bis)
 	if err != nil {
 		auth.HTTPError(w, http.StatusInternalServerError, "Server-Fehler")
 		return
@@ -154,22 +167,26 @@ func (s *Service) Overview(w http.ResponseWriter, r *http.Request) {
 		// time.Weekday zählt ab Sonntag, wir ab Montag.
 		wochentag := (int(datum.Weekday()) + 6) % 7
 
+		gestern := datum.AddDate(0, 0, -1)
+		gesternSchluessel := gestern.Format("2006-01-02")
+		gesternWochentag := (int(gestern.Weekday()) + 6) % 7
+
 		tag := Day{Date: schluessel, Blocks: []Block{}}
 		for _, p := range personen {
-			eintraege := konkret[schluessel][p.ID]
-			if len(eintraege) == 0 {
-				// Kein konkreter Eintrag: das Wochenmuster gilt.
-				for _, m := range muster[p.ID] {
-					if m.Weekday != wochentag {
-						continue
-					}
-					tag.Blocks = append(tag.Blocks, blockAus(p, m.Start, m.End, m.Kind, m.Note, true))
-				}
-				continue
+			// Was an diesem Tag beginnt.
+			for _, b := range bloeckeFuer(p, konkret[schluessel][p.ID], muster[p.ID], wochentag) {
+				tag.Blocks = append(tag.Blocks, b)
 			}
-			// Konkrete Einträge stechen das Muster — auch "frei".
-			for _, e := range eintraege {
-				tag.Blocks = append(tag.Blocks, blockAus(p, e.Start, e.End, e.Kind, e.Note, false))
+			// Und was gestern begann und bis heute reicht — die Nachtschicht.
+			for _, b := range bloeckeFuer(p, konkret[gesternSchluessel][p.ID], muster[p.ID], gesternWochentag) {
+				if !ueberMitternacht(b.Start, b.End) {
+					continue
+				}
+				b.KommtVonGestern = true
+				b.GehtWeiter = false
+				// Am heutigen Tag ist davon nur der Morgen übrig.
+				b.Start = "00:00"
+				tag.Blocks = append(tag.Blocks, b)
 			}
 		}
 
@@ -189,15 +206,21 @@ func (s *Service) Overview(w http.ResponseWriter, r *http.Request) {
 // alleDaAb ist die späteste Rückkehr des Tages. Genau die Zahl, die man beim
 // Planen braucht: ab wann sind alle da.
 //
-// Ist jemand ohne Uhrzeit eingetragen — ganztägig weg —, gibt es keine
-// solche Zeit, und das Feld bleibt leer statt zu lügen.
+// Drei Fälle geben keine solche Zeit her, und dann bleibt das Feld leer,
+// statt eine zu erfinden:
+//
+//   - Jemand ist ohne Uhrzeit eingetragen, also ganztägig weg.
+//   - Jemand geht in die Nachtschicht und kommt an diesem Tag nicht zurück.
+//     Die späteste Uhrzeit wäre dann sein Dienstbeginn — als Rückkehr
+//     gelesen wäre das schlicht falsch.
+//   - Niemand ist unterwegs. Dann braucht es die Zeile gar nicht.
 func alleDaAb(blocks []Block) string {
 	spaeteste := ""
 	for _, b := range blocks {
 		if !abwesend(b.Kind) {
 			continue
 		}
-		if b.End == "" {
+		if b.End == "" || b.GehtWeiter {
 			return ""
 		}
 		if b.End > spaeteste {
@@ -205,6 +228,39 @@ func alleDaAb(blocks []Block) string {
 		}
 	}
 	return spaeteste
+}
+
+// ueberMitternacht: Endet ein Block VOR seinem Anfang, läuft er in den
+// nächsten Tag. Das ist die Verabredung, mit der Dienstpläne seit jeher
+// arbeiten — 20:00 bis 07:00 ist eine Nachtschicht und keine Fehleingabe.
+// Gleiche Zeiten sind mehrdeutig (null oder vierundzwanzig Stunden) und
+// werden beim Eintragen abgelehnt.
+func ueberMitternacht(start, ende string) bool {
+	return start != "" && ende != "" && ende < start
+}
+
+// bloeckeFuer liefert die Blöcke einer Person an einem Tag. Ein konkreter
+// Eintrag sticht das Wochenmuster — auch ein Eintrag "frei", der es damit für
+// diesen einen Tag aufhebt, ohne es zu löschen.
+func bloeckeFuer(p Person, eintraege []DayEntry, muster []WeeklyEntry, wochentag int) []Block {
+	var raus []Block
+	if len(eintraege) == 0 {
+		for _, m := range muster {
+			if m.Weekday != wochentag {
+				continue
+			}
+			b := blockAus(p, m.Start, m.End, m.Kind, m.Note, true)
+			b.GehtWeiter = ueberMitternacht(m.Start, m.End)
+			raus = append(raus, b)
+		}
+		return raus
+	}
+	for _, e := range eintraege {
+		b := blockAus(p, e.Start, e.End, e.Kind, e.Note, false)
+		b.GehtWeiter = ueberMitternacht(e.Start, e.End)
+		raus = append(raus, b)
+	}
+	return raus
 }
 
 func blockAus(p Person, start, ende, art, notiz string, ausMuster bool) Block {

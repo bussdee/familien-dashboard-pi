@@ -309,6 +309,10 @@ export interface TimeBlock {
   note: string;
   /** true, wenn der Block aus dem Wochenmuster stammt. */
   from_pattern: boolean;
+  /** true, wenn der Block über Mitternacht in den nächsten Tag läuft. */
+  continues_tomorrow: boolean;
+  /** true, wenn der Block gestern begonnen hat — der Morgen einer Nachtschicht. */
+  from_yesterday: boolean;
 }
 
 export interface TimeDay {

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
-  import { Check, Clock, Copy, Plus, Trash2 } from 'lucide-svelte';
+  import { Check, Clock, Copy, Plus, Trash2, X } from 'lucide-svelte';
   import { ApiError, adminApi, timesApi } from '$lib/api';
   import { session } from '$lib/stores';
   import { confirmAction } from '$lib/stores/confirm.svelte';
@@ -110,23 +110,46 @@
     return liste;
   });
 
-  /** Der Entwurf: Tag -> {von, bis, art}. Wird erst beim Speichern geschickt. */
-  let entwurf = $state<Record<string, { von: string; bis: string; art: TimeKind }>>({});
+  /**
+   * Der Entwurf: Tag -> Liste von Blöcken. Eine Liste und kein einzelner
+   * Block, weil ein Teildienst zwei davon hat — 6 bis 10 und wieder 15 bis
+   * 20 Uhr ist im Schichtdienst der Normalfall.
+   *
+   * Jeder Tag hat mindestens einen Block, auch einen leeren. Der leere heisst
+   * „nichts Besonderes", und dann gilt der Wochenplan.
+   */
+  type Block = { von: string; bis: string; art: TimeKind };
+  let entwurf = $state<Record<string, Block[]>>({});
 
-  function leer() {
+  function leer(): Block {
     return { von: '', bis: '', art: 'arbeit' as TimeKind };
+  }
+
+  /** Ein Block, der vor seinem Anfang endet, läuft über Mitternacht. */
+  const ueberMitternacht = (b: Block) => !!b.von && !!b.bis && b.bis < b.von;
+
+  function blockDazu(tag: string) {
+    entwurf = { ...entwurf, [tag]: [...(entwurf[tag] ?? []), leer()] };
+  }
+
+  function blockWeg(tag: string, i: number) {
+    const rest = (entwurf[tag] ?? []).filter((_, j) => j !== i);
+    entwurf = { ...entwurf, [tag]: rest.length > 0 ? rest : [leer()] };
   }
 
   async function tageLaden() {
     const bis = tage[tage.length - 1];
     try {
       const { entries } = await timesApi.days(start, bis);
-      const neu: Record<string, { von: string; bis: string; art: TimeKind }> = {};
-      for (const t of tage) neu[t] = leer();
+      const neu: Record<string, Block[]> = {};
+      for (const t of tage) neu[t] = [];
       for (const e of entries as DayTime[]) {
         if (e.user_id !== fuer) continue;
-        neu[e.day] = { von: e.start_time, bis: e.end_time, art: e.kind };
+        (neu[e.day] ??= []).push({ von: e.start_time, bis: e.end_time, art: e.kind });
       }
+      // Ein Tag ohne Eintrag bekommt eine leere Zeile, damit man hineintippen
+      // kann, ohne erst etwas hinzufügen zu müssen.
+      for (const t of tage) if (neu[t].length === 0) neu[t] = [leer()];
       entwurf = neu;
     } catch (e) {
       fehler = e instanceof ApiError ? e.message : 'Zeiten konnten nicht geladen werden';
@@ -143,7 +166,9 @@
     for (let i = 0; i < 7; i++) {
       const quelle = tage[(wocheNr - 1) * 7 + i];
       const ziel = tage[wocheNr * 7 + i];
-      neu[ziel] = { ...(entwurf[quelle] ?? leer()) };
+      // Tief kopieren: Sonst teilten sich beide Wochen dieselben Blöcke, und
+      // eine Änderung in Woche 2 schlüge auf Woche 1 durch.
+      neu[ziel] = (entwurf[quelle] ?? [leer()]).map((b) => ({ ...b }));
     }
     entwurf = neu;
   }
@@ -152,12 +177,14 @@
     fehler = '';
     busy = true;
     try {
-      const eintraege = tage.map((tag) => {
-        const e = entwurf[tag] ?? leer();
-        return {
+      // Jeder Tag wird geschickt, auch die leeren — der Server leert sie dann
+      // und räumt damit weg, was gestrichen wurde.
+      const eintraege = tage.flatMap((tag) => {
+        const bloecke = entwurf[tag] ?? [leer()];
+        return bloecke.map((b) => ({
           user_id: fuer, day: tag,
-          start_time: e.von, end_time: e.bis, kind: e.art,
-        };
+          start_time: b.von, end_time: b.bis, kind: b.art,
+        }));
       });
       const { saved, removed } = await timesApi.saveDays(eintraege);
       hinweis = `${saved} Tage gespeichert${removed > 0 ? `, ${removed} entfernt` : ''}`;
@@ -338,6 +365,11 @@
           Vier Wochen am Stück. Leere Felder heissen „nichts Besonderes" —
           dann gilt der Wochenplan, falls es einen gibt. Gespeichert wird
           alles auf einmal.
+          <br /><br />
+          <strong>Nachtschicht:</strong> Endet die Zeit vor ihrem Anfang, läuft
+          sie über Mitternacht. 20:00 bis 07:00 ist also eine Nachtschicht.
+          <strong>Teildienst:</strong> Mit „+ zweite Zeit an diesem Tag" bekommt
+          ein Tag mehrere Blöcke.
         </p>
 
         {#each [0, 1, 2, 3] as woche (woche)}
@@ -359,48 +391,79 @@
 
             <div class="space-y-1">
               {#each tage.slice(woche * 7, woche * 7 + 7) as tag (tag)}
-                <!--
-                  Umbrechend statt starres Raster: Vier Spalten passen auf
-                  einem 375er Handy nicht nebeneinander — die Seite liess sich
-                  dann seitwärts schieben. Die Auswahl der Art ist auf schmalen
-                  Bildschirmen deshalb volle Breite und rutscht dadurch in eine
-                  eigene Zeile; ab sm steht wieder alles nebeneinander.
-                -->
                 <div
-                  class="flex flex-wrap items-center gap-2 rounded-lg px-2 py-1.5 {istWochenende(
-                    tag,
-                  )
-                    ? 'bg-muted/20'
-                    : ''}"
+                  class="rounded-lg px-2 py-1.5 {istWochenende(tag) ? 'bg-muted/20' : ''}"
                 >
-                  <span
-                    class="w-[5.5rem] shrink-0 truncate text-sm sm:w-28 {istWochenende(tag)
-                      ? 'text-muted-foreground'
-                      : ''}"
+                  {#each entwurf[tag] ?? [] as block, i (i)}
+                    <!--
+                      Umbrechend statt starres Raster: Vier Spalten passen auf
+                      einem 375er Handy nicht nebeneinander. Die Auswahl der
+                      Art ist dort volle Breite und rutscht in eine eigene
+                      Zeile; ab sm steht wieder alles nebeneinander.
+                    -->
+                    <div class="flex flex-wrap items-center gap-2 {i > 0 ? 'mt-1' : ''}">
+                      <span
+                        class="w-[5.5rem] shrink-0 truncate text-sm sm:w-28 {istWochenende(tag)
+                          ? 'text-muted-foreground'
+                          : ''}"
+                      >
+                        <!-- Der Tag steht nur an der ersten Zeile. -->
+                        {i === 0 ? tagKurz(tag) : ''}
+                      </span>
+                      <input
+                        class="input min-w-0 flex-1 py-1.5 text-sm"
+                        type="time"
+                        bind:value={block.von}
+                        aria-label="Von am {tag}, Block {i + 1}"
+                      />
+                      <input
+                        class="input min-w-0 flex-1 py-1.5 text-sm"
+                        type="time"
+                        bind:value={block.bis}
+                        aria-label="Bis am {tag}, Block {i + 1}"
+                      />
+                      <select
+                        class="input w-full shrink-0 py-1.5 text-sm sm:w-28"
+                        bind:value={block.art}
+                        aria-label="Art am {tag}, Block {i + 1}"
+                      >
+                        {#each ARTEN as a (a.wert)}
+                          <option value={a.wert}>{a.label}</option>
+                        {/each}
+                      </select>
+
+                      <!-- Ein zweiter Block lässt sich wieder entfernen. -->
+                      {#if (entwurf[tag] ?? []).length > 1}
+                        <button
+                          type="button"
+                          class="touch-target shrink-0 text-muted-foreground hover:text-destructive"
+                          onclick={() => blockWeg(tag, i)}
+                          aria-label="Block {i + 1} am {tag} entfernen"
+                        >
+                          <X class="h-4 w-4" />
+                        </button>
+                      {/if}
+                    </div>
+
+                    <!--
+                      Eine Nachtschicht sieht auf den ersten Blick nach
+                      Vertipper aus. Der Hinweis sagt, dass sie richtig
+                      verstanden wurde.
+                    -->
+                    {#if ueberMitternacht(block)}
+                      <p class="ml-[5.5rem] mt-0.5 text-[11px] text-primary sm:ml-28">
+                        Nachtschicht — endet am nächsten Tag um {block.bis}
+                      </p>
+                    {/if}
+                  {/each}
+
+                  <button
+                    type="button"
+                    class="ml-[5.5rem] mt-1 text-[11px] text-muted-foreground hover:text-foreground sm:ml-28"
+                    onclick={() => blockDazu(tag)}
                   >
-                    {tagKurz(tag)}
-                  </span>
-                  <input
-                    class="input min-w-0 flex-1 py-1.5 text-sm"
-                    type="time"
-                    bind:value={entwurf[tag].von}
-                    aria-label="Von am {tag}"
-                  />
-                  <input
-                    class="input min-w-0 flex-1 py-1.5 text-sm"
-                    type="time"
-                    bind:value={entwurf[tag].bis}
-                    aria-label="Bis am {tag}"
-                  />
-                  <select
-                    class="input w-full shrink-0 py-1.5 text-sm sm:w-28"
-                    bind:value={entwurf[tag].art}
-                    aria-label="Art am {tag}"
-                  >
-                    {#each ARTEN as a (a.wert)}
-                      <option value={a.wert}>{a.label}</option>
-                    {/each}
-                  </select>
+                    + zweite Zeit an diesem Tag
+                  </button>
                 </div>
               {/each}
             </div>

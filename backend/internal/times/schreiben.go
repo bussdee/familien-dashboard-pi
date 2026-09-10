@@ -36,6 +36,14 @@ var datum = regexp.MustCompile(`^\d{4}-\d{2}-\d{2}$`)
 
 // pruefeZeiten nimmt Anfang und Ende ab. Beide leer heisst „den ganzen Tag" —
 // das ist bei Urlaub und Krankheit der Normalfall und kein Fehler.
+//
+// **Ein Ende VOR dem Anfang ist erlaubt** und heisst: über Mitternacht. 20:00
+// bis 07:00 ist eine Nachtschicht, keine Fehleingabe. Bis 1.6.0 lehnte diese
+// Prüfung genau das ab — mit einer Annahme, die nirgends geschrieben stand:
+// dass ein Block am selben Tag endet. Für Schichtdienst ist das falsch.
+//
+// Gleiche Zeiten bleiben abgelehnt. 08:00 bis 08:00 könnte null Stunden oder
+// vierundzwanzig heissen, und raten will das hier niemand.
 func pruefeZeiten(start, ende string) (string, string, error) {
 	start, ende = strings.TrimSpace(start), strings.TrimSpace(ende)
 	if start == "" && ende == "" {
@@ -44,8 +52,8 @@ func pruefeZeiten(start, ende string) (string, string, error) {
 	if !uhrzeit.MatchString(start) || !uhrzeit.MatchString(ende) {
 		return "", "", fmt.Errorf("Uhrzeit muss wie 08:00 aussehen")
 	}
-	if ende <= start {
-		return "", "", fmt.Errorf("Das Ende muss nach dem Anfang liegen")
+	if ende == start {
+		return "", "", fmt.Errorf("Anfang und Ende dürfen nicht gleich sein")
 	}
 	return start, ende, nil
 }
@@ -207,9 +215,16 @@ type dayPayload struct {
 // dass eine davon danebengeht und der Plan halb gefüllt zurückbleibt. Also
 // alles in einem Rutsch, in einer Transaktion.
 //
-// Ein Tag mit leerem Anfang UND leerem Ende UND ohne besondere Art wird
-// gelöscht statt gespeichert — so räumt man einen versehentlichen Eintrag
-// wieder weg, ohne einen eigenen Knopf dafür zu brauchen.
+// **Ein Tag darf mehrere Blöcke haben.** Ein Teildienst von 6 bis 10 und
+// wieder von 15 bis 20 Uhr ist im Schichtdienst normal. Bis 1.6.0 ersetzte
+// jeder Eintrag den ganzen Tag — gegen Doppel gedacht, aber es machte den
+// zweiten Block unmöglich. Jetzt werden zuerst alle genannten Tage geleert
+// und danach alle Blöcke geschrieben, so dass mehrere nebeneinander stehen
+// können.
+//
+// Ein Tag mit leerem Anfang UND leerem Ende UND ohne besondere Art bleibt
+// leer — so räumt man einen versehentlichen Eintrag wieder weg, ohne einen
+// eigenen Knopf dafür zu brauchen.
 func (s *Service) SaveDays(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Entries []dayPayload `json:"entries"`
@@ -237,7 +252,26 @@ func (s *Service) SaveDays(w http.ResponseWriter, r *http.Request) {
 	}
 	defer func() { _ = tx.Rollback() }()
 
-	gespeichert, geloescht := 0, 0
+	// Erster Durchgang: alles prüfen, bevor irgendetwas geschrieben wird.
+	// Und je Person und Tag einmal merken, dass er zu leeren ist — sonst
+	// löschte der zweite Block eines Teildienstes den ersten wieder weg.
+	type geprueft struct {
+		UserID     int
+		Day        string
+		Start, End string
+		Kind, Note string
+	}
+	// Verbundschlüssel statt zusammengesetzter Zeichenkette: Ein Datum lässt
+	// sich nicht zuverlässig wieder aus einem String herauslesen, und ein
+	// Zerlegen, das schiefgeht, würde hier stillschweigend einen Tag nicht
+	// leeren.
+	type tagSchluessel struct {
+		UserID int
+		Day    string
+	}
+	var fertig []geprueft
+	zuLeeren := map[tagSchluessel]bool{}
+
 	for _, e := range req.Entries {
 		if e.UserID <= 0 {
 			e.UserID = eigene
@@ -260,29 +294,38 @@ func (s *Service) SaveDays(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		// Leer und gewöhnlich heisst: weg damit.
+		zuLeeren[tagSchluessel{e.UserID, e.Day}] = true
+
+		// Leer und gewöhnlich heisst: an diesem Tag steht nichts Besonderes
+		// an. Der Tag wird geleert und nichts an seine Stelle gesetzt.
 		if start == "" && (e.Kind == KindArbeit || e.Kind == KindSchule || e.Kind == KindSonstiges) {
-			res, err := tx.Exec("DELETE FROM day_times WHERE user_id = ? AND day = ?", e.UserID, e.Day)
-			if err != nil {
-				auth.HTTPError(w, http.StatusInternalServerError, "Speichern fehlgeschlagen")
-				return
-			}
-			if n, _ := res.RowsAffected(); n > 0 {
-				geloescht += int(n)
-			}
 			continue
 		}
+		fertig = append(fertig, geprueft{
+			UserID: e.UserID, Day: e.Day, Start: start, End: ende,
+			Kind: e.Kind, Note: strings.TrimSpace(e.Note),
+		})
+	}
 
-		// Ein Tag je Person wird ersetzt, nicht ergänzt. Sonst sammeln sich
-		// beim wiederholten Speichern Doppel an.
-		if _, err := tx.Exec("DELETE FROM day_times WHERE user_id = ? AND day = ?", e.UserID, e.Day); err != nil {
+	// Zweiter Durchgang: erst leeren, dann schreiben.
+	geloescht := 0
+	for k := range zuLeeren {
+		res, err := tx.Exec("DELETE FROM day_times WHERE user_id = ? AND day = ?", k.UserID, k.Day)
+		if err != nil {
 			auth.HTTPError(w, http.StatusInternalServerError, "Speichern fehlgeschlagen")
 			return
 		}
+		if n, _ := res.RowsAffected(); n > 0 {
+			geloescht += int(n)
+		}
+	}
+
+	gespeichert := 0
+	for _, e := range fertig {
 		if _, err := tx.Exec(`
 			INSERT INTO day_times (user_id, day, start_time, end_time, kind, note)
 			VALUES (?, ?, ?, ?, ?, ?)`,
-			e.UserID, e.Day, start, ende, e.Kind, strings.TrimSpace(e.Note)); err != nil {
+			e.UserID, e.Day, e.Start, e.End, e.Kind, e.Note); err != nil {
 			auth.HTTPError(w, http.StatusInternalServerError, "Speichern fehlgeschlagen")
 			return
 		}

@@ -44,14 +44,65 @@ Alles läuft lokal auf unserem eigenen Server – keine Cloud, keine Konten.
 - **Fotos** – Bilder aus `backend/data/photos/`
 - **Dateien** – Anleitungen und Formulare; Admin lädt hoch, alle laden herunter
 - **Musik** – MP3s und Hörspiele aus einem eingehängten Ordner (`MUSIC_HOST_DIR`)
-
-## Als App installieren
-- **iPhone/iPad:** Safari → Teilen → „Zum Home-Bildschirm"
-- **Android:** Chrome → Menü → „App installieren"
+- **Arbeit & Schule** – wer wann weg ist, und ab wann alle da sind
 
 ## Wichtig zum Start
 Alle starten mit der PIN **1234**. Bitte gleich unter
 **Einstellungen → PIN ändern** eine eigene wählen.
+
+## Als App aufs Handy — und warum das ein Zertifikat braucht
+
+„App installieren", Vollbild ohne Adressleiste und die Offline-Ansicht gibt es
+nur über **https**. Und nicht über irgendein https: Der Browser muss dem
+Zertifikat auch **trauen**. Eine weggeklickte Warnung reicht ihm nicht — er
+bietet die Installation dann weiterhin nicht an.
+
+Mitgeliefert ist nur ein Platzhalter-Zertifikat, das nicht einmal eure Adresse
+enthält. Ein eigenes ist in drei Schritten gemacht.
+
+### 1. Erzeugen — einmal, auf dem Gerät, auf dem das Dashboard läuft
+
+```
+bash scripts/make-cert.sh 192.168.1.20
+make up
+```
+
+Statt `192.168.1.20` die Adresse eintragen, die ihr im Browser eintippt. Das
+Skript legt eine kleine eigene Zertifizierungsstelle an und stellt damit ein
+Zertifikat für genau diese Adresse aus.
+
+### 2. Verteilen — über diese Kachel hier
+
+Legt die Datei `traefik/certs/familie-ca.crt` in die Kachel **Dateien**. Dann
+lädt sie jeder aus dem Dashboard herunter, ohne Kabel und ohne Mail.
+
+Beim allerersten Mal über **Port 8088**, nicht 8443 — der verschlüsselte
+Zugang warnt ja noch, das soll die Datei gerade beheben.
+
+> **Nur `familie-ca.crt` wird verteilt.** Sie enthält ein Zertifikat und
+> keinen Schlüssel. Geheim ist `familie-ca.key`, und die bleibt auf dem
+> Server. Wer sie hat, kann Zertifikate ausstellen, denen eure Geräte glauben.
+
+### 3. Einrichten — einmal pro Gerät
+
+- **Android:** Einstellungen → Sicherheit → Verschlüsselung & Anmeldedaten →
+  Zertifikat installieren → CA-Zertifikat → Trotzdem installieren, dann die
+  Datei aus *Downloads* wählen.
+- **iPhone/iPad:** Datei öffnen → Profil installieren. **Danach zusätzlich**
+  Einstellungen → Allgemein → Info → Zertifikatsvertrauenseinstellungen und
+  dort den Schalter umlegen. Ohne den zweiten Schritt bleibt die Warnung.
+- **Windows:** Doppelklick → Zertifikat installieren → Lokaler Computer →
+  Vertrauenswürdige Stammzertifizierungsstellen.
+- **Linux:** Datei nach `/usr/local/share/ca-certificates/` kopieren, dann
+  `sudo update-ca-certificates`.
+- **Firefox** hat einen eigenen Speicher: Einstellungen → Zertifikate →
+  Zertifikate anzeigen → Importieren.
+
+Danach das Dashboard über **https** und Port **8443** aufrufen. Die Warnung
+bleibt weg, und im Browsermenü steht „App installieren".
+
+- **iPhone/iPad:** Safari → Teilen → „Zum Home-Bildschirm"
+- **Android:** Chrome → Menü → „App installieren"
 NOTE
   echo "  + backend/data/notes/willkommen.md"
   created=1

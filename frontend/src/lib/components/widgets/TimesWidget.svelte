@@ -25,8 +25,17 @@
   const kurz = (iso: string) =>
     new Date(iso + 'T12:00:00').toLocaleDateString('de-DE', { weekday: 'short' });
 
-  const spanne = (b: TimeBlock) =>
-    b.start_time && b.end_time ? `${b.start_time}–${b.end_time}` : 'den ganzen Tag';
+  /**
+   * Wie eine Zeit dasteht. Bei einer Nachtschicht ist die nackte Angabe
+   * „20:00–07:00" irreführend — sie liest sich wie eine Zeitspanne am selben
+   * Tag. Deshalb steht dazu, wohin sie reicht.
+   */
+  const spanne = (b: TimeBlock) => {
+    if (!b.start_time || !b.end_time) return 'den ganzen Tag';
+    if (b.continues_tomorrow) return `ab ${b.start_time}, bis morgen ${b.end_time}`;
+    if (b.from_yesterday) return `seit gestern, bis ${b.end_time}`;
+    return `${b.start_time}–${b.end_time}`;
+  };
 
   async function laden() {
     try {
@@ -107,6 +116,7 @@
               <span class="block truncate text-sm font-medium">{b.user_name}</span>
               <span class="block truncate text-xs text-muted-foreground">
                 {b.kind === 'schule' ? 'Schule' : b.kind === 'arbeit' ? 'Arbeit' : 'Unterwegs'}
+                {#if b.continues_tomorrow}· Nachtschicht{/if}
                 {#if b.note}· {b.note}{/if}
               </span>
             </span>
@@ -125,6 +135,16 @@
         <House class="h-4 w-4 shrink-0" />
         Ab <strong>{heute.all_home_from}</strong> sind heute alle zu Hause.
       </p>
+    {:else if unterwegs(heute).some((b) => b.continues_tomorrow)}
+      <!--
+        Bei einer Nachtschicht gibt es keine Rückkehrzeit an diesem Tag. Das
+        zu sagen ist ehrlicher, als die Zeile wegzulassen — sonst sucht man
+        nach ihr.
+      -->
+      <p class="mt-3 flex items-center gap-2 rounded-lg bg-muted/40 px-3 py-2.5 text-sm text-muted-foreground">
+        <House class="h-4 w-4 shrink-0" />
+        Heute kommt nicht mehr jeder zurück — Nachtschicht.
+      </p>
     {/if}
 
     {#if weitere.length > 0}
@@ -137,7 +157,13 @@
                 alle da
               {:else}
                 {unterwegs(tag)
-                  .map((b) => `${b.user_emoji} ${b.start_time || ''}–${b.end_time || ''}`)
+                  .map((b) =>
+                    b.continues_tomorrow
+                      ? `${b.user_emoji} ab ${b.start_time}`
+                      : b.from_yesterday
+                        ? `${b.user_emoji} bis ${b.end_time}`
+                        : `${b.user_emoji} ${b.start_time || ''}–${b.end_time || ''}`,
+                  )
                   .join(' · ')}
               {/if}
             </span>

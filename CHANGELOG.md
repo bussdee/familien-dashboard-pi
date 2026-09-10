@@ -12,6 +12,45 @@ Deshalb gibt es hier **keine 1.4.5**. Sie stand eine Weile in dieser Datei,
 wurde aber nie veröffentlicht: Auf GitHub steht v1.4.4, und der Pi läuft
 darauf. Was unter 1.4.5 gesammelt war, ist in 1.5.0 aufgegangen.
 
+## [1.6.1] — 2026-09-10
+
+### Behoben
+
+- **Nachtschichten wurden als Fehleingabe abgelehnt.** Die Zeitprüfung
+  verlangte, dass das Ende nach dem Anfang liegt. Bei 20:00 bis 07:00 tut es
+  das nicht. Dahinter steckte eine Annahme, die nirgends geschrieben stand:
+  dass ein Block am selben Tag endet. Für Schichtdienst ist das falsch, und
+  damit war die Kachel für genau die Person unbrauchbar, für die sie gebaut
+  wurde.
+
+  **Endet eine Zeit vor ihrem Anfang, läuft sie jetzt über Mitternacht.** So
+  rechnen Dienstpläne seit jeher. Gleiche Zeiten bleiben abgelehnt — 08:00 bis
+  08:00 könnte null Stunden heissen oder vierundzwanzig.
+
+  Ein solcher Block steht in **beiden** Tagen der Übersicht: abends im einen,
+  morgens im anderen. Und die Zeile „ab wann sind alle da" nennt an einem Tag
+  mit Nachtschicht keine Uhrzeit mehr, sondern sagt, dass nicht mehr jeder
+  zurückkommt. Vorher hätte sie den Dienstbeginn genannt und ihn als Rückkehr
+  ausgegeben.
+
+- **Ein Tag konnte nur eine Zeit haben.** Ein Teildienst von 6 bis 10 und
+  wieder von 15 bis 20 Uhr ist im Schichtdienst normal, war aber nicht
+  eintragbar: Beim Speichern ersetzte jeder Eintrag den ganzen Tag. Das war
+  gegen doppelte Einträge gedacht und machte den zweiten Block unmöglich.
+
+  Jetzt werden zuerst alle genannten Tage geleert und danach alle Blöcke
+  geschrieben. Im Vier-Wochen-Raster bekommt jeder Tag einen Knopf
+  *„+ zweite Zeit an diesem Tag"*.
+
+### Geändert
+
+- **Die Willkommens-Notiz erklärt jetzt das Zertifikat.** Der Weg zu einem
+  Zertifikat, dem die Geräte trauen, stand nur in `INSTALL.md` — wer das
+  Projekt startet, schaut aber zuerst ins Dashboard. Die Notiz führt jetzt
+  durch alle drei Schritte: erzeugen, über die Kachel *Dateien* verteilen,
+  einmal pro Gerät einrichten. Mit dem Satz, der die Verwechslung ausräumt:
+  Verteilt wird nur `familie-ca.crt`, und die enthält keinen Schlüssel.
+
 ## [1.6.0] — 2026-09-10
 
 ### Hinzugefügt
