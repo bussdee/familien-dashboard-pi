@@ -40,7 +40,9 @@ worker.addEventListener('message', (event) => {
 });
 
 /** Read-only endpoints worth keeping for an offline glance at the dashboard. */
-const CACHEABLE_API = ['/api/weather', '/api/calendar', '/api/chores', '/api/notes', '/api/scoreboard'];
+const CACHEABLE_API = [
+  '/api/weather', '/api/calendar', '/api/chores', '/api/notes', '/api/scoreboard', '/api/meals',
+];
 
 worker.addEventListener('fetch', (event) => {
   const { request } = event;

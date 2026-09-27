@@ -60,7 +60,9 @@ solange es im eigenen, vertrauenswürdigen Netz bleibt.
 |---|---|
 | ⭐ **Aufgaben** | Müll, Geschirrspüler, Katzenklo. Jede Aufgabe hat ein Intervall und einen Punktwert. Zuständig ist wahlweise *reihum*, eine feste Person, *alle* oder *wer mag*. Einmal erledigt ist erledigt — ein zweites Abhaken am selben Tag gibt es nicht. |
 | 🏆 **Punkte & Level** | Wer abhakt, bekommt Punkte. Level von *Neuling* bis *Legende*, Serien, elf Abzeichen, Siegertreppchen. Verklickt? Ein Elternteil nimmt es zurück — die Aufgabe wird dabei wieder fällig. |
-| 🛒 **Einkaufsliste** | Gemeinsam und **in Echtzeit**: Was im Laden abgehakt wird, verschwindet sofort auf allen Geräten. Punkte gibt es auch dafür. |
+| 🎁 **Belohnungen** | Wofür die Punkte da sind: Die Eltern legen fest, was es gibt — Bildschirmzeit, ein Eis, den Film am Familienabend. Ein Kind löst ein, ein Elternteil bestätigt. Ausgegeben wird ein **Guthaben**; Level und Rangliste bleiben unberührt. |
+| 🛒 **Einkaufsliste** | Gemeinsam und **in Echtzeit**: Was im Laden abgehakt wird, verschwindet sofort auf allen Geräten. **Häufig gekaufte Artikel** stehen als Vorschläge zum Antippen bereit, und im Laden gibt es eine eigene Ansicht — nach Abteilung sortiert, der Bildschirm bleibt an. Punkte gibt es auch dafür. |
+| 🍝 **Essensplan** | Was gibt's heute — und die ganze Woche. Mit Zutaten, die **mit einem Tipp auf die Einkaufsliste** wandern, ohne Doppelte. Gerichte der letzten Monate stehen zum Wiederverwenden bereit. |
 | 📅 **Kalender** | Termine direkt eintragen, einmalig oder wiederkehrend. Oder eine `.ics` aus Apple, Google oder Outlook ablegen. |
 | 📝 **Notizen** | Markdown, zweiseitig mit echten Dateien synchronisiert. Bleiben lesbar, auch ohne dieses Programm. |
 | 🔗 **Links** | Lesezeichen mit Kategorien, privat oder mit der Familie geteilt. Angepinnte erscheinen auf der Startseite. |
@@ -71,8 +73,25 @@ solange es im eigenen, vertrauenswürdigen Netz bleibt.
 | 🕗 **Arbeit & Schule** | Wer wann weg ist — und daraus: **ab wann sind alle da**. Das Kind trägt seinen Stundenplan als festen Wochenplan ein, die Eltern ihre Schichten als Kalenderblatt für vier Wochen. Ein eingetragener Tag sticht den Wochenplan, ein Feiertag hebt ihn also auf, ohne ihn zu löschen. |
 | 🏠 **Familien-Modus fürs Wandtablet** | Ein Tablet im Flur wird zum Familiengerät: dauerhaft angemeldet, aber ohne persönliche Daten. Wer abhakt, tippt kurz auf sein Gesicht — **keine PIN**, und die Punkte landen beim Richtigen. Wer es mit aufs Sofa nimmt, meldet sich an und ist danach wieder im Familien-Modus. |
 | 📱 **Geräte-Status** | Läuft Plex, Kavita, der NAS? Kachel antippen öffnet die Oberfläche. |
-| 🎛️ **Pro Person** | Jeder ordnet sich die Fenster selbst an und blendet aus, was er nicht braucht. Zwei Oberflächen zur Wahl — *Nachtlicht* (offen, mit feinen Linien) und *Glas* (Fenster als milchige Scheiben) — jeweils hell oder dunkel. |
+| ➕ **Ein Plus für alles** | Unten in der Mitte (am Rechner: Taste **N**): Einkauf, Termin, Notiz, Aufgabe oder Essen eintragen, egal auf welcher Seite man gerade ist. Auf dem Handy liegen die wichtigsten Ziele in einer Leiste am unteren Rand — dort, wo der Daumen ist. |
+| ☀️ **Heute auf einen Blick** | Unter der Begrüssung: nächster Termin, das Essen, offene Aufgaben, die Einkaufsliste und ab wann alle zu Hause sind. |
+| 🎛️ **Pro Person** | Jeder ordnet sich die Fenster selbst an (per Ziehen) und blendet aus, was er nicht braucht. Zwei Oberflächen zur Wahl — *Nachtlicht* (offen, mit feinen Linien) und *Glas* (Fenster als milchige Scheiben) — jeweils hell oder dunkel, dazu **sechs Akzentfarben**. |
 | 📲 **Wie eine App** | Zum Startbildschirm hinzufügen: eigenes Symbol, keine Browserleiste, Offline-Ansicht. |
+
+---
+
+## Neu in 2.0
+
+- **Essensplan** mit Zutaten, die auf die Einkaufsliste wandern
+- **Belohnungen**: Punkte gegen Bildschirmzeit, Eis oder Kinoabend tauschen
+- **Einkaufsmodus** fürs Handy im Laden, mit **Vorschlägen** aus dem, was ihr oft kauft
+- **Leiste am unteren Rand** und **ein Plus** für alles, was man schnell eintragen will
+- **Heute-Leiste**, **Akzentfarben**, farbige Kacheln, **Rückgängig** statt Nachfragen
+- Fenster **per Ziehen** sortieren
+
+Alles Weitere, samt dem Warum: [CHANGELOG.md](CHANGELOG.md).
+
+> Die Bilder unten zeigen noch die Fassung 1.x. Neue folgen.
 
 ---
 
@@ -367,7 +386,7 @@ make up
 make verify
 ```
 
-Erwartet: **55 Prüfungen bestanden.** Wenn hier etwas rot ist, hilft
+Erwartet: **64 Prüfungen bestanden.** Wenn hier etwas rot ist, hilft
 [INSTALL.md](INSTALL.md) weiter.
 
 **Im Browser öffnen** und anmelden. Es sind drei Benutzer angelegt — **Papa**,
@@ -446,7 +465,8 @@ Damit du nicht enttäuscht wirst:
   Ein Container sieht nur, was in ihn eingehängt wurde. Welcher *Teil* davon
   gehört wird, stellt man dann in der Verwaltung ein.
 - **Der erste Start dauert 10–20 Minuten.** Einmalig.
-- **Fenster sortiert man mit Pfeiltasten**, nicht per Ziehen.
+- **Belohnungen werden nicht automatisch eingelöst.** Ein Elternteil bestätigt
+  jede Anfrage — das Eis muss ja auch jemand kaufen.
 - **HEIC-Fotos vom iPhone** werden beim direkten Upload nicht unterstützt (beim
   Teilen wandelt iOS meist automatisch in JPG um).
 
@@ -458,7 +478,7 @@ Damit du nicht enttäuscht wirst:
 make setup       Einrichten (einmalig)
 make preflight   Prüfen, ob das Gerät passt (ändert nichts)
 make up          Starten                 make down     Stoppen
-make logs        Logs ansehen            make verify   55 Prüfungen
+make logs        Logs ansehen            make verify   64 Prüfungen
 make backup      Sichern                 make restore  Zurückspielen
 make dev         Entwicklungsmodus mit Hot-Reload
 make clean       Aufräumen
@@ -517,7 +537,8 @@ DOMPurify. Das Backend startet nicht ohne gesetztes `JWT_SECRET`.
 ```
 familien-dashboard/
 ├── backend/internal/     auth · calendar · chores · points · shopping
-│                         notes · links · devices · photos · weather
+│                         meals · rewards · notes · links · devices
+│                         photos · weather · times · music · files
 │                         backup · config · store
 ├── frontend/src/         SvelteKit (Routen, Widgets, Stores)
 ├── traefik/              Reverse Proxy

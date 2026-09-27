@@ -122,7 +122,7 @@
   {/if}
 {/snippet}
 
-<Kachel
+<Kachel ton="var(--ton-dateien)"
   titel="Dateien"
   icon={FileText}
   {zeile}

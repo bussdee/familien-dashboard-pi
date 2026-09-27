@@ -5,7 +5,8 @@ import type {
   DeviceTarget, EventDraft, FileListing, FileUploadResult, Link, LinkDraft,
   DayTime, MonthBoard, MusicBrowse, MusicDirListing, MusicStatus, Note, Photo,
   PhotoUploadResult, Score, ShoppingEvent, ShoppingItem, TimeOverview, Track,
-  User, WeatherData, WeatherLocation, WeeklyTime,
+  User, WeatherData, WeatherLocation, WeeklyTime, Meal, RecentMeal, Reward,
+  RewardOverview, ShoppingSuggestion, RedemptionStatus,
 } from '$lib/types';
 
 const BASE = '/api';
@@ -214,6 +215,49 @@ export const shoppingApi = {
     }),
   /** What the currently ticked-off items are worth, shown before committing. */
   reward: () => request<{ checked_items: number; points_awarded: number }>('/shopping/reward'),
+  /** Was die Familie häufig kauft — ohne das, was schon offen auf der Liste steht. */
+  suggestions: (query = '') =>
+    request<ShoppingSuggestion[]>(
+      `/shopping/suggestions${query ? `?q=${encodeURIComponent(query)}` : ''}`,
+    ),
+  /** Nimmt einen Vorschlag heraus — Tippfehler sollen nicht ewig auftauchen. */
+  forgetSuggestion: (name: string) =>
+    request<void>(`/shopping/suggestions?name=${encodeURIComponent(name)}`, { method: 'DELETE' }),
+};
+
+export const mealsApi = {
+  list: (from: string, days = 7) =>
+    request<{ from: string; to: string; meals: Meal[] }>(
+      `/meals?from=${encodeURIComponent(from)}&days=${days}`,
+    ),
+  recent: () => request<RecentMeal[]>('/meals/recent'),
+  save: (day: string, data: { title: string; note: string; ingredients: string[] }) =>
+    request<Meal>(`/meals/${day}`, { method: 'PUT', ...json(data) }),
+  remove: (day: string) => request<void>(`/meals/${day}`, { method: 'DELETE' }),
+  /** Setzt die Zutaten auf die Einkaufsliste; Doppeltes bleibt draussen. */
+  toShopping: (day: string) =>
+    request<{ added: number; skipped: number }>(`/meals/${day}/shopping`, { method: 'POST' }),
+};
+
+export const rewardsApi = {
+  overview: () => request<RewardOverview>('/rewards'),
+  redeem: (id: number) =>
+    request<{ id: number; title: string; cost: number; balance: number }>(
+      `/rewards/${id}/redeem`,
+      { method: 'POST' },
+    ),
+  cancel: (redemptionId: number) =>
+    request<void>(`/rewards/redemptions/${redemptionId}`, { method: 'DELETE' }),
+  create: (data: { title: string; emoji: string; cost: number; active?: boolean }) =>
+    request<Reward>('/admin/rewards', { method: 'POST', ...json(data) }),
+  update: (id: number, data: { title: string; emoji: string; cost: number; active?: boolean }) =>
+    request<void>(`/admin/rewards/${id}`, { method: 'PUT', ...json(data) }),
+  remove: (id: number) => request<void>(`/admin/rewards/${id}`, { method: 'DELETE' }),
+  decide: (redemptionId: number, status: Exclude<RedemptionStatus, 'offen'>) =>
+    request<void>(`/admin/rewards/redemptions/${redemptionId}`, {
+      method: 'POST',
+      ...json({ status }),
+    }),
 };
 
 export const notesApi = {

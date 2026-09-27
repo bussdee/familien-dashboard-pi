@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { untrack } from 'svelte';
+  import { schnell } from '$lib/stores/schnell.svelte';
   import {
     CalendarDays, FileText, Lock, Pencil, Plus, Repeat, Trash2, X,
   } from 'lucide-svelte';
@@ -129,6 +131,15 @@
     showForm = true;
   }
 
+  // Das Plus unten hat nach diesem Formular gefragt.
+  $effect(() => {
+    if (schnell.anfrage !== 'termin') return;
+    untrack(() => {
+      schnell.abholen('termin');
+      startNew();
+    });
+  });
+
   function select(event: CalendarEvent) {
     selectedId = selectedId === event.id ? null : event.id;
   }
@@ -210,7 +221,7 @@
   </button>
 {/snippet}
 
-<Kachel titel="Kalender" icon={CalendarDays} {zeile} {aktionen}>
+<Kachel ton="var(--ton-kalender)" titel="Kalender" icon={CalendarDays} {zeile} {aktionen}>
 
   {#if error}
     <p class="mb-3 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>

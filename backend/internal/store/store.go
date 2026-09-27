@@ -298,6 +298,61 @@ func (s *Store) Migrate() error {
 			updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 			FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 		)`,
+		// Der Essensplan: ein Gericht je Tag. Mehr braucht die Frage „Was
+		// gibt's heute?" nicht — und mehr pflegt auch niemand. Der Tag ist
+		// der Schlüssel, als Text, aus demselben Grund wie bei day_times.
+		//
+		// ingredients sind Zeilen, keine eigene Tabelle: Sie wandern mit
+		// einem Tipp auf die Einkaufsliste und werden dort zu Einträgen.
+		`CREATE TABLE IF NOT EXISTS meals (
+			day TEXT PRIMARY KEY,
+			title TEXT NOT NULL,
+			note TEXT NOT NULL DEFAULT '',
+			ingredients TEXT NOT NULL DEFAULT '',
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+		)`,
+		// Belohnungen: wofür die Punkte da sind. Die Punkte selbst bleiben
+		// unangetastet — Level und Rangliste sollen nicht fallen, nur weil
+		// jemand sich ein Eis geholt hat. Ausgegeben wird ein Guthaben, das
+		// sich aus Punkten minus Einlösungen ergibt.
+		`CREATE TABLE IF NOT EXISTS rewards (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			title TEXT NOT NULL,
+			emoji TEXT NOT NULL DEFAULT '🎁',
+			cost INTEGER NOT NULL,
+			active BOOLEAN NOT NULL DEFAULT 1,
+			position INTEGER NOT NULL DEFAULT 0,
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+		)`,
+		// Eine Einlösung merkt sich Titel und Preis von damals. Wird die
+		// Belohnung später teurer oder gelöscht, stimmt das Guthaben weiter.
+		`CREATE TABLE IF NOT EXISTS reward_redemptions (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			reward_id INTEGER,
+			user_id INTEGER NOT NULL,
+			title TEXT NOT NULL,
+			emoji TEXT NOT NULL DEFAULT '🎁',
+			cost INTEGER NOT NULL,
+			-- offen | eingeloest | abgelehnt
+			status TEXT NOT NULL DEFAULT 'offen',
+			created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			decided_at DATETIME,
+			FOREIGN KEY (reward_id) REFERENCES rewards(id) ON DELETE SET NULL,
+			FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+		)`,
+		// Was die Familie schon einmal eingekauft hat. Daraus werden die
+		// Vorschläge unter dem Eingabefeld: Milch tippt man nicht jede Woche
+		// neu. name_key ist der kleingeschriebene Name, damit „Milch" und
+		// „milch" ein Eintrag bleiben.
+		`CREATE TABLE IF NOT EXISTS shopping_history (
+			name_key TEXT PRIMARY KEY,
+			name TEXT NOT NULL,
+			category TEXT NOT NULL DEFAULT '',
+			uses INTEGER NOT NULL DEFAULT 1,
+			last_used DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+		)`,
 		`CREATE TABLE IF NOT EXISTS login_attempts (
 			user_id INTEGER PRIMARY KEY,
 			failures INTEGER NOT NULL DEFAULT 0,
@@ -318,6 +373,8 @@ func (s *Store) Migrate() error {
 		`CREATE INDEX IF NOT EXISTS idx_weekly_times_user ON weekly_times(user_id, weekday)`,
 		`CREATE INDEX IF NOT EXISTS idx_day_times_day ON day_times(day, user_id)`,
 		`CREATE INDEX IF NOT EXISTS idx_month_scores ON month_scores(month, rank)`,
+		`CREATE INDEX IF NOT EXISTS idx_redemptions_user ON reward_redemptions(user_id, status)`,
+		`CREATE INDEX IF NOT EXISTS idx_rewards_position ON rewards(position)`,
 	}
 
 	for _, m := range migrations {
@@ -367,6 +424,9 @@ func (s *Store) Migrate() error {
 		return err
 	}
 	if err := s.seedChores(); err != nil {
+		return err
+	}
+	if err := s.seedRewards(); err != nil {
 		return err
 	}
 	return s.backfillPoints()
@@ -437,6 +497,43 @@ func (s *Store) seedChores() error {
 		}
 	}
 	return nil
+}
+
+// seedRewards legt einmalig ein paar Beispiel-Belohnungen an — auch bei
+// bestehenden Installationen, die mit 2.0 zum ersten Mal Belohnungen
+// kennen. Eine leere Seite erklärt die Idee schlechter als drei Beispiele.
+//
+// Ein Merker in settings sorgt dafür, dass das genau einmal passiert: Wer die
+// Beispiele löscht, bekommt sie beim nächsten Start nicht wieder.
+func (s *Store) seedRewards() error {
+	if _, done, err := s.Setting("seed.rewards"); err != nil || done {
+		return err
+	}
+
+	var count int
+	if err := s.db.QueryRow("SELECT COUNT(*) FROM rewards").Scan(&count); err != nil {
+		return err
+	}
+	if count == 0 {
+		defaults := []struct {
+			title, emoji string
+			cost         int
+		}{
+			{"30 Minuten Bildschirmzeit", "📱", 50},
+			{"Ein Eis", "🍦", 80},
+			{"Film aussuchen am Familienabend", "🎬", 120},
+			{"Später ins Bett (30 Min.)", "🌙", 150},
+		}
+		for i, r := range defaults {
+			if _, err := s.db.Exec(
+				`INSERT INTO rewards (title, emoji, cost, position) VALUES (?, ?, ?, ?)`,
+				r.title, r.emoji, r.cost, i,
+			); err != nil {
+				return err
+			}
+		}
+	}
+	return s.SetSetting("seed.rewards", "1")
 }
 
 // Setting reads a family-wide setting. A missing key is not an error; the

@@ -2,14 +2,12 @@
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
   import { authApi } from '$lib/api';
-  import { connection, session, theme, type Theme } from '$lib/stores';
+  import { AKZENTE, akzent, connection, session, theme, type Theme } from '$lib/stores';
   import { board } from '$lib/stores/scores.svelte';
   import {
-    Clock, CloudSun, House, LayoutGrid, Link as LinkIcon, LogOut, Menu, Monitor,
-    Moon, Settings, Shield, Sun, Trophy, WifiOff, X, UserRound,
+    LogOut, Menu, Monitor, Moon, Sun, WifiOff, X, UserRound,
   } from 'lucide-svelte';
-
-  let menuOpen = $state(false);
+  import { aktiv, menu, zieleFuer } from '$lib/stores/navigation.svelte';
 
   const themes: { value: Theme; label: string; icon: typeof Sun }[] = [
     { value: 'light', label: 'Hell', icon: Sun },
@@ -26,18 +24,8 @@
   // Im Familien-Modus verschwindet alles, was einer Person gehört: Links,
   // eigene Ansicht, Einstellungen — und die Rangliste, die im Flur niemanden
   // etwas angeht.
-  const nav = $derived(
-    [
-      { href: '/', label: 'Übersicht', icon: House, show: true },
-      { href: '/wetter', label: 'Wetter', icon: CloudSun, show: true },
-      { href: '/links', label: 'Links', icon: LinkIcon, show: !geraet },
-      { href: '/zeiten', label: 'Arbeit & Schule', icon: Clock, show: !geraet },
-      { href: '/rangliste', label: 'Rangliste', icon: Trophy, show: !geraet },
-      { href: '/ansicht', label: 'Ansicht anpassen', icon: LayoutGrid, show: !geraet },
-      { href: '/settings', label: 'Einstellungen', icon: Settings, show: !geraet },
-      { href: '/admin', label: 'Verwaltung', icon: Shield, show: user?.role === 'admin' },
-    ].filter((item) => item.show),
-  );
+  const nav = $derived(zieleFuer(geraet, user?.role === 'admin'));
+  const leiste = $derived(nav.filter((z) => z.leiste));
 
   // Only the top three ranks get a medal; below that the number carries it.
   const medals = ['🥇', '🥈', '🥉'];
@@ -48,11 +36,11 @@
   // Any navigation closes the drawer, including the browser's back button.
   $effect(() => {
     void path;
-    menuOpen = false;
+    menu.offen = false;
   });
 
   async function signOut() {
-    menuOpen = false;
+    menu.offen = false;
     try {
       await authApi.logout();
     } catch {
@@ -75,10 +63,10 @@
   }
 </script>
 
-<svelte:window onkeydown={(e) => e.key === 'Escape' && (menuOpen = false)} />
+<svelte:window onkeydown={(e) => e.key === 'Escape' && (menu.offen = false)} />
 
-<header class="sticky top-0 z-40 border-b border-border bg-card/95 backdrop-blur">
-  <div class="mx-auto flex max-w-7xl items-center gap-2 px-3 py-2 sm:px-4">
+<header class="sticky top-0 z-40 border-b border-[color:var(--haarlinie)] bg-background/80 backdrop-blur-xl">
+  <div class="flex w-full items-center gap-2 px-3 py-2 sm:px-5 2xl:px-10">
     <!--
       Der Menüknopf ist die ganze Navigation, solange die Leiste nicht
       hineinpasst. Die Grenze liegt bei lg und nicht bei md: Seit Wetter und
@@ -87,38 +75,39 @@
       seitwärts schieben.
     -->
     <button
-      class="btn-ghost shrink-0 rounded-xl px-2 lg:hidden"
-      onclick={() => (menuOpen = true)}
+      class="btn-ghost hidden shrink-0 rounded-xl px-2 lg:inline-flex"
+      onclick={() => (menu.offen = true)}
       aria-label="Menü öffnen"
-      aria-expanded={menuOpen}
+      aria-expanded={menu.offen}
     >
       <Menu class="h-6 w-6" />
     </button>
 
     <a href="/" class="flex shrink-0 items-center gap-2 lg:pr-2" aria-label="Startseite">
-      <span class="text-xl">🏠</span>
-      <span class="hidden text-sm font-semibold sm:inline">Familie</span>
+      <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-primary/15 text-lg">🏠</span>
+      <span class="text-sm font-semibold tracking-tight">Familie</span>
     </a>
 
-    <nav class="hidden items-center gap-1 lg:flex">
-      <!--
-        Nur "Ansicht anpassen" fehlt hier: Der Weg dorthin steht unten auf der
-        Übersicht, direkt bei den Fenstern, die man ordnen will.
-
-        Wetter stand lange ebenfalls nicht hier, weil es über den Wetterblock
-        erreichbar war. Das reichte nicht — wer den Ort einstellen will, sucht
-        ihn im Menü.
-      -->
-      {#each nav.filter((i) => i.href !== '/ansicht') as item (item.href)}
+    <!--
+      Die Leiste steht ab lg. Dort erst nur mit Symbolen (sieben Beschriftungen
+      passen in 1024 Pixel nicht hinein, ohne dass die Seite seitwärts
+      rutscht), ab xl mit Text. Unterhalb von lg übernimmt die Leiste am
+      unteren Rand.
+    -->
+    <nav class="hidden items-center gap-0.5 lg:flex" aria-label="Hauptnavigation">
+      {#each leiste as item (item.href)}
+        {@const an = aktiv(path, item.href)}
         <a
           href={item.href}
           class="touch-target gap-2 rounded-xl px-3 text-sm font-medium transition-colors
-            {path === item.href
-            ? 'bg-primary text-primary-foreground'
+            {an
+            ? 'bg-primary/15 text-primary'
             : 'text-muted-foreground hover:bg-accent hover:text-foreground'}"
+          aria-current={an ? 'page' : undefined}
+          title={item.label}
         >
           <item.icon class="h-4 w-4" />
-          {item.label}
+          <span class="hidden xl:inline">{item.label}</span>
         </a>
       {/each}
     </nav>
@@ -171,11 +160,11 @@
 </header>
 
 <!-- Slide-in drawer: the phone menu, and a shortcut sheet on desktop too. -->
-{#if menuOpen}
+{#if menu.offen}
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
     class="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm"
-    onclick={() => (menuOpen = false)}
+    onclick={() => (menu.offen = false)}
     role="presentation"
   ></div>
 
@@ -186,7 +175,7 @@
       <span class="flex items-center gap-2 font-semibold">
         <span class="text-xl">🏠</span> Familien Dashboard
       </span>
-      <button class="touch-target text-muted-foreground" onclick={() => (menuOpen = false)} aria-label="Menü schließen">
+      <button class="touch-target text-muted-foreground" onclick={() => (menu.offen = false)} aria-label="Menü schließen">
         <X class="h-5 w-5" />
       </button>
     </div>
@@ -220,7 +209,8 @@
         <a
           href={item.href}
           class="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-colors
-            {path === item.href ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'}"
+            {aktiv(path, item.href) ? 'bg-primary/15 text-primary' : 'hover:bg-accent'}"
+          aria-current={aktiv(path, item.href) ? 'page' : undefined}
         >
           <item.icon class="h-5 w-5 shrink-0" />
           {item.label}
@@ -242,6 +232,20 @@
           </button>
         {/each}
       </div>
+      <!-- Die Akzentfarbe gleich daneben: ausprobieren, ohne die Seite zu wechseln. -->
+      <div class="mt-2 flex justify-between gap-1 px-2" role="group" aria-label="Akzentfarbe">
+        {#each AKZENTE as a (a.value)}
+          <button
+            class="h-8 w-8 rounded-full transition-transform
+              {$akzent === a.value ? 'scale-110 ring-2 ring-offset-2 ring-offset-card' : 'hover:scale-105'}"
+            style="background-color: {a.farbe}; --tw-ring-color: {a.farbe}"
+            onclick={() => akzent.set(a.value)}
+            aria-label="Akzentfarbe {a.label}"
+            aria-pressed={$akzent === a.value}
+            title={a.label}
+          ></button>
+        {/each}
+      </div>
     </nav>
 
     <div class="safe-bottom border-t border-border p-2">
@@ -251,7 +255,7 @@
         <a
           href="/login"
           class="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm transition-colors hover:bg-accent"
-          onclick={() => (menuOpen = false)}
+          onclick={() => (menu.offen = false)}
         >
           <UserRound class="h-5 w-5" />
           Als Familienmitglied anmelden

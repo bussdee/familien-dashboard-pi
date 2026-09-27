@@ -4,7 +4,7 @@
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
   import { authApi } from '$lib/api';
-  import { connection, oberflaeche, session, theme } from '$lib/stores';
+  import { akzent, connection, oberflaeche, session, theme } from '$lib/stores';
   import { layout } from '$lib/stores/layout.svelte';
   import { player } from '$lib/stores/player.svelte';
   import { diashow } from '$lib/stores/diashow.svelte';
@@ -17,6 +17,9 @@
   import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
   import WerWarDas from '$lib/components/WerWarDas.svelte';
   import PlayerBar from '$lib/components/PlayerBar.svelte';
+  import BottomNav from '$lib/components/BottomNav.svelte';
+  import QuickAdd from '$lib/components/QuickAdd.svelte';
+  import Toasts from '$lib/components/Toasts.svelte';
 
   let { children } = $props();
 
@@ -37,8 +40,22 @@
    */
   const inDiashow = $derived($page.url.pathname.startsWith('/diashow'));
 
+  /**
+   * Die Leiste am unteren Rand und das Plus gibt es überall ausser beim
+   * Anmelden und in der Diashow — dort gehört das ganze Bild dem Foto.
+   */
+  const mitNavigation = $derived(!isLogin && !inDiashow && $session.ready);
+
+  /**
+   * Das Seitenende muss über allem liegen, was unten schwebt: der Leiste
+   * (auf dem Handy) und der Abspielleiste. Die Höhe der Leiste steht als
+   * --unten-leiste in app.css — hier wird nur addiert, statt für jede
+   * Kombination eine eigene Klasse zu raten.
+   */
   const abstandUnten = $derived(
-    isLogin ? '' : player.aktiv ? 'pb-36 md:pb-24' : 'pb-20 md:pb-0',
+    isLogin
+      ? ''
+      : `padding-bottom: calc(var(--unten-leiste, 0px) + ${player.aktiv ? '5.5rem' : '1rem'})`,
   );
 
   // Die Diashow liegt als Vollbild über allem. Der Zustand wird beim Betreten
@@ -52,6 +69,7 @@
   onMount(() => {
     theme.init();
     oberflaeche.init();
+    akzent.init();
     player.init();
     if (audioEl) player.attach(audioEl);
 
@@ -101,21 +119,17 @@
   });
 </script>
 
-<div class="flex min-h-full flex-col bg-background">
+<!-- Der Abstand unten sitzt am äussersten Rahmen und nicht an <main>:
+     Sonst läge die Fusszeile hinter der Leiste. -->
+<div
+  class="flex min-h-full flex-col bg-background {mitNavigation ? 'mit-unten-leiste' : ''}"
+  style={abstandUnten}
+>
   {#if !isLogin}
     <Header />
   {/if}
 
-  <!--
-    pb-20 on phones keeps content clear of the bottom navigation bar. Läuft
-    Musik, kommt die Höhe der Abspielleiste dazu — sonst liegt sie über der
-    letzten Kachel.
-
-    Genau EINE Abstandsklasse, nicht zwei sich widersprechende: Welche von
-    "pb-20" und "pb-36" gewinnt, entscheidet sonst die Reihenfolge im
-    erzeugten Stylesheet und nicht diese Datei.
-  -->
-  <main class="flex-1 {abstandUnten}">
+  <main class="flex-1">
     {#if $session.ready || isLogin}
       {@render children()}
     {:else}
@@ -144,6 +158,13 @@
   {#if !isLogin}
     <PlayerBar gedimmt={inDiashow && !diashow.wach} ueberDiashow={inDiashow} />
   {/if}
+
+  {#if mitNavigation}
+    <BottomNav />
+    <QuickAdd />
+  {/if}
+
+  <Toasts />
 
   <!-- Outside the isLogin guard: a confirmation can be asked from anywhere. -->
   <ConfirmDialog />

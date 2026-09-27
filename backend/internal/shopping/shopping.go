@@ -323,9 +323,144 @@ func (s *Service) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	s.merken(item.Name, item.Category)
 	s.broadcast("created", item)
 	w.WriteHeader(http.StatusCreated)
 	auth.WriteJSON(w, item)
+}
+
+// merken zählt einen Eintrag für die Vorschläge mit. Ein Fehler hier ist
+// kein Grund, den Eintrag selbst scheitern zu lassen.
+func (s *Service) merken(name, category string) {
+	key := strings.ToLower(strings.TrimSpace(name))
+	if key == "" {
+		return
+	}
+	if _, err := s.db.Exec(`
+		INSERT INTO shopping_history (name_key, name, category) VALUES (?, ?, ?)
+		ON CONFLICT(name_key) DO UPDATE SET
+			uses = uses + 1,
+			name = excluded.name,
+			category = CASE WHEN excluded.category != '' THEN excluded.category ELSE shopping_history.category END,
+			last_used = CURRENT_TIMESTAMP`, key, strings.TrimSpace(name), category); err != nil {
+		log.Debug().Err(err).Msg("Einkaufsverlauf nicht aktualisiert")
+	}
+}
+
+// AddItems setzt mehrere Einträge auf einmal auf die Liste — die Zutaten aus
+// dem Essensplan. Was schon offen auf der Liste steht, kommt nicht doppelt
+// dazu. userID darf nil sein (Wandgerät).
+func (s *Service) AddItems(names []string, userID *int) (added int, err error) {
+	var urheber any
+	if userID != nil {
+		urheber = *userID
+	}
+	for _, raw := range names {
+		name := strings.TrimSpace(raw)
+		if name == "" {
+			continue
+		}
+		if len(name) > 80 {
+			name = name[:80]
+		}
+		var da int
+		err := s.db.QueryRow(
+			`SELECT COUNT(*) FROM shopping_items WHERE checked = 0 AND lower(name) = lower(?)`, name,
+		).Scan(&da)
+		if err != nil {
+			return added, err
+		}
+		if da > 0 {
+			continue
+		}
+
+		// Die Kategorie kommt aus dem Verlauf, wenn der Artikel schon einmal
+		// auf der Liste stand. So landen die Tomaten wieder bei Obst & Gemüse.
+		var category string
+		_ = s.db.QueryRow(`SELECT category FROM shopping_history WHERE name_key = ?`,
+			strings.ToLower(name)).Scan(&category)
+
+		res, err := s.db.Exec(
+			`INSERT INTO shopping_items (name, quantity, category, user_id) VALUES (?, '', ?, ?)`,
+			name, category, urheber)
+		if err != nil {
+			return added, err
+		}
+		id, _ := res.LastInsertId()
+		if item, err := s.byID(int(id)); err == nil {
+			s.merken(item.Name, item.Category)
+			s.broadcast("created", item)
+		}
+		added++
+	}
+	return added, nil
+}
+
+// ForgetSuggestion nimmt einen Artikel aus den Vorschlägen — für Tippfehler
+// („Mlich") und für Dinge, die man nie wieder kaufen will.
+func (s *Service) ForgetSuggestion(w http.ResponseWriter, r *http.Request) {
+	key := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("name")))
+	if key == "" {
+		auth.HTTPError(w, http.StatusBadRequest, "Welcher Vorschlag?")
+		return
+	}
+	if _, err := s.db.Exec(`DELETE FROM shopping_history WHERE name_key = ?`, key); err != nil {
+		auth.HTTPError(w, http.StatusInternalServerError, "Server-Fehler")
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// Suggestion ist ein Artikel, den die Familie schon öfter gekauft hat.
+type Suggestion struct {
+	Name     string `json:"name"`
+	Category string `json:"category"`
+	Uses     int    `json:"uses"`
+}
+
+// Suggestions liefert die häufigsten Artikel — ohne die, die gerade offen auf
+// der Liste stehen. Mit ?q= gefiltert, für die Vervollständigung beim Tippen.
+func (s *Service) Suggestions(w http.ResponseWriter, r *http.Request) {
+	q := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("q")))
+	limit := 12
+
+	// Häufigkeit zählt, aber was seit Monaten niemand gekauft hat, rutscht
+	// nach hinten: Die Sonnencreme vom Sommer soll im November nicht oben
+	// stehen.
+	query := `
+		SELECT h.name, h.category, h.uses
+		FROM shopping_history h
+		WHERE NOT EXISTS (
+			SELECT 1 FROM shopping_items i WHERE i.checked = 0 AND lower(i.name) = h.name_key
+		)`
+	args := []any{}
+	if q != "" {
+		query += ` AND h.name_key LIKE ? ESCAPE '\'`
+		esc := strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`).Replace(q)
+		args = append(args, esc+"%")
+	}
+	query += `
+		ORDER BY h.uses * 1.0 / (1 + (julianday('now') - julianday(h.last_used)) / 30.0) DESC, h.name
+		LIMIT ?`
+	args = append(args, limit)
+
+	rows, err := s.db.Query(query, args...)
+	if err != nil {
+		log.Error().Err(err).Msg("Vorschläge konnten nicht gelesen werden")
+		auth.HTTPError(w, http.StatusInternalServerError, "Server-Fehler")
+		return
+	}
+	defer rows.Close()
+
+	list := []Suggestion{}
+	for rows.Next() {
+		var sg Suggestion
+		if err := rows.Scan(&sg.Name, &sg.Category, &sg.Uses); err != nil {
+			continue
+		}
+		list = append(list, sg)
+	}
+	auth.WriteJSON(w, list)
 }
 
 func (s *Service) Update(w http.ResponseWriter, r *http.Request) {

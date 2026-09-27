@@ -19,6 +19,7 @@ export const WIDGETS: WidgetMeta[] = [
   { id: 'chores', label: 'Aufgaben', emoji: '⭐', hint: 'Was ansteht, mit Punkten' },
   { id: 'shopping', label: 'Einkaufen', emoji: '🛒', hint: 'Gemeinsame Liste, live' },
   { id: 'calendar', label: 'Kalender', emoji: '📅', hint: 'Termine der nächsten Tage' },
+  { id: 'meals', label: 'Essensplan', emoji: '🍝', hint: 'Was es heute und die nächsten Tage gibt' },
   { id: 'links', label: 'Links', emoji: '🔗', hint: 'Angepinnte Lesezeichen' },
   { id: 'countdown', label: 'Countdowns', emoji: '⏰', hint: 'Geburtstage und Ferien' },
   { id: 'times', label: 'Arbeit & Schule', emoji: '🕗', hint: 'Wer wann weg ist' },
@@ -77,8 +78,16 @@ class LayoutStore {
   private apply(layout: DashboardLayout) {
     const known = new Set(DEFAULT_ORDER);
     const stored = (layout.order ?? []).filter((id) => known.has(id));
-    const missing = DEFAULT_ORDER.filter((id) => !stored.includes(id));
-    this.order = [...stored, ...missing];
+    // Eine neue Kachel landet hinter ihrem Vorgänger aus der Standard-
+    // reihenfolge, nicht ganz unten: Der Essensplan gehört neben den
+    // Kalender, auch bei jemandem, der seine Ansicht längst sortiert hat.
+    const order = [...stored];
+    DEFAULT_ORDER.forEach((id, index) => {
+      if (order.includes(id)) return;
+      const vorgaenger = DEFAULT_ORDER.slice(0, index).reverse().find((v) => order.includes(v));
+      order.splice(vorgaenger ? order.indexOf(vorgaenger) + 1 : 0, 0, id);
+    });
+    this.order = order;
     this.hidden = (layout.hidden ?? []).filter((id) => known.has(id));
   }
 

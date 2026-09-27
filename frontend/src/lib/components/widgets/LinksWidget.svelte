@@ -45,7 +45,7 @@
   {/if}
 {/snippet}
 
-<Kachel titel="Links" icon={LinkIcon} {zeile} {aktionen}>
+<Kachel ton="var(--ton-links)" titel="Links" icon={LinkIcon} {zeile} {aktionen}>
   {#if loading}
     <div class="space-y-2">
       {#each Array(3) as _, i (i)}

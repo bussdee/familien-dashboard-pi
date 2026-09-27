@@ -90,6 +90,12 @@ type Score struct {
 	LevelProgress int `json:"level_progress"`
 	PointsToNext  int `json:"points_to_next"`
 
+	// Guthaben: Punkte minus das, was für Belohnungen eingelöst oder
+	// angefragt ist. Die Punkte selbst sinken dabei nie — ein Eis soll kein
+	// Level kosten.
+	Balance int `json:"balance"`
+	Spent   int `json:"spent"`
+
 	StreakDays int     `json:"streak_days"`
 	LastActive string  `json:"last_active,omitempty"`
 	Badges     []Badge `json:"badges"`
@@ -134,7 +140,9 @@ func (s *Service) Leaderboard() ([]Score, error) {
 			COUNT(p.id)                                                           AS activities,
 			COALESCE(SUM(CASE WHEN p.source = 'chore'    THEN 1 ELSE 0 END), 0)   AS chores,
 			COALESCE(SUM(CASE WHEN p.source = 'shopping' THEN 1 ELSE 0 END), 0)   AS shops,
-			MAX(p.created_at)                                                     AS last_active
+			MAX(p.created_at)                                                     AS last_active,
+			(SELECT COALESCE(SUM(r.cost), 0) FROM reward_redemptions r
+			  WHERE r.user_id = u.id AND r.status != 'abgelehnt')                 AS spent
 		FROM users u
 		LEFT JOIN point_events p ON p.user_id = u.id
 		GROUP BY u.id
@@ -150,10 +158,11 @@ func (s *Service) Leaderboard() ([]Score, error) {
 		var lastActive sql.NullString
 		if err := rows.Scan(&sc.ID, &sc.Name, &sc.Color, &sc.AvatarEmoji,
 			&sc.TotalPoints, &sc.ThisWeek, &sc.Today, &sc.Activities,
-			&sc.ChoreCount, &sc.ShopCount, &lastActive); err != nil {
+			&sc.ChoreCount, &sc.ShopCount, &lastActive, &sc.Spent); err != nil {
 			return nil, err
 		}
 		sc.LastActive = lastActive.String
+		sc.Balance = balanceOf(sc.TotalPoints, sc.Spent)
 		sc.Level, sc.LevelProgress, sc.PointsToNext = deriveLevel(sc.TotalPoints)
 		sc.LevelName = levelName(sc.Level)
 		scores = append(scores, sc)
@@ -189,6 +198,36 @@ func (s *Service) Leaderboard() ([]Score, error) {
 		scores[i].Badges = badgesFor(scores[i], weekLeader)
 	}
 	return scores, nil
+}
+
+// balanceOf rechnet das Guthaben aus. Nie unter null: Nimmt ein Elternteil
+// nach einer Einlösung Punkte zurück, steht dort „0", nicht „-30" — ein Kind
+// soll kein Minus vor sich sehen.
+func balanceOf(total, spent int) int {
+	if b := total - spent; b > 0 {
+		return b
+	}
+	return 0
+}
+
+// Balance liefert das Guthaben einer Person. Innerhalb einer Transaktion
+// gelesen, damit zwei gleichzeitige Einlösungen nicht beide durchkommen.
+func Balance(q interface {
+	QueryRow(query string, args ...any) *sql.Row
+}, userID int) (int, error) {
+	var total, spent int
+	if err := q.QueryRow(
+		`SELECT COALESCE(SUM(points), 0) FROM point_events WHERE user_id = ?`, userID,
+	).Scan(&total); err != nil {
+		return 0, err
+	}
+	if err := q.QueryRow(
+		`SELECT COALESCE(SUM(cost), 0) FROM reward_redemptions
+		  WHERE user_id = ? AND status != 'abgelehnt'`, userID,
+	).Scan(&spent); err != nil {
+		return 0, err
+	}
+	return balanceOf(total, spent), nil
 }
 
 func assignRanks(scores []Score, value func(Score) int, set func(*Score, int)) {

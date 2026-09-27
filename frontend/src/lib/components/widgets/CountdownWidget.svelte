@@ -77,7 +77,7 @@
   {countdowns.length === 0 ? 'Worauf wir uns freuen' : `${countdowns.length} in Sicht`}
 {/snippet}
 
-<Kachel titel="Countdowns" icon={Timer} {zeile}>
+<Kachel ton="var(--ton-countdown)" titel="Countdowns" icon={Timer} {zeile}>
   {#if countdowns.length === 0}
     <KachelLeer
       icon={PartyPopper}
