@@ -48,6 +48,10 @@
       const item = await shoppingApi.create({ name: text, category });
       name = '';
       vorschlaege = vorschlaege.filter((v) => v.name.toLowerCase() !== text.toLowerCase());
+      if (item.existing) {
+        toast(`„${item.name}" steht schon auf der Liste`);
+        return;
+      }
       toast(`„${item.name}" steht auf der Liste`, {
         ton: 'erfolg',
         aktion: {

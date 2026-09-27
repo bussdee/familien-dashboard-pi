@@ -70,7 +70,7 @@
             class="flex items-center gap-3 rounded-xl px-2 py-2 transition-colors hover:bg-muted/30
               {isToday(t.d) ? 'bg-muted/40' : ''}"
           >
-            <span class="w-16 shrink-0 text-xs font-medium uppercase tracking-wider {isToday(t.d) ? 'text-primary' : 'text-muted-foreground'}">
+            <span class="w-24 shrink-0 truncate text-xs font-medium uppercase tracking-wider {isToday(t.d) ? 'text-primary' : 'text-muted-foreground'}">
               {tagName(t.d)}
             </span>
             {#if t.meal}

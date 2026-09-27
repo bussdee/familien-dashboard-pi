@@ -124,6 +124,18 @@ bleiben, wie sie sind.
   landet jetzt hinter ihrem Vorgänger aus der Standardreihenfolge — der
   Essensplan also neben dem Kalender.
 
+- **Was schon auf der Einkaufsliste steht, kommt nicht doppelt dazu.** Zwei
+  Leute, die unabhängig voneinander „Milch" eintragen, meinen dieselbe Milch.
+  Statt einer zweiten Zeile sagt die App jetzt: *steht schon auf der Liste*.
+  Gross- und Kleinschreibung spielen dabei keine Rolle.
+
+- **„Einkauf abschliessen" verläuft in der Akzentfarbe.** Bisher lief der
+  Knopf fest nach Grün aus — mit Violett oder Rose sah das nach einem Fehler
+  aus.
+
+- **Neue Bilder im README**, aufgenommen mit erfundenen Daten: der
+  Familien-Modus, die Handy-Ansichten, Essensplan und Belohnungen.
+
 - **Der Rauchtest prüft 64 Dinge statt 55:** die drei neuen Seiten, die neuen
   Endpunkte und einen Eintrag im Essensplan, den er danach wieder entfernt.
   Seine Testeinträge räumt er jetzt auch aus den Einkaufs-Vorschlägen.

@@ -125,7 +125,7 @@
 <svelte:head><title>Einstellungen · Familien Dashboard</title></svelte:head>
 
 <div class="mx-auto max-w-2xl px-4 py-6">
-  <h1 class="mb-6 text-2xl font-semibold">Einstellungen</h1>
+  <h1 class="seiten-titel mb-6">Einstellungen</h1>
 
   {#if user}
     <section class="card mb-4 p-5">

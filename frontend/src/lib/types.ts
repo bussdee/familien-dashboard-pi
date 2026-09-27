@@ -151,6 +151,8 @@ export interface ShoppingItem {
   user_id: number | null;
   created_at: string;
   updated_at: string;
+  /** Nur beim Anlegen: stand schon offen auf der Liste, nichts Neues angelegt. */
+  existing?: boolean;
 }
 
 export interface Note {

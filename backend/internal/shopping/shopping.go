@@ -36,6 +36,9 @@ type Item struct {
 	UserID    *int      `json:"user_id"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
+	// Existing ist nur in der Antwort auf ein Anlegen gesetzt: Der Artikel
+	// stand schon offen auf der Liste und wurde nicht noch einmal angelegt.
+	Existing bool `json:"existing,omitempty"`
 }
 
 type CreateRequest struct {
@@ -296,6 +299,24 @@ func (s *Service) Create(w http.ResponseWriter, r *http.Request) {
 	req.Name = strings.TrimSpace(req.Name)
 	if req.Name == "" {
 		auth.HTTPError(w, http.StatusBadRequest, "Name erforderlich")
+		return
+	}
+
+	// Was schon offen auf der Liste steht, kommt nicht doppelt dazu. Zwei
+	// Leute, die unabhängig voneinander „Milch" eintragen, meinen dieselbe
+	// Milch — drei Zeilen davon im Laden helfen niemandem.
+	var vorhandenID int
+	err := s.db.QueryRow(
+		`SELECT id FROM shopping_items WHERE checked = 0 AND lower(name) = lower(?) LIMIT 1`, req.Name,
+	).Scan(&vorhandenID)
+	if err == nil {
+		item, err := s.byID(vorhandenID)
+		if err != nil {
+			auth.HTTPError(w, http.StatusInternalServerError, "Server-Fehler")
+			return
+		}
+		item.Existing = true
+		auth.WriteJSON(w, item)
 		return
 	}
 

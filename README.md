@@ -13,7 +13,7 @@ Elternabend? Und ab wann sind eigentlich alle zu Hause?
 
 <br>
 
-<img src="docs/screenshots/Familien_Modus.png" alt="Das Dashboard im Familien-Modus: Aufgaben, Einkaufsliste, Kalender, geteilte Links, Notizen, Foto-Rahmen und Geräte-Status">
+<img src="docs/screenshots/Familien_Modus.png" alt="Das Dashboard im Familien-Modus: Wetter mit Trockenfenster, Heute-Leiste, Aufgaben, Einkaufsliste, Kalender, Essensplan, Links, Countdowns, Zeiten, Notizen, Dateien und Geräte">
 
 <sub>Das Wandtablet im Familien-Modus — begrüßt niemanden persönlich, zeigt keine Rangliste.</sub>
 
@@ -91,8 +91,6 @@ solange es im eigenen, vertrauenswürdigen Netz bleibt.
 
 Alles Weitere, samt dem Warum: [CHANGELOG.md](CHANGELOG.md).
 
-> Die Bilder unten zeigen noch die Fassung 1.x. Neue folgen.
-
 ---
 
 ## So sieht es aus
@@ -104,7 +102,42 @@ ab, fragt es kurz nach. **Ein Tipp aufs eigene Gesicht, keine PIN.** Die Punkte
 landen bei dem, der die Arbeit gemacht hat, und nicht bei dem, der sich zuletzt
 angemeldet hatte.
 
-![Der Dialog „Wer war das?" mit den drei Familienmitgliedern zur Auswahl](docs/screenshots/WerWarDas.png)
+![Der Dialog „Wer war das?" mit den vier Familienmitgliedern zur Auswahl](docs/screenshots/WerWarDas.png)
+
+### Auf dem Handy
+
+Die wichtigsten Ziele liegen unten, wo der Daumen ist. Das Plus in der Mitte
+trägt von jeder Seite aus etwas ein — samt Vorschlägen aus dem, was ihr oft
+kauft. Im Laden zeigt die Einkaufsliste alles nach Abteilung.
+
+![Drei Handy-Ansichten: Übersicht, Einkaufsliste nach Abteilung, Schnell hinzufügen](docs/screenshots/Handy.png)
+
+### Essensplan und Belohnungen
+
+<table>
+<tr>
+<td width="50%">
+
+**Essensplan**
+
+Eine Woche auf einen Blick. Der Einkaufswagen daneben setzt die Zutaten auf
+die Liste — ohne Doppelte.
+
+<img src="docs/screenshots/Essensplan.png" alt="Der Essensplan einer Woche, heute hervorgehoben">
+
+</td>
+<td width="50%">
+
+**Belohnungen**
+
+Das Guthaben oben, darunter was es dafür gibt. Ein Elternteil bestätigt, wenn
+es so weit ist.
+
+<img src="docs/screenshots/Belohnungen.png" alt="Belohnungen mit Guthaben, Angeboten und einer offenen Anfrage">
+
+</td>
+</tr>
+</table>
 
 ### Der Rest
 
@@ -116,14 +149,14 @@ angemeldet hatte.
 
 Antippen, PIN, fertig. Keine E-Mail, kein Konto.
 
-<img src="docs/screenshots/LogIn.png" alt="Anmeldebildschirm mit den drei Familienmitgliedern">
+<img src="docs/screenshots/LogIn.png" alt="Anmeldebildschirm mit den vier Familienmitgliedern">
 
 </td>
 <td width="50%">
 
 **Angemeldet: die persönliche Ansicht**
 
-Mit Namen, Punktestand und Level. Am Wandgerät fehlt genau das.
+Mit Namen, Punktestand, Level und Guthaben. Am Wandgerät fehlt genau das.
 
 <img src="docs/screenshots/Familien_Dashboard.png" alt="Die Übersicht als angemeldete Person, mit Begrüßung und Punkteband">
 
@@ -143,8 +176,8 @@ Siegertreppchen, Level, Abzeichen und wer zuletzt was erledigt hat.
 
 **Einstellungen**
 
-Name, Avatar, Farbe und PIN ändert jeder selbst. Dazu hell oder dunkel und
-die Wahl zwischen den Oberflächen *Nachtlicht* und *Glas*.
+Name, Avatar, Farbe und PIN ändert jeder selbst. Dazu hell oder dunkel, die
+Oberflächen *Nachtlicht* und *Glas* und sechs Akzentfarben.
 
 <img src="docs/screenshots/Einstellungen.png" alt="Einstellungen mit Profil, Avatarauswahl, Darstellung, Oberfläche und PIN-Änderung">
 
@@ -153,9 +186,10 @@ die Wahl zwischen den Oberflächen *Nachtlicht* und *Glas*.
 </table>
 
 **Auf einem schmaleren Bildschirm** rücken die Fenster in drei Spalten
-zusammen, auf dem Handy untereinander.
+zusammen, auf dem Handy untereinander. Hier hell, als *Glas* in Violett — und
+mit Papas eigener Auswahl: Foto, Musik und Geräte hat er ausgeblendet.
 
-![Die Übersicht in drei Spalten](docs/screenshots/Dashboard_Papa.png)
+![Die Übersicht in drei Spalten, hell mit Glas-Oberfläche und violetter Akzentfarbe](docs/screenshots/Dashboard_Papa.png)
 
 ---
 

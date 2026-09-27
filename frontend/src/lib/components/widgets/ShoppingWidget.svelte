@@ -111,7 +111,8 @@
     error = '';
     try {
       // The WebSocket echoes the new item back, so the list updates itself.
-      await shoppingApi.create({ name: name.trim(), quantity, category });
+      const item = await shoppingApi.create({ name: name.trim(), quantity, category });
+      if (item.existing) toast(`„${item.name}" steht schon auf der Liste`);
       name = '';
       quantity = '';
       // Das Formular bleibt bewusst offen — anders als bei Notizen und
@@ -250,7 +251,7 @@
     <!-- Finishing the shop is the moment points are earned, so it gets a real
          button rather than a quiet "clear" link. -->
     <button
-      class="btn-primary mb-4 w-full justify-between bg-gradient-to-r from-primary to-emerald-500 px-4 py-3"
+      class="btn-primary mb-4 w-full justify-between bg-gradient-to-r from-primary to-primary/75 px-4 py-3"
       onclick={clearDone}
       disabled={busy}
     >

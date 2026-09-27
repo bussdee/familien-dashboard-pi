@@ -59,8 +59,8 @@
 
 <div class="mx-auto max-w-2xl px-4 py-5">
   <header class="mb-5">
-    <h1 class="flex items-center gap-2 text-2xl font-semibold">
-      <LayoutGrid class="h-6 w-6" /> Ansicht anpassen
+    <h1 class="seiten-titel flex items-center gap-2">
+      <LayoutGrid class="h-7 w-7" /> Ansicht anpassen
     </h1>
     <p class="text-sm text-muted-foreground">
       Reihenfolge und Sichtbarkeit der Fenster auf deiner Übersicht. Am Griff
