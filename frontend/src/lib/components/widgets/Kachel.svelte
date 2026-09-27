@@ -34,6 +34,11 @@
      * kleben.
      */
     randlos = false,
+    /**
+     * Die Farbe der Kachel, als CSS-Farbe. Färbt nur das Symbolfeld — genug,
+     * um eine Kachel aus dem Augenwinkel wiederzuerkennen.
+     */
+    ton = '',
     children,
   }: {
     titel: string;
@@ -45,6 +50,7 @@
     onFehlerZu?: () => void;
     onHinweisZu?: () => void;
     randlos?: boolean;
+    ton?: string;
     children: Snippet;
   } = $props();
 </script>
@@ -60,13 +66,19 @@
     <div class="min-w-0">
       <h2 class="widget-title">
         {#if Icon}
-          <Icon class="h-5 w-5 shrink-0" />
+          <span class="kachel-symbol" style={ton ? `--ton: ${ton}` : ''}>
+            <Icon class="h-[18px] w-[18px]" />
+          </span>
         {/if}
-        <span class="truncate">{titel}</span>
+        <span class="min-w-0">
+          <span class="block truncate">{titel}</span>
+          {#if zeile}
+            <span class="block truncate text-sm font-normal tracking-normal text-muted-foreground">
+              {@render zeile()}
+            </span>
+          {/if}
+        </span>
       </h2>
-      {#if zeile}
-        <p class="truncate text-sm text-muted-foreground">{@render zeile()}</p>
-      {/if}
     </div>
 
     {#if aktionen}

@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { untrack } from 'svelte';
+  import { schnell } from '$lib/stores/schnell.svelte';
   import { FileText, Pin, PinOff, Plus, Trash2, X } from 'lucide-svelte';
   import { marked } from 'marked';
   import DOMPurify from 'dompurify';
@@ -36,6 +38,15 @@
     draft = { title: '', content: '', tags: '', pinned: false, shared: true };
     showForm = true;
   }
+
+  // Das Plus unten hat nach diesem Formular gefragt.
+  $effect(() => {
+    if (schnell.anfrage !== 'notiz') return;
+    untrack(() => {
+      schnell.abholen('notiz');
+      startNew();
+    });
+  });
 
   function startEdit(note: Note) {
     editing = note;
@@ -121,7 +132,7 @@
   </button>
 {/snippet}
 
-<Kachel titel="Notizen" icon={FileText} {zeile} {aktionen}>
+<Kachel ton="var(--ton-notizen)" titel="Notizen" icon={FileText} {zeile} {aktionen}>
 
   {#if error}
     <p class="mb-3 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>

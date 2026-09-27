@@ -32,8 +32,11 @@
 </script>
 
 {#if player.aktiv && track}
+  <!-- Über der Leiste am unteren Rand, nicht darunter: --unten-leiste ist
+       deren Höhe auf dem Handy und 0 am grossen Bildschirm. -->
   <div
-    class="fixed inset-x-0 bottom-0 border-t border-border bg-card/95 backdrop-blur transition-opacity duration-500
+    style="bottom: var(--unten-leiste, 0px)"
+    class="fixed inset-x-0 border-t border-border bg-card/95 backdrop-blur transition-opacity duration-500
       {ueberDiashow ? 'z-[90]' : 'z-40'}
       {gedimmt ? 'pointer-events-none opacity-0' : 'opacity-100'}"
   >

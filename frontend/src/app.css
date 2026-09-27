@@ -71,13 +71,30 @@
     --input: 214 32% 88%;
     --ring: 173 80% 36%;
     --radius: 0.85rem;
+    /* Die Akzentfarbe als RGB, für Lichtschein und Schatten mit Transparenz. */
+    --akzent-rgb: 13 148 136;
+
+    /* Die Farben der Kacheln. Nur fürs Symbolfeld — erkennbar, nicht bunt. */
+    --ton-aufgaben: #d97706;
+    --ton-einkaufen: #059669;
+    --ton-kalender: #2563eb;
+    --ton-essen: #ea580c;
+    --ton-links: #0284c7;
+    --ton-countdown: #db2777;
+    --ton-zeiten: #4f46e5;
+    --ton-notizen: #ca8a04;
+    --ton-fotos: #9333ea;
+    --ton-musik: #e11d48;
+    --ton-dateien: #0d9488;
+    --ton-geraete: #64748b;
+    --ton-belohnung: #c026d3;
 
     /* Nachtlicht: Trennung durch Haarlinien statt durch Rahmen. */
     --haarlinie: rgba(15, 23, 41, 0.10);
     --haarlinie-stark: rgba(15, 23, 41, 0.16);
     /* Ein weicher Lichtschein statt einer flachen Fläche. */
     --schein:
-      radial-gradient(64% 30% at 16% -4%, rgba(18, 165, 148, 0.10), transparent 66%),
+      radial-gradient(64% 30% at 16% -4%, rgb(var(--akzent-rgb) / 0.12), transparent 66%),
       radial-gradient(56% 26% at 94% 22%, rgba(140, 90, 190, 0.07), transparent 70%),
       radial-gradient(80% 26% at 50% 102%, rgba(224, 144, 44, 0.07), transparent 68%);
 
@@ -108,11 +125,26 @@
     --border: 222 30% 24%;
     --input: 222 30% 24%;
     --ring: 173 70% 45%;
+    --akzent-rgb: 45 212 191;
+
+    --ton-aufgaben: #fbbf24;
+    --ton-einkaufen: #34d399;
+    --ton-kalender: #60a5fa;
+    --ton-essen: #fb923c;
+    --ton-links: #38bdf8;
+    --ton-countdown: #f472b6;
+    --ton-zeiten: #818cf8;
+    --ton-notizen: #facc15;
+    --ton-fotos: #c084fc;
+    --ton-musik: #fb7185;
+    --ton-dateien: #2dd4bf;
+    --ton-geraete: #94a3b8;
+    --ton-belohnung: #e879f9;
 
     --haarlinie: rgba(255, 255, 255, 0.07);
     --haarlinie-stark: rgba(255, 255, 255, 0.13);
     --schein:
-      radial-gradient(64% 30% at 16% -4%, rgba(127, 216, 200, 0.17), transparent 66%),
+      radial-gradient(64% 30% at 16% -4%, rgb(var(--akzent-rgb) / 0.20), transparent 66%),
       radial-gradient(56% 26% at 94% 22%, rgba(180, 120, 220, 0.12), transparent 70%),
       radial-gradient(80% 26% at 50% 102%, rgba(232, 150, 80, 0.10), transparent 68%);
 
@@ -121,6 +153,22 @@
     --glas-schatten: 0 22px 50px rgba(0, 0, 0, 0.34);
     --glas-kante: inset 0 1px 0 rgba(255, 255, 255, 0.14);
   }
+
+
+  /* ---------------------------------------------------------------------
+     Akzentfarben. Jede hat einen hellen und einen dunklen Wert: Das Blau,
+     das auf Weiss gut lesbar ist, versinkt auf Nachtblau — und umgekehrt.
+  --------------------------------------------------------------------- */
+  [data-akzent='blau'] { --primary: 221 83% 53%; --ring: 221 83% 53%; --akzent-rgb: 37 99 235; }
+  .dark[data-akzent='blau'] { --primary: 213 94% 68%; --ring: 213 94% 68%; --akzent-rgb: 96 165 250; }
+  [data-akzent='violett'] { --primary: 262 83% 58%; --ring: 262 83% 58%; --akzent-rgb: 124 58 237; }
+  .dark[data-akzent='violett'] { --primary: 255 92% 76%; --ring: 255 92% 76%; --akzent-rgb: 167 139 250; }
+  [data-akzent='rose'] { --primary: 347 77% 50%; --ring: 347 77% 50%; --akzent-rgb: 225 29 72; }
+  .dark[data-akzent='rose'] { --primary: 351 95% 71%; --ring: 351 95% 71%; --akzent-rgb: 251 113 133; }
+  [data-akzent='orange'] { --primary: 21 90% 48%; --ring: 21 90% 48%; --akzent-rgb: 234 88 12; }
+  .dark[data-akzent='orange'] { --primary: 27 96% 61%; --ring: 27 96% 61%; --akzent-rgb: 251 146 60; }
+  [data-akzent='gruen'] { --primary: 142 72% 35%; --ring: 142 72% 35%; --akzent-rgb: 22 163 74; }
+  .dark[data-akzent='gruen'] { --primary: 142 69% 58%; --ring: 142 69% 58%; --akzent-rgb: 74 222 128; }
 
   * {
     @apply border-border;
@@ -250,7 +298,21 @@
     padding: 1.25rem 1.35rem;
     border: 1px solid var(--haarlinie-stark);
     border-radius: 1.25rem;
-    background-color: hsl(var(--card) / 0.5);
+    background-color: hsl(var(--card) / 0.55);
+    /* Ein Hauch Tiefe, damit die Fenster auf dem Grund liegen statt in ihm.
+       Nicht mehr: Auf einem Wandgerät nachts soll nichts leuchten. */
+    box-shadow: 0 1px 2px rgba(15, 23, 41, 0.03), 0 8px 24px -12px rgba(15, 23, 41, 0.10);
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+  }
+
+  .dark .widget-raster > * {
+    box-shadow: 0 10px 30px -18px rgba(0, 0, 0, 0.6);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .widget-raster > *:hover {
+      border-color: rgb(var(--akzent-rgb) / 0.28);
+    }
   }
 
   @media (min-width: 768px) {
@@ -339,7 +401,37 @@
 
   /* Section headers repeat across every widget; one rule keeps them identical. */
   .widget-title {
-    @apply flex items-center gap-2 text-lg font-semibold;
+    @apply flex items-center gap-2.5 text-lg font-semibold tracking-tight;
+  }
+
+  /* Das Symbol einer Kachel sitzt in einem getönten Feld in der Farbe der
+     Kachel. Aus drei Metern Entfernung erkennt man eine Kachel an ihrer
+     Farbe, bevor man den Titel lesen kann.
+
+     color-mix fehlt auf sehr alten Tablets; dann bleibt der neutrale Grund
+     aus der Zeile davor stehen. */
+  .kachel-symbol {
+    @apply flex h-9 w-9 shrink-0 items-center justify-center rounded-xl;
+    background-color: hsl(var(--muted));
+    background-color: color-mix(in srgb, var(--ton, hsl(var(--primary))) 15%, transparent);
+    color: var(--ton, hsl(var(--primary)));
+  }
+
+  /* Kopf einer Unterseite: gleiche Schrift wie die Begrüssung, kleiner. */
+  .seiten-titel {
+    @apply font-display text-3xl font-light tracking-tight sm:text-4xl;
+  }
+
+  /* Ein Chip zum Antippen: Vorschläge, Filter, Schnellauswahl. */
+  .chip {
+    @apply inline-flex min-h-[36px] items-center gap-1.5 rounded-full border px-3 text-sm transition-colors;
+    border-color: var(--haarlinie-stark);
+  }
+  .chip:hover {
+    @apply bg-accent;
+  }
+  .chip[aria-pressed='true'] {
+    @apply border-primary bg-primary/10 text-primary;
   }
 
   /*
@@ -392,6 +484,18 @@
 @media print {
   .no-print {
     display: none !important;
+  }
+}
+
+/* Die Leiste am unteren Rand gibt es nur unterhalb von lg. Ihre Höhe steht
+   hier einmal, damit Abspielleiste, Hinweise und Seitenende sich danach
+   richten, statt jeweils eine eigene Zahl zu raten. */
+.mit-unten-leiste {
+  --unten-leiste: calc(4.25rem + env(safe-area-inset-bottom));
+}
+@media (min-width: 1024px) {
+  .mit-unten-leiste {
+    --unten-leiste: 0px;
   }
 }
 

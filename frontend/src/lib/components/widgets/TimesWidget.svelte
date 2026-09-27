@@ -79,7 +79,7 @@
   {/if}
 {/snippet}
 
-<Kachel titel="Arbeit & Schule" icon={Clock} {zeile} {aktionen}>
+<Kachel ton="var(--ton-zeiten)" titel="Arbeit & Schule" icon={Clock} {zeile} {aktionen}>
   {#if loading}
     <div class="space-y-2">
       {#each Array(3) as _, i (i)}

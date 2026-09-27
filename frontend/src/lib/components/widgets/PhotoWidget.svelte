@@ -145,7 +145,7 @@
       </button>
 {/snippet}
 
-<Kachel titel="Foto-Rahmen" icon={Image} {zeile} {aktionen} randlos>
+<Kachel ton="var(--ton-fotos)" titel="Foto-Rahmen" icon={Image} {zeile} {aktionen} randlos>
   <input
     bind:this={fileInput}
     type="file"

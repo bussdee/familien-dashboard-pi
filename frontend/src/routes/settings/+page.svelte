@@ -4,7 +4,9 @@
     Check, KeyRound, LayoutGrid, Layers, Minus, Monitor, Moon, Palette, Sun, User as UserIcon,
   } from 'lucide-svelte';
   import { ApiError, authApi } from '$lib/api';
-  import { oberflaeche, session, theme, type Oberflaeche, type Theme } from '$lib/stores';
+  import {
+    AKZENTE, akzent, oberflaeche, session, theme, type Oberflaeche, type Theme,
+  } from '$lib/stores';
   import { board } from '$lib/stores/scores.svelte';
 
   let currentPin = $state('');
@@ -123,7 +125,7 @@
 <svelte:head><title>Einstellungen · Familien Dashboard</title></svelte:head>
 
 <div class="mx-auto max-w-2xl px-4 py-6">
-  <h1 class="mb-6 text-2xl font-semibold">Einstellungen</h1>
+  <h1 class="seiten-titel mb-6">Einstellungen</h1>
 
   {#if user}
     <section class="card mb-4 p-5">
@@ -254,9 +256,27 @@
         </button>
       {/each}
     </div>
+    <h3 class="mb-3 mt-6 text-sm font-medium text-muted-foreground">Akzentfarbe</h3>
+    <div class="grid grid-cols-3 gap-2 sm:grid-cols-6">
+      {#each AKZENTE as a (a.value)}
+        <button
+          class="flex flex-col items-center gap-2 rounded-lg border p-3 transition-colors
+            {$akzent === a.value ? 'border-primary bg-primary/5' : 'border-border hover:bg-accent'}"
+          onclick={() => akzent.set(a.value)}
+          aria-pressed={$akzent === a.value}
+        >
+          <span class="flex h-8 w-8 items-center justify-center rounded-full text-white" style="background-color: {a.farbe}">
+            {#if $akzent === a.value}<Check class="h-4 w-4" />{/if}
+          </span>
+          <span class="text-xs font-medium">{a.label}</span>
+        </button>
+      {/each}
+    </div>
+
     <p class="mt-3 text-[11px] text-muted-foreground">
       Glas sieht auf einem hellen Hintergrund am besten aus. Auf sehr alten
-      Geräten kann das Weichzeichnen ruckeln — dann lieber Nachtlicht.
+      Geräten kann das Weichzeichnen ruckeln — dann lieber Nachtlicht. Farbe,
+      Oberfläche und hell/dunkel gelten nur für dieses Gerät.
     </p>
   </section>
 

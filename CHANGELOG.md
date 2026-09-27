@@ -12,6 +12,134 @@ Deshalb gibt es hier **keine 1.4.5**. Sie stand eine Weile in dieser Datei,
 wurde aber nie veröffentlicht: Auf GitHub steht v1.4.4, und der Pi läuft
 darauf. Was unter 1.4.5 gesammelt war, ist in 1.5.0 aufgegangen.
 
+## [2.0.0] — 2026-09-27
+
+Die erste Fassung, die nicht nur etwas anzeigt, sondern den Tag mitorganisiert:
+Was gibt's zu essen, was fehlt dafür, und wofür sind die Punkte eigentlich da.
+Dazu eine Bedienung, die auf dem Handy dort liegt, wo der Daumen ist.
+
+Bestehende Installationen übernehmen alles ohne Zutun. Die neuen Tabellen legt
+das Backend beim ersten Start selbst an; Ansicht, Punkte und Einstellungen
+bleiben, wie sie sind.
+
+### Hinzugefügt
+
+- **Essensplan.** Eine Woche, Montag bis Sonntag, ein Gericht pro Tag — die
+  Antwort auf die meistgestellte Frage in einer Küche. Zu jedem Gericht lassen
+  sich eine Notiz („Oma kommt") und die Zutaten eintragen, eine pro Zeile oder
+  mit Komma getrennt.
+
+  Der eigentliche Gewinn steckt im Knopf daneben: **Die Zutaten wandern mit
+  einem Tipp auf die Einkaufsliste.** Was dort schon offen steht, kommt nicht
+  doppelt dazu, und die Kategorie kommt aus dem, was die Familie früher schon
+  eingekauft hat — die Tomaten landen wieder bei Obst & Gemüse.
+
+  Familien kochen im Kreis, und das ist gut so. Deshalb stehen unter dem
+  Eingabefeld die Gerichte der letzten Monate; ein Tipp übernimmt Name und
+  Zutaten von damals.
+
+  Eintragen darf jeder, auch das Tablet in der Küche: Dort wird der Plan
+  meistens gemacht. Auf der Übersicht gibt es eine eigene Kachel mit heute und
+  den nächsten drei Tagen.
+
+- **Belohnungen.** Eine Zahl, die nur steigt, trägt bei einem Kind etwa drei
+  Wochen. Dann kommt die Frage: „Und was krieg ich dafür?" Die Antwort legen
+  jetzt die Eltern fest — 30 Minuten Bildschirmzeit, ein Eis, den Film am
+  Familienabend —, jeweils mit einem Preis in Punkten.
+
+  Ein Kind löst selbst ein, ein Elternteil bestätigt, wenn es so weit ist
+  (oder lehnt ab, dann sind die Punkte wieder da). Zweistufig, weil „Ein Eis"
+  sonst als erledigt dastünde, während die Gefriertruhe leer ist.
+
+  **Level und Rangliste bleiben davon unberührt.** Ausgegeben wird ein
+  Guthaben — Punkte minus Einlösungen. Wer sich ein Eis holt, fällt nicht auf
+  Platz drei zurück. Das Guthaben steht im Punkteband auf der Übersicht.
+
+  Einlösen braucht eine persönliche Anmeldung. Am Wandgerät ist das Angebot
+  zu sehen, aber es gibt keinen Knopf: Ohne PIN könnte dort jeder das
+  Guthaben der Schwester ausgeben. Vier Beispiele sind angelegt und lassen
+  sich ändern oder löschen; wer sie löscht, bekommt sie nicht wieder.
+
+- **Einkaufen als eigene Seite.** Auf der Übersicht teilt sich die Liste den
+  Platz mit zehn anderen Kacheln. Im Laden braucht man das Gegenteil: die
+  ganze Liste, grosse Zeilen, **nach Abteilung sortiert** — und einen
+  Bildschirm, der nicht alle dreissig Sekunden dunkel wird. *Bildschirm an*
+  hält ihn wach, wo der Browser das erlaubt.
+
+- **Häufig gekauft.** Unter dem Eingabefeld der Einkaufsliste stehen die
+  Artikel, die die Familie oft kauft, als Chips zum Antippen. Was schon auf
+  der Liste steht, fehlt dort. Was lange niemand gekauft hat, rutscht nach
+  hinten, damit die Sonnencreme im November nicht oben steht. Tippfehler
+  verschwinden mit dem kleinen × daneben.
+
+- **Löschen mit Rückgängig.** Ein Eintrag auf der Einkaufsliste verschwindet
+  ohne Rückfrage — im Laden hält ein Dialog nur auf. Dafür steht unten einige
+  Sekunden lang *Rückgängig*.
+
+- **Die Heute-Leiste.** Unter der Begrüssung stand bisher eine Textzeile mit
+  zwei Zahlen. Jetzt stehen dort fünf Antworten, die sonst fünf Fragen wären:
+  der nächste Termin, das Essen, die offenen Aufgaben, die Einkaufsliste, und
+  ab wann alle zu Hause sind. Jede Karte führt dorthin, wo man etwas daran
+  ändern kann.
+
+- **Akzentfarben.** Petrol, Blau, Violett, Rose, Orange oder Grün — pro Gerät,
+  wie hell und dunkel. Jede Farbe hat einen eigenen Wert für die dunkle
+  Oberfläche, weil das Blau, das auf Weiss gut lesbar ist, auf Nachtblau
+  versinkt. Auch die Statusleiste des Handys nimmt sie an. Umschalten geht in
+  den Einstellungen oder direkt im Menü.
+
+### Geändert
+
+- **Eine Leiste am unteren Rand, auf Handy und Tablet im Hochformat.** Bis
+  1.7 gab es dort nur den Menüknopf oben links — genau die Ecke, die der
+  Daumen nicht erreicht, und im Laden mit dem Korb in der anderen Hand die
+  falscheste. Jetzt liegen Start, Einkauf und Essen unten, dazu *Mehr* für
+  alles andere.
+
+- **Ein Plus für alles.** In der Mitte der Leiste (am grossen Bildschirm
+  rechts unten, oder mit der Taste **N**) öffnet sich ein Blatt mit den
+  häufigsten Handgriffen. Die Einkaufsliste wird direkt dort befüllt, samt
+  Vorschlägen. Termin, Notiz und Aufgabe springen zur passenden Kachel und
+  öffnen deren Formular — jedes Formular gibt es weiterhin genau einmal.
+
+- **Die Kopfleiste zeigt am grossen Bildschirm sieben Ziele** statt fünf:
+  Einkaufen, Essensplan und Belohnungen sind dazugekommen. Damit sie in 1024
+  Pixel passen, stehen dort zwischen lg und xl nur die Symbole; die
+  Beschriftung erscheint als Tooltip. Die Ziele stehen jetzt an einer Stelle
+  im Code, statt in Kopfleiste und Menü getrennt zu altern.
+
+- **Jede Kachel hat ihre Farbe.** Das Symbol sitzt in einem getönten Feld —
+  Aufgaben bernstein, Einkaufen grün, Kalender blau. Aus drei Metern erkennt
+  man eine Kachel an der Farbe, bevor man den Titel lesen kann. Die Fenster
+  haben dazu einen Hauch Tiefe bekommen, nicht mehr: Nachts an der Wand soll
+  nichts leuchten.
+
+- **Fenster lassen sich ziehen.** Unter *Ansicht anpassen* hat jede Zeile
+  einen Griff — mit Finger und Maus gleichermassen. Die Pfeile bleiben, für
+  alle, die lieber tippen oder die Tastatur benutzen. Damit fällt eine der
+  „Grenzen" aus dem README weg.
+
+- **Neue Kacheln erscheinen an ihrem Platz.** Wer seine Übersicht schon
+  sortiert hatte, bekam eine neue Kachel bisher ganz unten angehängt. Sie
+  landet jetzt hinter ihrem Vorgänger aus der Standardreihenfolge — der
+  Essensplan also neben dem Kalender.
+
+- **Was schon auf der Einkaufsliste steht, kommt nicht doppelt dazu.** Zwei
+  Leute, die unabhängig voneinander „Milch" eintragen, meinen dieselbe Milch.
+  Statt einer zweiten Zeile sagt die App jetzt: *steht schon auf der Liste*.
+  Gross- und Kleinschreibung spielen dabei keine Rolle.
+
+- **„Einkauf abschliessen" verläuft in der Akzentfarbe.** Bisher lief der
+  Knopf fest nach Grün aus — mit Violett oder Rose sah das nach einem Fehler
+  aus.
+
+- **Neue Bilder im README**, aufgenommen mit erfundenen Daten: der
+  Familien-Modus, die Handy-Ansichten, Essensplan und Belohnungen.
+
+- **Der Rauchtest prüft 64 Dinge statt 55:** die drei neuen Seiten, die neuen
+  Endpunkte und einen Eintrag im Essensplan, den er danach wieder entfernt.
+  Seine Testeinträge räumt er jetzt auch aus den Einkaufs-Vorschlägen.
+
 ## [1.7.0] — 2026-09-14
 
 ### Hinzugefügt
@@ -659,6 +787,7 @@ Erste öffentliche Fassung.
 - Ein Punkt lässt sich nicht vom Benutzer selbst zurücknehmen, nur von einem
   Administrator
 
+[2.0.0]: https://github.com/bussdee/familien-dashboard-pi/releases/tag/v2.0.0
 [1.4.5]: https://github.com/bussdee/familien-dashboard-pi/releases/tag/v1.4.5
 [1.4.4]: https://github.com/bussdee/familien-dashboard-pi/releases/tag/v1.4.4
 [1.4.3]: https://github.com/bussdee/familien-dashboard-pi/releases/tag/v1.4.3

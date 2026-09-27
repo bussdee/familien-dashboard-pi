@@ -1,7 +1,7 @@
 {
   "name": "Familien Dashboard",
   "short_name": "Familie",
-  "description": "Aufgaben, Einkaufsliste, Kalender, Wetter, Fotos, Musik und Arbeitszeiten für die ganze Familie",
+  "description": "Aufgaben, Einkaufsliste, Essensplan, Belohnungen, Kalender, Wetter, Fotos, Musik und Arbeitszeiten für die ganze Familie",
   "id": "/",
   "start_url": "/",
   "scope": "/",
@@ -81,8 +81,20 @@
     {
       "name": "Einkaufsliste",
       "short_name": "Einkaufen",
-      "description": "Zur gemeinsamen Einkaufsliste",
-      "url": "/#shopping",
+      "description": "Die Einkaufsliste für den Laden",
+      "url": "/einkaufen",
+      "icons": [
+        {
+          "src": "/icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Essensplan",
+      "short_name": "Essen",
+      "description": "Was es diese Woche gibt",
+      "url": "/essen",
       "icons": [
         {
           "src": "/icons/icon-192.png",

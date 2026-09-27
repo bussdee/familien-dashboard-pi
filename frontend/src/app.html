@@ -20,6 +20,12 @@
           var t = localStorage.getItem('theme') || 'system';
           var dark = t === 'dark' || (t === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
           document.documentElement.classList.toggle('dark', dark);
+          // Akzentfarbe und Oberfläche ebenfalls vor dem ersten Bild, sonst
+          // blitzt beim Start kurz das Petrol der Voreinstellung auf.
+          var a = localStorage.getItem('akzent');
+          if (a) document.documentElement.dataset.akzent = a;
+          var o = localStorage.getItem('oberflaeche');
+          if (o) document.documentElement.dataset.oberflaeche = o;
         } catch (e) {}
       })();
     </script>

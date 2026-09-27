@@ -55,7 +55,7 @@
   </button>
 {/snippet}
 
-<Kachel titel="Geräte" icon={Wifi} {zeile} {aktionen}>
+<Kachel ton="var(--ton-geraete)" titel="Geräte" icon={Wifi} {zeile} {aktionen}>
   {#if devices.length === 0}
     <KachelLeer
       icon={WifiOff}

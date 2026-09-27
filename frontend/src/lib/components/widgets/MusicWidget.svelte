@@ -144,7 +144,7 @@
   {/if}
 {/snippet}
 
-<Kachel
+<Kachel ton="var(--ton-musik)"
   titel="Musik"
   icon={Music}
   {zeile}

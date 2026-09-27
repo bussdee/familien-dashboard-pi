@@ -69,13 +69,16 @@
 <svelte:head><title>Rangliste · Familien Dashboard</title></svelte:head>
 
 <div class="mx-auto max-w-3xl px-4 py-5">
-  <header class="mb-6">
-    <h1 class="flex items-center gap-2 text-2xl font-semibold">
-      <Trophy class="h-6 w-6 text-amber-500" /> Rangliste
-    </h1>
-    <p class="text-sm text-muted-foreground">
-      Punkte gibt es für erledigte Aufgaben und fürs Einkaufen.
-    </p>
+  <header class="mb-6 flex flex-wrap items-end justify-between gap-3">
+    <div>
+      <h1 class="seiten-titel flex items-center gap-2">
+        <Trophy class="h-7 w-7 text-amber-500" /> Rangliste
+      </h1>
+      <p class="mt-1 text-sm text-muted-foreground">
+        Punkte gibt es für erledigte Aufgaben und fürs Einkaufen.
+      </p>
+    </div>
+    <a href="/belohnungen" class="chip">🎁 Punkte eintauschen →</a>
   </header>
 
   {#if loading}

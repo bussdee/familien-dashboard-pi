@@ -151,6 +151,8 @@ export interface ShoppingItem {
   user_id: number | null;
   created_at: string;
   updated_at: string;
+  /** Nur beim Anlegen: stand schon offen auf der Liste, nichts Neues angelegt. */
+  existing?: boolean;
 }
 
 export interface Note {
@@ -246,6 +248,10 @@ export interface Score {
   /** 0-100 within the current level. */
   level_progress: number;
   points_to_next: number;
+
+  /** Punkte minus Einlösungen — was man für Belohnungen ausgeben kann. */
+  balance: number;
+  spent: number;
 
   streak_days: number;
   last_active?: string;
@@ -500,3 +506,56 @@ export interface BackupFile {
 export type ShoppingEvent =
   | { action: 'created' | 'updated' | 'deleted'; item: ShoppingItem }
   | { action: 'cleared'; item: ShoppingItem };
+
+/** Ein Gericht im Essensplan. Ein Tag, ein Gericht. */
+export interface Meal {
+  /** JJJJ-MM-TT */
+  day: string;
+  title: string;
+  note: string;
+  ingredients: string[];
+}
+
+export interface RecentMeal {
+  title: string;
+  count: number;
+  ingredients: string[];
+}
+
+export interface Reward {
+  id: number;
+  title: string;
+  emoji: string;
+  cost: number;
+  active: boolean;
+  position: number;
+}
+
+export type RedemptionStatus = 'offen' | 'eingeloest' | 'abgelehnt';
+
+export interface Redemption {
+  id: number;
+  reward_id: number | null;
+  user_id: number;
+  user_name: string;
+  user_emoji: string;
+  title: string;
+  emoji: string;
+  cost: number;
+  status: RedemptionStatus;
+  created_at: string;
+  decided_at?: string;
+}
+
+export interface RewardOverview {
+  rewards: Reward[];
+  /** null am Wandgerät — dort ist niemand angemeldet. */
+  balance: number | null;
+  redemptions: Redemption[];
+}
+
+export interface ShoppingSuggestion {
+  name: string;
+  category: string;
+  uses: number;
+}

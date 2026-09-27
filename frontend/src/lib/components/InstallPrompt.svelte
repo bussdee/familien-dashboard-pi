@@ -68,7 +68,7 @@
 
 {#if visible && (deferred || showIosHint)}
   <div
-    class="safe-bottom fixed inset-x-3 bottom-20 z-50 mx-auto max-w-md animate-slide-up rounded-2xl border border-border bg-card p-4 shadow-xl md:bottom-4"
+    class="safe-bottom fixed inset-x-3 bottom-[calc(var(--unten-leiste,0px)+1rem)] z-50 mx-auto max-w-md animate-slide-up rounded-2xl border border-border bg-card p-4 shadow-xl"
   >
     <div class="flex items-start gap-3">
       <span class="text-2xl">🏠</span>

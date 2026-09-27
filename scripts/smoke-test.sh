@@ -50,6 +50,9 @@ check "SPA-Fallback für /links"        200 "$(code "$BASE/links")"
 check "SPA-Fallback für /ansicht"      200 "$(code "$BASE/ansicht")"
 check "SPA-Fallback für /wetter"       200 "$(code "$BASE/wetter")"
 check "SPA-Fallback für /zeiten"       200 "$(code "$BASE/zeiten")"
+check "SPA-Fallback für /einkaufen"    200 "$(code "$BASE/einkaufen")"
+check "SPA-Fallback für /essen"        200 "$(code "$BASE/essen")"
+check "SPA-Fallback für /belohnungen"  200 "$(code "$BASE/belohnungen")"
 check "Manifest"                       200 "$(code "$BASE/manifest.json")"
 check "Service Worker"                 200 "$(code "$BASE/service-worker.js")"
 check "App-Icon"                       200 "$(code "$BASE/icons/icon-192.png")"
@@ -97,7 +100,9 @@ else
             reward:/api/shopping/reward location:/api/weather/location \
             devices:/api/devices photos:/api/photos files:/api/files \
             music:/api/music/status musikordner:/api/music/browse \
-            zeiten:/api/times wochenplan:/api/times/weekly; do
+            zeiten:/api/times wochenplan:/api/times/weekly \
+            essen:/api/meals gerichte:/api/meals/recent \
+            belohnungen:/api/rewards vorschlaege:/api/shopping/suggestions; do
     name="${ep%%:*}"; path="${ep#*:}"
     status="$(code -b "$JAR" "$BASE$path")"
     # Wetter darf 503 sein, wenn der Server (noch) kein Internet hatte.
@@ -129,8 +134,23 @@ else
 for item in json.load(sys.stdin):
     if item["name"].startswith("Smoke-Test"):
         print(item["id"])' 2>/dev/null)
+  # Auch aus den Vorschlägen: Sonst stünde „Smoke-Test" nach jedem Lauf
+  # unter dem Eingabefeld der Familie.
+  for name in Smoke-Test Smoke-Test-2; do
+    curl -s -o /dev/null -b "$JAR" -X DELETE "$BASE/api/shopping/suggestions?name=$name"
+  done
   printf '  \033[32m✓\033[0m %-46s %s\n' "Testdaten wieder entfernt" "$removed"
   pass=$((pass + 1))
+
+  echo ""
+  echo "Essensplan"
+  # Ein Tag weit in der Zukunft, damit der Test keinen echten Eintrag
+  # überschreibt — und danach wieder weg.
+  TAG="2099-12-31"
+  check "Gericht eintragen"            200 \
+    "$(code -b "$JAR" -X PUT -H 'Content-Type: application/json' \
+      -d '{"title":"Smoke-Test","note":"","ingredients":[]}' "$BASE/api/meals/$TAG")"
+  check "Gericht wieder entfernen"     204 "$(code -b "$JAR" -X DELETE "$BASE/api/meals/$TAG")"
 
   echo ""
   echo "Aufgaben"

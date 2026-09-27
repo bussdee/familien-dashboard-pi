@@ -19,10 +19,12 @@ import (
 	"family-dashboard/backend/internal/devices"
 	"family-dashboard/backend/internal/files"
 	"family-dashboard/backend/internal/links"
+	"family-dashboard/backend/internal/meals"
 	"family-dashboard/backend/internal/music"
 	"family-dashboard/backend/internal/notes"
 	"family-dashboard/backend/internal/photos"
 	"family-dashboard/backend/internal/points"
+	"family-dashboard/backend/internal/rewards"
 	"family-dashboard/backend/internal/shopping"
 	"family-dashboard/backend/internal/store"
 	"family-dashboard/backend/internal/times"
@@ -79,6 +81,8 @@ func main() {
 	filesSvc := files.NewService(cfg.Files.Dir)
 	musicSvc := music.NewService(sql, cfg.Music.Dir, db)
 	timesSvc := times.NewService(sql)
+	mealsSvc := meals.NewService(sql, shoppingSvc)
+	rewardsSvc := rewards.NewService(sql)
 	backupSvc := backup.NewService(sql, cfg.Database.Path, cfg.Database.BackupDir,
 		dataDir(cfg.Database.Path), cfg.Database.BackupRetention, cfg.Database.BackupCron)
 
@@ -159,6 +163,11 @@ func main() {
 				r.Post("/links/{id}/pin", linksSvc.TogglePin)
 				r.Delete("/links/{id}", linksSvc.Delete)
 				r.Post("/links/reorder", linksSvc.Reorder)
+
+				// Einlösen gehört einer Person: Am Wandgerät könnte sonst
+				// jeder das Guthaben der Schwester ausgeben.
+				r.Post("/rewards/{id}/redeem", rewardsSvc.Redeem)
+				r.Delete("/rewards/redemptions/{id}", rewardsSvc.Cancel)
 			})
 
 			r.Get("/weather", weatherSvc.GetWeather)
@@ -178,6 +187,19 @@ func main() {
 			r.Post("/shopping/clear-checked", shoppingSvc.ClearChecked)
 			r.Get("/shopping/reward", shoppingSvc.Reward)
 			r.Get("/shopping/ws", shoppingSvc.WebSocket)
+			r.Get("/shopping/suggestions", shoppingSvc.Suggestions)
+			r.Delete("/shopping/suggestions", shoppingSvc.ForgetSuggestion)
+
+			// Der Essensplan gehört der Familie. Eintragen darf jeder, auch
+			// das Tablet in der Küche — dort wird er meistens gemacht.
+			r.Get("/meals", mealsSvc.List)
+			r.Get("/meals/recent", mealsSvc.Recent)
+			r.Put("/meals/{day}", mealsSvc.Save)
+			r.Delete("/meals/{day}", mealsSvc.Delete)
+			r.Post("/meals/{day}/shopping", mealsSvc.ToShopping)
+
+			// Das Angebot sehen darf jeder, auch das Wandgerät: Es spornt an.
+			r.Get("/rewards", rewardsSvc.List)
 
 			r.Get("/notes", notesSvc.List)
 			r.Post("/notes", notesSvc.Create)
@@ -253,6 +275,10 @@ func main() {
 				r.Put("/admin/music/dir", musicSvc.SetDir)
 				r.Post("/files", filesSvc.Upload)
 				r.Delete("/files/{name}", filesSvc.Delete)
+				r.Post("/admin/rewards", rewardsSvc.Create)
+				r.Put("/admin/rewards/{id}", rewardsSvc.Update)
+				r.Delete("/admin/rewards/{id}", rewardsSvc.Delete)
+				r.Post("/admin/rewards/redemptions/{id}", rewardsSvc.Decide)
 				r.Get("/admin/backups", backupSvc.ListBackups)
 				r.Post("/admin/backup", backupSvc.TriggerBackup)
 				r.Get("/admin/backup/download", backupSvc.Download)

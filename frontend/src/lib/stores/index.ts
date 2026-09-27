@@ -159,3 +159,64 @@ function createConnection() {
 }
 
 export const connection = createConnection();
+
+/**
+ * Die Akzentfarbe. Eine Familie will „ihre" Farbe an der Wand haben, und ein
+ * Kind erkennt sein Handy daran wieder. Sie gilt pro Gerät, wie hell und
+ * dunkel — das Tablet im Flur darf anders aussehen als Papas Handy.
+ *
+ * Gesetzt wird nur ein Attribut am Wurzelelement; die Farbwerte stehen in
+ * app.css, getrennt für hell und dunkel, damit jede Farbe in beiden
+ * Stimmungen genug Kontrast behält.
+ */
+export type Akzent = 'petrol' | 'blau' | 'violett' | 'rose' | 'orange' | 'gruen';
+
+export const AKZENTE: { value: Akzent; label: string; farbe: string }[] = [
+  { value: 'petrol', label: 'Petrol', farbe: '#0d9488' },
+  { value: 'blau', label: 'Blau', farbe: '#2563eb' },
+  { value: 'violett', label: 'Violett', farbe: '#7c3aed' },
+  { value: 'rose', label: 'Rose', farbe: '#e11d48' },
+  { value: 'orange', label: 'Orange', farbe: '#ea580c' },
+  { value: 'gruen', label: 'Grün', farbe: '#16a34a' },
+];
+
+function createAkzent() {
+  const { subscribe, set } = writable<Akzent>('petrol');
+
+  function apply(wahl: Akzent) {
+    if (!browser) return;
+    document.documentElement.dataset.akzent = wahl;
+    const farbe = AKZENTE.find((a) => a.value === wahl)?.farbe;
+    // Auch die Statusleiste des Handys nimmt die Farbe an.
+    document
+      .querySelectorAll<HTMLMetaElement>('meta[name="theme-color"][media*="light"]')
+      .forEach((m) => farbe && (m.content = farbe));
+    try {
+      localStorage.setItem('akzent', wahl);
+    } catch {
+      /* private mode */
+    }
+  }
+
+  return {
+    subscribe,
+    set: (wahl: Akzent) => {
+      set(wahl);
+      apply(wahl);
+    },
+    init: () => {
+      if (!browser) return;
+      let gespeichert: Akzent = 'petrol';
+      try {
+        const roh = localStorage.getItem('akzent') as Akzent | null;
+        if (roh && AKZENTE.some((a) => a.value === roh)) gespeichert = roh;
+      } catch {
+        /* private mode */
+      }
+      set(gespeichert);
+      apply(gespeichert);
+    },
+  };
+}
+
+export const akzent = createAkzent();

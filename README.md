@@ -13,7 +13,7 @@ Elternabend? Und ab wann sind eigentlich alle zu Hause?
 
 <br>
 
-<img src="docs/screenshots/Familien_Modus.png" alt="Das Dashboard im Familien-Modus: Aufgaben, Einkaufsliste, Kalender, geteilte Links, Notizen, Foto-Rahmen und Geräte-Status">
+<img src="docs/screenshots/Familien_Modus.png" alt="Das Dashboard im Familien-Modus: Wetter mit Trockenfenster, Heute-Leiste, Aufgaben, Einkaufsliste, Kalender, Essensplan, Links, Countdowns, Zeiten, Notizen, Dateien und Geräte">
 
 <sub>Das Wandtablet im Familien-Modus — begrüßt niemanden persönlich, zeigt keine Rangliste.</sub>
 
@@ -60,7 +60,9 @@ solange es im eigenen, vertrauenswürdigen Netz bleibt.
 |---|---|
 | ⭐ **Aufgaben** | Müll, Geschirrspüler, Katzenklo. Jede Aufgabe hat ein Intervall und einen Punktwert. Zuständig ist wahlweise *reihum*, eine feste Person, *alle* oder *wer mag*. Einmal erledigt ist erledigt — ein zweites Abhaken am selben Tag gibt es nicht. |
 | 🏆 **Punkte & Level** | Wer abhakt, bekommt Punkte. Level von *Neuling* bis *Legende*, Serien, elf Abzeichen, Siegertreppchen. Verklickt? Ein Elternteil nimmt es zurück — die Aufgabe wird dabei wieder fällig. |
-| 🛒 **Einkaufsliste** | Gemeinsam und **in Echtzeit**: Was im Laden abgehakt wird, verschwindet sofort auf allen Geräten. Punkte gibt es auch dafür. |
+| 🎁 **Belohnungen** | Wofür die Punkte da sind: Die Eltern legen fest, was es gibt — Bildschirmzeit, ein Eis, den Film am Familienabend. Ein Kind löst ein, ein Elternteil bestätigt. Ausgegeben wird ein **Guthaben**; Level und Rangliste bleiben unberührt. |
+| 🛒 **Einkaufsliste** | Gemeinsam und **in Echtzeit**: Was im Laden abgehakt wird, verschwindet sofort auf allen Geräten. **Häufig gekaufte Artikel** stehen als Vorschläge zum Antippen bereit, und im Laden gibt es eine eigene Ansicht — nach Abteilung sortiert, der Bildschirm bleibt an. Punkte gibt es auch dafür. |
+| 🍝 **Essensplan** | Was gibt's heute — und die ganze Woche. Mit Zutaten, die **mit einem Tipp auf die Einkaufsliste** wandern, ohne Doppelte. Gerichte der letzten Monate stehen zum Wiederverwenden bereit. |
 | 📅 **Kalender** | Termine direkt eintragen, einmalig oder wiederkehrend. Oder eine `.ics` aus Apple, Google oder Outlook ablegen. |
 | 📝 **Notizen** | Markdown, zweiseitig mit echten Dateien synchronisiert. Bleiben lesbar, auch ohne dieses Programm. |
 | 🔗 **Links** | Lesezeichen mit Kategorien, privat oder mit der Familie geteilt. Angepinnte erscheinen auf der Startseite. |
@@ -71,8 +73,23 @@ solange es im eigenen, vertrauenswürdigen Netz bleibt.
 | 🕗 **Arbeit & Schule** | Wer wann weg ist — und daraus: **ab wann sind alle da**. Das Kind trägt seinen Stundenplan als festen Wochenplan ein, die Eltern ihre Schichten als Kalenderblatt für vier Wochen. Ein eingetragener Tag sticht den Wochenplan, ein Feiertag hebt ihn also auf, ohne ihn zu löschen. |
 | 🏠 **Familien-Modus fürs Wandtablet** | Ein Tablet im Flur wird zum Familiengerät: dauerhaft angemeldet, aber ohne persönliche Daten. Wer abhakt, tippt kurz auf sein Gesicht — **keine PIN**, und die Punkte landen beim Richtigen. Wer es mit aufs Sofa nimmt, meldet sich an und ist danach wieder im Familien-Modus. |
 | 📱 **Geräte-Status** | Läuft Plex, Kavita, der NAS? Kachel antippen öffnet die Oberfläche. |
-| 🎛️ **Pro Person** | Jeder ordnet sich die Fenster selbst an und blendet aus, was er nicht braucht. Zwei Oberflächen zur Wahl — *Nachtlicht* (offen, mit feinen Linien) und *Glas* (Fenster als milchige Scheiben) — jeweils hell oder dunkel. |
+| ➕ **Ein Plus für alles** | Unten in der Mitte (am Rechner: Taste **N**): Einkauf, Termin, Notiz, Aufgabe oder Essen eintragen, egal auf welcher Seite man gerade ist. Auf dem Handy liegen die wichtigsten Ziele in einer Leiste am unteren Rand — dort, wo der Daumen ist. |
+| ☀️ **Heute auf einen Blick** | Unter der Begrüssung: nächster Termin, das Essen, offene Aufgaben, die Einkaufsliste und ab wann alle zu Hause sind. |
+| 🎛️ **Pro Person** | Jeder ordnet sich die Fenster selbst an (per Ziehen) und blendet aus, was er nicht braucht. Zwei Oberflächen zur Wahl — *Nachtlicht* (offen, mit feinen Linien) und *Glas* (Fenster als milchige Scheiben) — jeweils hell oder dunkel, dazu **sechs Akzentfarben**. |
 | 📲 **Wie eine App** | Zum Startbildschirm hinzufügen: eigenes Symbol, keine Browserleiste, Offline-Ansicht. |
+
+---
+
+## Neu in 2.0
+
+- **Essensplan** mit Zutaten, die auf die Einkaufsliste wandern
+- **Belohnungen**: Punkte gegen Bildschirmzeit, Eis oder Kinoabend tauschen
+- **Einkaufsmodus** fürs Handy im Laden, mit **Vorschlägen** aus dem, was ihr oft kauft
+- **Leiste am unteren Rand** und **ein Plus** für alles, was man schnell eintragen will
+- **Heute-Leiste**, **Akzentfarben**, farbige Kacheln, **Rückgängig** statt Nachfragen
+- Fenster **per Ziehen** sortieren
+
+Alles Weitere, samt dem Warum: [CHANGELOG.md](CHANGELOG.md).
 
 ---
 
@@ -85,7 +102,42 @@ ab, fragt es kurz nach. **Ein Tipp aufs eigene Gesicht, keine PIN.** Die Punkte
 landen bei dem, der die Arbeit gemacht hat, und nicht bei dem, der sich zuletzt
 angemeldet hatte.
 
-![Der Dialog „Wer war das?" mit den drei Familienmitgliedern zur Auswahl](docs/screenshots/WerWarDas.png)
+![Der Dialog „Wer war das?" mit den vier Familienmitgliedern zur Auswahl](docs/screenshots/WerWarDas.png)
+
+### Auf dem Handy
+
+Die wichtigsten Ziele liegen unten, wo der Daumen ist. Das Plus in der Mitte
+trägt von jeder Seite aus etwas ein — samt Vorschlägen aus dem, was ihr oft
+kauft. Im Laden zeigt die Einkaufsliste alles nach Abteilung.
+
+![Drei Handy-Ansichten: Übersicht, Einkaufsliste nach Abteilung, Schnell hinzufügen](docs/screenshots/Handy.png)
+
+### Essensplan und Belohnungen
+
+<table>
+<tr>
+<td width="50%">
+
+**Essensplan**
+
+Eine Woche auf einen Blick. Der Einkaufswagen daneben setzt die Zutaten auf
+die Liste — ohne Doppelte.
+
+<img src="docs/screenshots/Essensplan.png" alt="Der Essensplan einer Woche, heute hervorgehoben">
+
+</td>
+<td width="50%">
+
+**Belohnungen**
+
+Das Guthaben oben, darunter was es dafür gibt. Ein Elternteil bestätigt, wenn
+es so weit ist.
+
+<img src="docs/screenshots/Belohnungen.png" alt="Belohnungen mit Guthaben, Angeboten und einer offenen Anfrage">
+
+</td>
+</tr>
+</table>
 
 ### Der Rest
 
@@ -97,14 +149,14 @@ angemeldet hatte.
 
 Antippen, PIN, fertig. Keine E-Mail, kein Konto.
 
-<img src="docs/screenshots/LogIn.png" alt="Anmeldebildschirm mit den drei Familienmitgliedern">
+<img src="docs/screenshots/LogIn.png" alt="Anmeldebildschirm mit den vier Familienmitgliedern">
 
 </td>
 <td width="50%">
 
 **Angemeldet: die persönliche Ansicht**
 
-Mit Namen, Punktestand und Level. Am Wandgerät fehlt genau das.
+Mit Namen, Punktestand, Level und Guthaben. Am Wandgerät fehlt genau das.
 
 <img src="docs/screenshots/Familien_Dashboard.png" alt="Die Übersicht als angemeldete Person, mit Begrüßung und Punkteband">
 
@@ -124,8 +176,8 @@ Siegertreppchen, Level, Abzeichen und wer zuletzt was erledigt hat.
 
 **Einstellungen**
 
-Name, Avatar, Farbe und PIN ändert jeder selbst. Dazu hell oder dunkel und
-die Wahl zwischen den Oberflächen *Nachtlicht* und *Glas*.
+Name, Avatar, Farbe und PIN ändert jeder selbst. Dazu hell oder dunkel, die
+Oberflächen *Nachtlicht* und *Glas* und sechs Akzentfarben.
 
 <img src="docs/screenshots/Einstellungen.png" alt="Einstellungen mit Profil, Avatarauswahl, Darstellung, Oberfläche und PIN-Änderung">
 
@@ -134,9 +186,10 @@ die Wahl zwischen den Oberflächen *Nachtlicht* und *Glas*.
 </table>
 
 **Auf einem schmaleren Bildschirm** rücken die Fenster in drei Spalten
-zusammen, auf dem Handy untereinander.
+zusammen, auf dem Handy untereinander. Hier hell, als *Glas* in Violett — und
+mit Papas eigener Auswahl: Foto, Musik und Geräte hat er ausgeblendet.
 
-![Die Übersicht in drei Spalten](docs/screenshots/Dashboard_Papa.png)
+![Die Übersicht in drei Spalten, hell mit Glas-Oberfläche und violetter Akzentfarbe](docs/screenshots/Dashboard_Papa.png)
 
 ---
 
@@ -367,7 +420,7 @@ make up
 make verify
 ```
 
-Erwartet: **55 Prüfungen bestanden.** Wenn hier etwas rot ist, hilft
+Erwartet: **64 Prüfungen bestanden.** Wenn hier etwas rot ist, hilft
 [INSTALL.md](INSTALL.md) weiter.
 
 **Im Browser öffnen** und anmelden. Es sind drei Benutzer angelegt — **Papa**,
@@ -446,7 +499,8 @@ Damit du nicht enttäuscht wirst:
   Ein Container sieht nur, was in ihn eingehängt wurde. Welcher *Teil* davon
   gehört wird, stellt man dann in der Verwaltung ein.
 - **Der erste Start dauert 10–20 Minuten.** Einmalig.
-- **Fenster sortiert man mit Pfeiltasten**, nicht per Ziehen.
+- **Belohnungen werden nicht automatisch eingelöst.** Ein Elternteil bestätigt
+  jede Anfrage — das Eis muss ja auch jemand kaufen.
 - **HEIC-Fotos vom iPhone** werden beim direkten Upload nicht unterstützt (beim
   Teilen wandelt iOS meist automatisch in JPG um).
 
@@ -458,7 +512,7 @@ Damit du nicht enttäuscht wirst:
 make setup       Einrichten (einmalig)
 make preflight   Prüfen, ob das Gerät passt (ändert nichts)
 make up          Starten                 make down     Stoppen
-make logs        Logs ansehen            make verify   55 Prüfungen
+make logs        Logs ansehen            make verify   64 Prüfungen
 make backup      Sichern                 make restore  Zurückspielen
 make dev         Entwicklungsmodus mit Hot-Reload
 make clean       Aufräumen
@@ -517,7 +571,8 @@ DOMPurify. Das Backend startet nicht ohne gesetztes `JWT_SECRET`.
 ```
 familien-dashboard/
 ├── backend/internal/     auth · calendar · chores · points · shopping
-│                         notes · links · devices · photos · weather
+│                         meals · rewards · notes · links · devices
+│                         photos · weather · times · music · files
 │                         backup · config · store
 ├── frontend/src/         SvelteKit (Routen, Widgets, Stores)
 ├── traefik/              Reverse Proxy

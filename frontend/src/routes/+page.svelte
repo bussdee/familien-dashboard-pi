@@ -4,8 +4,11 @@
   import { RefreshCw, TriangleAlert } from 'lucide-svelte';
   import {
     adminApi, calendarApi, choresApi, connectShoppingSocket,
-    devicesApi, notesApi, shoppingApi, weatherApi,
+    devicesApi, mealsApi, notesApi, shoppingApi, timesApi, weatherApi,
   } from '$lib/api';
+  import { format } from 'date-fns';
+  import HeuteLeiste from '$lib/components/HeuteLeiste.svelte';
+  import MealsWidget from '$lib/components/widgets/MealsWidget.svelte';
   import { connection, session } from '$lib/stores';
   import { board } from '$lib/stores/scores.svelte';
   import { layout } from '$lib/stores/layout.svelte';
@@ -24,7 +27,7 @@
   import LinksWidget from '$lib/components/widgets/LinksWidget.svelte';
   import { LayoutGrid } from 'lucide-svelte';
   import type {
-    CalendarEvent, Chore, DeviceStatus, Note, ShoppingItem, User, WeatherData,
+    CalendarEvent, Chore, DeviceStatus, Meal, Note, ShoppingItem, TimeDay, User, WeatherData,
   } from '$lib/types';
 
   let weather = $state<WeatherData | null>(null);
@@ -34,6 +37,8 @@
   let chores = $state<Chore[]>([]);
   let devices = $state<DeviceStatus[]>([]);
   let users = $state<User[]>([]);
+  let meals = $state<Meal[]>([]);
+  let zeitenHeute = $state<TimeDay | null>(null);
 
   let loading = $state(true);
   let refreshing = $state(false);
@@ -51,8 +56,6 @@
     new Date().toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' }),
   );
 
-  const openTasks = $derived(chores.filter((c) => c.is_overdue || c.days_until_due <= 0).length);
-  const openItems = $derived(shopping.filter((i) => !i.checked).length);
   const me = $derived(board.for($session.user?.id));
 
   /**
@@ -77,6 +80,10 @@
       run('Aufgaben', () => choresApi.list(), (v) => (chores = v)),
       run('Geräte', () => devicesApi.list(), (v) => (devices = v)),
       run('Rangliste', () => board.refresh(), () => {}),
+      run('Essensplan', () => mealsApi.list(format(new Date(), 'yyyy-MM-dd'), 4), (v) => (meals = v.meals)),
+      // Die Zeiten sind eine Zugabe für die Heute-Leiste. Fehlen sie, steht
+      // dort ein Verweis — keine Meldung wert.
+      timesApi.overview(undefined, 1).then((v) => (zeitenHeute = v.days[0] ?? null)).catch(() => {}),
     ]);
 
     failures = problems;
@@ -168,8 +175,13 @@
      Rand stehen, und der Flurbildschirm verschenkt die Hälfte der Fläche. -->
 <div class="w-full px-4 py-5 sm:px-7 sm:py-7 2xl:px-10">
   <!-- Begrüßung links, Wetter rechts — beides ohne Kasten -->
-  <header class="mb-6 flex flex-wrap items-start justify-between gap-x-10 gap-y-6">
-    <div class="min-w-0">
+  <!--
+    relative + absolut gesetzter Aktualisieren-Knopf: Als drittes Element im
+    Umbruch landete er auf dem Handy in einer eigenen Zeile und riss eine
+    Lücke zwischen Begrüssung und Heute-Leiste.
+  -->
+  <header class="relative mb-6 flex flex-wrap items-start justify-between gap-x-10 gap-y-5">
+    <div class="min-w-0 pr-12">
       <p class="text-[11px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
         {today}
       </p>
@@ -185,18 +197,6 @@
           {/if}
         {/if}
       </h1>
-      {#if !loading}
-        <p class="mt-3 text-sm font-light text-muted-foreground">
-          <a href="#chores" class="transition-colors hover:text-foreground">
-            {openTasks}
-            {openTasks === 1 ? 'Aufgabe' : 'Aufgaben'} offen
-          </a>
-          <span class="mx-2 opacity-40">·</span>
-          <a href="#shopping" class="transition-colors hover:text-foreground">
-            {openItems} auf der Einkaufsliste
-          </a>
-        </p>
-      {/if}
     </div>
 
     <!--
@@ -206,12 +206,14 @@
       kann nicht schrumpfen. Ergebnis war eine Seite, die sich seitwärts
       schieben liess.
     -->
-    <div class="min-w-0 basis-full sm:basis-0 sm:flex-1 sm:max-w-2xl">
-      <WeatherHero {weather} />
-    </div>
+    {#if weather}
+      <div class="min-w-0 basis-full sm:mr-12 sm:max-w-2xl sm:flex-1 sm:basis-0">
+        <WeatherHero {weather} />
+      </div>
+    {/if}
 
     <button
-      class="btn-ghost shrink-0 rounded-full px-2 text-muted-foreground"
+      class="btn-ghost absolute right-0 top-0 shrink-0 rounded-full px-2 text-muted-foreground"
       onclick={manualRefresh}
       disabled={refreshing}
       aria-label="Alles aktualisieren"
@@ -220,6 +222,17 @@
       <RefreshCw class="h-5 w-5 {refreshing ? 'animate-spin' : ''}" />
     </button>
   </header>
+
+  {#if !loading}
+    <HeuteLeiste
+      {events}
+      {chores}
+      {shopping}
+      {meals}
+      zeiten={zeitenHeute}
+      meineId={$session.user?.id ?? null}
+    />
+  {/if}
 
   {#if !$session.device}
     <PointsBand {me} total={board.scores.length} />
@@ -265,6 +278,8 @@
                  offen, die Benutzerverwaltung nur Administratoren — und
                  eintragen darf hier jeder. -->
             <CalendarWidget {events} users={board.scores} onRefresh={reloadCalendar} />
+          {:else if widget.id === 'meals'}
+            <MealsWidget bind:meals />
           {:else if widget.id === 'links'}
             <LinksWidget />
           {:else if widget.id === 'countdown'}
