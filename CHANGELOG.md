@@ -12,6 +12,15 @@ Deshalb gibt es hier **keine 1.4.5**. Sie stand eine Weile in dieser Datei,
 wurde aber nie veröffentlicht: Auf GitHub steht v1.4.4, und der Pi läuft
 darauf. Was unter 1.4.5 gesammelt war, ist in 1.5.0 aufgegangen.
 
+## [2.0.2] — 2026-09-28
+
+### Behoben
+
+- **Unter dem Wetter hing auf dem Handy eine Scrollleiste.** Die Karten der
+  Heute-Leiste (Termine, Essen, Aufgaben, Einkauf, Zuhause) sind seitwärts
+  wischbar; dazu erschien ein Balken darunter, der nach Fehler aussah. Er ist
+  weg. Dass die Reihe weitergeht, zeigt die angeschnittene Karte am Rand.
+
 ## [2.0.1] — 2026-09-28
 
 Ein Fehler aus dem Alltag: Der Geburtstag stand im Countdown, war aber nirgends
@@ -822,6 +831,7 @@ Erste öffentliche Fassung.
 - Ein Punkt lässt sich nicht vom Benutzer selbst zurücknehmen, nur von einem
   Administrator
 
+[2.0.2]: https://github.com/bussdee/familien-dashboard-pi/releases/tag/v2.0.2
 [2.0.1]: https://github.com/bussdee/familien-dashboard-pi/releases/tag/v2.0.1
 [2.0.0]: https://github.com/bussdee/familien-dashboard-pi/releases/tag/v2.0.0
 [1.4.5]: https://github.com/bussdee/familien-dashboard-pi/releases/tag/v1.4.5

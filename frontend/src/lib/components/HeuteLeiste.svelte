@@ -68,9 +68,13 @@
 <!--
   Auf dem Handy seitwärts wischbar, auf dem grossen Bildschirm in einer
   Reihe. snap-x, damit eine Karte nicht halb abgeschnitten stehen bleibt.
+
+  Ohne sichtbare Scrollleiste: Sie hing als Balken unter den Karten und sah
+  nach Fehler aus. Dass die Reihe weitergeht, sagt die angeschnittene Karte
+  am rechten Rand — der Balken sagte es doppelt.
 -->
 <nav
-  class="scrollbar-thin -mx-4 mb-6 flex snap-x gap-2.5 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0 lg:grid lg:grid-cols-5 lg:overflow-visible"
+  class="heute-reihe -mx-4 mb-6 flex snap-x gap-2.5 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0 lg:grid lg:grid-cols-5 lg:overflow-visible"
   aria-label="Heute auf einen Blick"
 >
   <a href="#calendar" class="heute-karte" style="--ton: var(--ton-kalender)">
@@ -123,6 +127,13 @@
 </nav>
 
 <style>
+  .heute-reihe {
+    scrollbar-width: none;
+  }
+  .heute-reihe::-webkit-scrollbar {
+    display: none;
+  }
+
   .heute-karte {
     display: flex;
     min-width: 12.5rem;
