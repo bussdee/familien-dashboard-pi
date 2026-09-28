@@ -12,6 +12,41 @@ Deshalb gibt es hier **keine 1.4.5**. Sie stand eine Weile in dieser Datei,
 wurde aber nie veröffentlicht: Auf GitHub steht v1.4.4, und der Pi läuft
 darauf. Was unter 1.4.5 gesammelt war, ist in 1.5.0 aufgegangen.
 
+## [2.0.1] — 2026-09-28
+
+Ein Fehler aus dem Alltag: Der Geburtstag stand im Countdown, war aber nirgends
+zu ändern oder zu löschen.
+
+### Behoben
+
+- **Countdown-Einträge liessen sich weder bearbeiten noch löschen.** Der
+  Countdown hat keine eigenen Einträge, er filtert Kalendertermine nach
+  Stichwörtern wie *Geburtstag* oder *Ferien*. Er holt sich dafür ein Fenster
+  von 400 Tagen, damit ein Geburtstag im August überhaupt auftaucht. Die
+  Kalender-Kachel zeigt dagegen nur die nächsten 45 Tage — und nur acht Tage
+  mit Terminen. Der Termin war also im Countdown zu sehen und im Kalender, dem
+  einzigen Ort mit *Bearbeiten* und *Löschen*, nicht. Was man sah, liess sich
+  nicht anfassen; was man anfassen konnte, sah man nicht.
+
+  Ein Tipp auf eine Countdown-Zeile klappt jetzt *Bearbeiten* und *Löschen*
+  auf, wie im Kalender. Termine aus einer `.ics`-Datei bleiben schreibgeschützt
+  und sagen, woran das liegt, statt einen Knopf zu zeigen, der nichts tut. Wird
+  im Kalender etwas geändert, zieht der Countdown sofort nach.
+
+- **Beim Bearbeiten einer Wiederholung wurde das Startdatum verschoben.** Im
+  Formular stand der Tag, der gerade angezeigt wurde, nicht der Beginn der
+  Serie. Wer bei einem jährlichen Geburtstag nur den Namen änderte, machte aus
+  dem 14.08.2026 ein 14.08.2027. Bei einem monatlichen Termin am 31. wäre der
+  Tag beim Speichern dauerhaft auf den 3. gerutscht. Der Server liefert den
+  Serienstart jetzt mit, und das Formular nimmt ihn.
+
+### Geändert
+
+- **Das Termin-Formular öffnet als Fenster** statt oben in der Kalender-Kachel,
+  wie bei den Aufgaben. Ein Termin, der aus dem Countdown heraus bearbeitet
+  wird, öffnet sonst irgendwo oben auf der Seite, wo man es nicht sieht. Das
+  Plus im Kalender und das Plus unten in der Leiste öffnen dasselbe Fenster.
+
 ## [2.0.0] — 2026-09-27
 
 Die erste Fassung, die nicht nur etwas anzeigt, sondern den Tag mitorganisiert:
@@ -787,6 +822,7 @@ Erste öffentliche Fassung.
 - Ein Punkt lässt sich nicht vom Benutzer selbst zurücknehmen, nur von einem
   Administrator
 
+[2.0.1]: https://github.com/bussdee/familien-dashboard-pi/releases/tag/v2.0.1
 [2.0.0]: https://github.com/bussdee/familien-dashboard-pi/releases/tag/v2.0.0
 [1.4.5]: https://github.com/bussdee/familien-dashboard-pi/releases/tag/v1.4.5
 [1.4.4]: https://github.com/bussdee/familien-dashboard-pi/releases/tag/v1.4.4

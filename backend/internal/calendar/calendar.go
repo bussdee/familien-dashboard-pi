@@ -41,6 +41,12 @@ type Event struct {
 	EventID  int    `json:"event_id,omitempty"`
 	Repeat   string `json:"repeat,omitempty"`
 
+	// SeriesStart ist der erste Termin einer Wiederholung — nicht der, der
+	// gerade angezeigt wird. Wer eine Serie bearbeitet, bearbeitet diesen:
+	// Aus dem angezeigten Tag ein neues Startdatum zu machen, verschöbe die
+	// Serie (und liesse einen monatlichen Termin am 31. auf den 3. abrutschen).
+	SeriesStart *time.Time `json:"series_start,omitempty"`
+
 	// Wem der Termin gehört. Leer heisst: der ganzen Familie. Name, Farbe
 	// und Emoji reisen mit, damit die Oberfläche für „Mama: Zahnarzt" nicht
 	// erst die Benutzerliste nachladen muss.

@@ -119,6 +119,11 @@ export interface CalendarEvent {
   /** database id of the underlying appointment, for edit and delete. */
   event_id?: number;
   repeat?: EventRepeat;
+  /**
+   * Der erste Termin einer Wiederholung. Bearbeitet wird die Serie, nicht der
+   * Tag, der gerade angezeigt wird.
+   */
+  series_start?: string;
   /** Für wen der Termin gilt. Fehlt er, gilt er für die ganze Familie. */
   user_id?: number;
   user_name?: string;

@@ -283,7 +283,7 @@
           {:else if widget.id === 'links'}
             <LinksWidget />
           {:else if widget.id === 'countdown'}
-            <CountdownWidget {events} />
+            <CountdownWidget {events} onRefresh={reloadCalendar} />
           {:else if widget.id === 'times'}
             <TimesWidget />
           {:else if widget.id === 'notes'}

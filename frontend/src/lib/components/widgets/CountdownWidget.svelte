@@ -1,9 +1,13 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
-  import { Cake, CalendarHeart, PartyPopper, Plane, Timer } from 'lucide-svelte';
+  import { untrack } from 'svelte';
+  import {
+    Cake, CalendarHeart, FileText, Pencil, PartyPopper, Plane, Timer, Trash2,
+  } from 'lucide-svelte';
   import { differenceInCalendarDays, format, parseISO, startOfDay } from 'date-fns';
   import { de } from 'date-fns/locale';
-  import { calendarApi } from '$lib/api';
+  import { ApiError, calendarApi } from '$lib/api';
+  import { confirmAction } from '$lib/stores/confirm.svelte';
+  import { schnell } from '$lib/stores/schnell.svelte';
   import Kachel from './Kachel.svelte';
   import KachelLeer from './KachelLeer.svelte';
   import type { CalendarEvent } from '$lib/types';
@@ -19,21 +23,58 @@
    */
   const FENSTER_TAGE = 400;
 
-  let { events = [] }: { events?: CalendarEvent[] } = $props();
+  let {
+    events = [],
+    onRefresh,
+  }: { events?: CalendarEvent[]; onRefresh?: () => Promise<void> } = $props();
 
   let weit = $state<CalendarEvent[] | null>(null);
   const quelle = $derived(weit ?? events);
 
-  onMount(() => {
-    void (async () => {
-      try {
-        weit = (await calendarApi.events(FENSTER_TAGE)).events;
-      } catch {
-        // Bleibt bei den übergebenen Terminen — lieber die nächsten Wochen
-        // als eine leere Kachel.
-      }
-    })();
+  /** Angetippte Zeile: klappt Bearbeiten und Löschen auf, wie im Kalender. */
+  let offenId = $state<string | null>(null);
+  let fehler = $state('');
+
+  async function ladeWeit() {
+    try {
+      weit = (await calendarApi.events(FENSTER_TAGE)).events;
+    } catch {
+      // Bleibt bei den übergebenen Terminen — lieber die nächsten Wochen
+      // als eine leere Kachel.
+    }
+  }
+
+  // Beim Öffnen und immer dann, wenn die Übersicht ihre Termine neu geladen
+  // hat — etwa weil im Kalender ein Termin geändert wurde. Sonst zeigte diese
+  // Kachel danach noch den alten Namen.
+  $effect(() => {
+    events;
+    untrack(() => void ladeWeit());
   });
+
+  function bearbeiten(event: CalendarEvent) {
+    offenId = null;
+    schnell.terminBearbeiten = event;
+  }
+
+  async function loeschen(event: CalendarEvent) {
+    if (!event.event_id) return;
+    const ok = await confirmAction({
+      title: `„${event.title}“ löschen?`,
+      message: event.recurring
+        ? 'Der Termin verschwindet auch aus dem Kalender — samt allen Wiederholungen.'
+        : 'Der Termin verschwindet auch aus dem Kalender.',
+    });
+    if (!ok) return;
+    try {
+      await calendarApi.remove(event.event_id);
+      offenId = null;
+      fehler = '';
+      await Promise.all([ladeWeit(), onRefresh?.()]);
+    } catch (e) {
+      fehler = e instanceof ApiError ? e.message : 'Termin konnte nicht gelöscht werden';
+    }
+  }
 
   // Keywords that turn an ordinary calendar entry into a countdown.
   const kinds = [
@@ -85,10 +126,20 @@
       hinweis="Termine mit „Geburtstag“, „Ferien“ oder „Feier“ erscheinen hier von selbst."
     />
   {:else}
+    {#if fehler}
+      <p class="mb-3 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{fehler}</p>
+    {/if}
     <div class="space-y-2">
       {#each countdowns as item (item.event.id)}
         {@const Icon = item.icon}
-        <div class="flex items-center gap-3 rounded-lg px-1 py-2.5">
+        {@const auf = offenId === item.event.id}
+        <div class="rounded-lg transition-colors {auf ? 'bg-muted/25' : ''}">
+        <button
+          class="flex w-full items-center gap-3 rounded-lg px-1 py-2.5 text-left"
+          onclick={() => (offenId = auf ? null : item.event.id)}
+          aria-expanded={auf}
+          aria-label="{item.event.title} – Optionen"
+        >
           <div
             class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"
             style="background-color: {item.color}1a"
@@ -110,6 +161,36 @@
               <p class="text-[10px] text-muted-foreground opacity-70">{dazu(item.days)}</p>
             {/if}
           </div>
+        </button>
+
+        {#if auf}
+          <div class="border-t border-border/60 px-2 py-2">
+            {#if item.event.editable && item.event.event_id}
+              <div class="flex gap-2">
+                <button class="btn-outline flex-1 text-sm" onclick={() => bearbeiten(item.event)}>
+                  <Pencil class="h-4 w-4" /> Bearbeiten
+                </button>
+                <button
+                  class="btn-outline flex-1 text-sm text-destructive"
+                  onclick={() => loeschen(item.event)}
+                >
+                  <Trash2 class="h-4 w-4" /> Löschen
+                </button>
+              </div>
+            {:else}
+              <!-- Aus einer .ics-Datei: gehört der App, die sie exportiert
+                   hat. Ein Knopf, der nichts bewirkt, wäre schlimmer als
+                   der Hinweis, woran es liegt. -->
+              <p class="flex items-start gap-2 text-xs text-muted-foreground">
+                <FileText class="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                <span>
+                  Kommt aus der Kalenderdatei <strong>{item.event.calendar}.ics</strong> und
+                  lässt sich hier nicht ändern.
+                </span>
+              </p>
+            {/if}
+          </div>
+        {/if}
         </div>
       {/each}
     </div>

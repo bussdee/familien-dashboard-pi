@@ -2,13 +2,14 @@
   import { untrack } from 'svelte';
   import { schnell } from '$lib/stores/schnell.svelte';
   import {
-    CalendarDays, FileText, Lock, Pencil, Plus, Repeat, Trash2, X,
+    CalendarDays, FileText, Lock, Pencil, Plus, Repeat, Trash2,
   } from 'lucide-svelte';
   import { addDays, differenceInCalendarDays, format, isToday, isTomorrow, parseISO } from 'date-fns';
   import { de } from 'date-fns/locale';
   import { ApiError, calendarApi } from '$lib/api';
   import Kachel from './Kachel.svelte';
   import KachelLeer from './KachelLeer.svelte';
+  import Modal from '$lib/components/Modal.svelte';
   import type { CalendarEvent, EventDraft, EventRepeat } from '$lib/types';
 
   /**
@@ -131,6 +132,18 @@
     showForm = true;
   }
 
+  // Der Countdown hat einen Termin zum Bearbeiten herübergereicht. Er liegt
+  // oft ausserhalb der Tage, die diese Kachel anzeigt — deshalb kommt er als
+  // fertiger Termin und wird nicht in der eigenen Liste gesucht.
+  $effect(() => {
+    const termin = schnell.terminBearbeiten;
+    if (!termin) return;
+    untrack(() => {
+      schnell.terminBearbeiten = null;
+      startEdit(termin);
+    });
+  });
+
   // Das Plus unten hat nach diesem Formular gefragt.
   $effect(() => {
     if (schnell.anfrage !== 'termin') return;
@@ -147,8 +160,13 @@
   function startEdit(event: CalendarEvent) {
     if (!event.editable || !event.event_id) return;
     selectedId = null;
-    const start = parseISO(event.start);
-    const end = parseISO(event.end);
+    // Bei einer Wiederholung gilt der erste Termin der Serie. Der angezeigte
+    // Tag ist nur eine Stelle darauf — als Startdatum gespeichert, verschöbe
+    // er die ganze Serie.
+    const angezeigt = parseISO(event.start);
+    const dauer = parseISO(event.end).getTime() - angezeigt.getTime();
+    const start = event.series_start ? parseISO(event.series_start) : angezeigt;
+    const end = new Date(start.getTime() + dauer);
     editingId = event.event_id;
     draft = {
       title: event.title,
@@ -214,21 +232,30 @@
 {#snippet aktionen()}
   <button
     class="btn-primary px-3"
-    onclick={() => (showForm ? (showForm = false) : startNew())}
-    aria-label={showForm ? 'Abbrechen' : 'Termin hinzufügen'}
+    onclick={startNew}
+    aria-label="Termin hinzufügen"
   >
-    {#if showForm}<X class="h-5 w-5" />{:else}<Plus class="h-5 w-5" />{/if}
+    <Plus class="h-5 w-5" />
   </button>
 {/snippet}
 
 <Kachel ton="var(--ton-kalender)" titel="Kalender" icon={CalendarDays} {zeile} {aktionen}>
 
-  {#if error}
+  {#if error && !showForm}
     <p class="mb-3 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>
   {/if}
 
-  {#if showForm}
-    <form class="mb-4 space-y-2 rounded-lg border border-border p-3" onsubmit={save}>
+  <!--
+    Das Formular liegt als Fenster über der Seite, wie bei den Aufgaben.
+    Inline stand es oben in dieser Kachel — und wer aus dem Countdown einen
+    Termin bearbeiten will, steht dann irgendwo weiter unten auf der Seite
+    und sieht nicht, dass sich oben etwas geöffnet hat.
+  -->
+  <Modal bind:open={showForm} title={editingId !== null ? 'Termin bearbeiten' : 'Neuer Termin'}>
+    {#if error}
+      <p class="mb-3 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>
+    {/if}
+    <form class="space-y-2" onsubmit={save}>
       <input class="input" placeholder="Was steht an?" bind:value={draft.title} maxlength="120" />
 
       <div class="grid grid-cols-2 gap-2">
@@ -324,7 +351,7 @@
         {editingId !== null ? 'Änderungen speichern' : 'Termin eintragen'}
       </button>
     </form>
-  {/if}
+  </Modal>
 
   {#if groups.length === 0}
     <KachelLeer

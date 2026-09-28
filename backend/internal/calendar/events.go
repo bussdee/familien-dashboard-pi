@@ -148,7 +148,13 @@ func (s *Service) expandStored(e StoredEvent, from, until time.Time) []Event {
 		if recurring {
 			id = fmt.Sprintf("local-%d@%d", e.ID, start.Unix())
 		}
+		var serie *time.Time
+		if recurring {
+			erster := e.Start
+			serie = &erster
+		}
 		return Event{
+			SeriesStart: serie,
 			ID:          id,
 			Title:       e.Title,
 			Description: e.Description,

@@ -100,3 +100,29 @@ func TestEinmaligerTerminBleibtEinmalig(t *testing.T) {
 		t.Error("ein einmaliger Termin ist keine Wiederholung")
 	}
 }
+
+// Wer eine Serie bearbeitet, braucht ihren ersten Termin und nicht den, der
+// gerade im Kalender steht. Sonst rutscht ein monatlicher Termin am 31. beim
+// Speichern auf den 3.
+func TestSerieKenntIhrenStart(t *testing.T) {
+	s := &Service{loc: time.UTC}
+	start := tagAm(2026, time.January, 31)
+	e := StoredEvent{
+		ID: 3, Title: "Miete", Start: start, End: start.Add(time.Hour), Repeat: RepeatMonthly,
+	}
+	events := s.expandStored(e, tagAm(2026, time.September, 1), tagAm(2026, time.December, 31))
+	if len(events) == 0 {
+		t.Fatal("erwartet Wiederholungen im Herbst")
+	}
+	for _, ev := range events {
+		if ev.SeriesStart == nil || !ev.SeriesStart.Equal(start) {
+			t.Fatalf("Serienstart erwartet %s, war %v", start, ev.SeriesStart)
+		}
+	}
+
+	einmal := StoredEvent{ID: 4, Title: "Zahnarzt", Start: start, End: start.Add(time.Hour), Repeat: RepeatNone}
+	got := s.expandStored(einmal, tagAm(2026, time.January, 1), tagAm(2026, time.February, 28))
+	if len(got) != 1 || got[0].SeriesStart != nil {
+		t.Errorf("ein einmaliger Termin hat keine Serie, war %+v", got)
+	}
+}
