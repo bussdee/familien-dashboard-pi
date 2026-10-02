@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strconv"
 	"strings"
@@ -65,6 +66,12 @@ type Chore struct {
 	// LastDoneBy beantwortet die Frage, die dann sofort kommt: von wem denn?
 	IsDue      bool   `json:"is_due"`
 	LastDoneBy string `json:"last_done_by,omitempty"`
+
+	// NeedsCheck: Ein Kind bekommt die Punkte erst, wenn ein Elternteil
+	// nachgesehen hat. PendingCheck: Die letzte Erledigung wartet genau
+	// darauf.
+	NeedsCheck   bool `json:"needs_check"`
+	PendingCheck bool `json:"pending_check"`
 }
 
 type CreateRequest struct {
@@ -76,6 +83,7 @@ type CreateRequest struct {
 	Assignment   string `json:"assignment"`
 	AssigneeID   *int   `json:"assignee_id"`
 	OneOff       bool   `json:"one_off"`
+	NeedsCheck   bool   `json:"needs_check"`
 }
 
 type UpdateRequest struct {
@@ -87,6 +95,7 @@ type UpdateRequest struct {
 	Assignment   *string `json:"assignment"`
 	AssigneeID   *int    `json:"assignee_id"`
 	OneOff       *bool   `json:"one_off"`
+	NeedsCheck   *bool   `json:"needs_check"`
 }
 
 type Service struct {
@@ -238,7 +247,10 @@ const choreColumns = `c.id, c.title, c.description, c.interval_days, c.points, c
 	c.assignment, c.assignee_id, c.last_done_at, c.next_due_at, c.created_at, c.updated_at,
 	c.one_off, u.name, u.color, u.avatar_emoji,
 	(SELECT du.name FROM chore_completions cc JOIN users du ON du.id = cc.user_id
-	  WHERE cc.chore_id = c.id ORDER BY cc.id DESC LIMIT 1)`
+	  WHERE cc.chore_id = c.id ORDER BY cc.id DESC LIMIT 1),
+	c.needs_check,
+	COALESCE((SELECT cc.pending FROM chore_completions cc
+	  WHERE cc.chore_id = c.id ORDER BY cc.id DESC LIMIT 1), 0)`
 
 // Everyone sees the whole board — a family chore list is only motivating if you
 // can see what the others still owe.
@@ -311,10 +323,10 @@ func (s *Service) Create(w http.ResponseWriter, r *http.Request) {
 	// warten dürfen, bis man sie abhaken kann.
 	nextDue := startOfDay(time.Now())
 	res, err := s.db.Exec(
-		`INSERT INTO chores (title, description, interval_days, points, rotate, assignment, assignee_id, next_due_at, one_off)
-		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		`INSERT INTO chores (title, description, interval_days, points, rotate, assignment, assignee_id, next_due_at, one_off, needs_check)
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		req.Title, req.Description, req.IntervalDays, req.Points, rotate, zuweisung, assignee, nextDue,
-		req.OneOff)
+		req.OneOff, req.NeedsCheck)
 	if err != nil {
 		log.Error().Err(err).Msg("DB error creating chore")
 		auth.HTTPError(w, http.StatusInternalServerError, "Server-Fehler")
@@ -388,6 +400,10 @@ func (s *Service) Update(w http.ResponseWriter, r *http.Request) {
 			sets = append(sets, "next_due_at = COALESCE(next_due_at, ?)")
 			args = append(args, startOfDay(time.Now()))
 		}
+	}
+	if req.NeedsCheck != nil {
+		sets = append(sets, "needs_check = ?")
+		args = append(args, *req.NeedsCheck)
 	}
 	// assignee_id = 0 explicitly clears the assignment.
 	if req.AssigneeID != nil {
@@ -489,11 +505,11 @@ func (s *Service) Complete(w http.ResponseWriter, r *http.Request) {
 	var title string
 	var assignee sql.NullInt64
 	var due, lastDone sql.NullTime
-	var oneOff bool
+	var oneOff, needsCheck bool
 	err = s.db.QueryRow(
-		`SELECT title, interval_days, points, assignee_id, next_due_at, last_done_at, one_off
+		`SELECT title, interval_days, points, assignee_id, next_due_at, last_done_at, one_off, needs_check
 		 FROM chores WHERE id = ?`, id,
-	).Scan(&title, &intervalDays, &reward, &assignee, &due, &lastDone, &oneOff)
+	).Scan(&title, &intervalDays, &reward, &assignee, &due, &lastDone, &oneOff, &needsCheck)
 	if err != nil {
 		auth.HTTPError(w, http.StatusNotFound, "Aufgabe nicht gefunden")
 		return
@@ -536,19 +552,33 @@ func (s *Service) Complete(w http.ResponseWriter, r *http.Request) {
 	}
 	defer func() { _ = tx.Rollback() }()
 
+	// Muss ein Elternteil nachsehen? Nur, wenn die Aufgabe so markiert ist
+	// und nicht gerade ein Elternteil selbst abhakt — sich selbst zu
+	// bestätigen wäre ein Umweg ohne Sinn.
+	var rolle string
+	// Über tx, nicht s.db: Die Datenbank hat genau eine Verbindung, und die
+	// hält gerade diese Transaktion. Eine Abfrage daneben wartete ewig.
+	_ = tx.QueryRow(`SELECT role FROM users WHERE id = ?`, userID).Scan(&rolle)
+	wartet := needsCheck && rolle != "admin"
+
 	res, err := tx.Exec(
-		`INSERT INTO chore_completions (chore_id, user_id, completed_at, verified, points_awarded)
-		 VALUES (?, ?, ?, 0, ?)`, id, userID, now, reward)
+		`INSERT INTO chore_completions (chore_id, user_id, completed_at, verified, points_awarded, pending)
+		 VALUES (?, ?, ?, ?, ?, ?)`, id, userID, now, !wartet, reward, wartet)
 	if err != nil {
 		auth.HTTPError(w, http.StatusInternalServerError, "Server-Fehler")
 		return
 	}
 	// The point event references the completion, not the chore, so revoking it
 	// in the admin area can undo both halves of the action.
+	//
+	// Wartet die Erledigung auf ein Elternteil, gibt es noch keinen
+	// Punkteeintrag: Er entsteht erst beim Bestätigen.
 	completionID, _ := res.LastInsertId()
-	if err := points.Award(tx, userID, points.SourceChore, int(completionID), reward, title); err != nil {
-		auth.HTTPError(w, http.StatusInternalServerError, "Server-Fehler")
-		return
+	if !wartet {
+		if err := points.Award(tx, userID, points.SourceChore, int(completionID), reward, title); err != nil {
+			auth.HTTPError(w, http.StatusInternalServerError, "Server-Fehler")
+			return
+		}
 	}
 	if _, err := tx.Exec(
 		`UPDATE chores SET last_done_at = ?, next_due_at = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
@@ -561,12 +591,155 @@ func (s *Service) Complete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	vergeben := reward
+	if wartet {
+		vergeben = 0
+	}
 	auth.WriteJSON(w, map[string]any{
 		"completed_at":   now,
 		"next_due_at":    nextDue,
-		"points_awarded": reward,
+		"points_awarded": vergeben,
+		"points_pending": reward - vergeben,
+		"pending":        wartet,
 		"title":          title,
 	})
+}
+
+// ---------------------------------------------------------- Bestätigen
+
+// Pending ist eine Erledigung, die auf ein Elternteil wartet.
+type Pending struct {
+	CompletionID int       `json:"completion_id"`
+	ChoreID      int       `json:"chore_id"`
+	Title        string    `json:"title"`
+	UserID       int       `json:"user_id"`
+	UserName     string    `json:"user_name"`
+	UserEmoji    string    `json:"user_emoji"`
+	Points       int       `json:"points"`
+	CompletedAt  time.Time `json:"completed_at"`
+}
+
+// ListPending zeigt, was auf Bestätigung wartet. Lesen darf jeder, auch das
+// Wandgerät: „Lena hat das Zimmer aufgeräumt — wartet auf Mama" ist dort genau
+// die richtige Nachricht. Bestätigen dürfen nur Eltern.
+func (s *Service) ListPending(w http.ResponseWriter, r *http.Request) {
+	rows, err := s.db.Query(`
+		SELECT cc.id, cc.chore_id, c.title, cc.user_id, u.name, u.avatar_emoji,
+		       cc.points_awarded, cc.completed_at
+		FROM chore_completions cc
+		JOIN chores c ON c.id = cc.chore_id
+		JOIN users u ON u.id = cc.user_id
+		WHERE cc.pending = 1
+		ORDER BY cc.id`)
+	if err != nil {
+		log.Error().Err(err).Msg("Ausstehende Aufgaben konnten nicht gelesen werden")
+		auth.HTTPError(w, http.StatusInternalServerError, "Server-Fehler")
+		return
+	}
+	defer rows.Close()
+
+	list := []Pending{}
+	for rows.Next() {
+		var p Pending
+		if err := rows.Scan(&p.CompletionID, &p.ChoreID, &p.Title, &p.UserID, &p.UserName,
+			&p.UserEmoji, &p.Points, &p.CompletedAt); err != nil {
+			continue
+		}
+		list = append(list, p)
+	}
+	auth.WriteJSON(w, list)
+}
+
+// Approve bestätigt eine Erledigung: Jetzt gibt es die Punkte. Der Eintrag
+// bekommt den Zeitpunkt der Erledigung, nicht den der Bestätigung — sonst
+// risse die Serie eines Kindes, nur weil Mama erst am nächsten Morgen
+// nachgesehen hat. Liegt die Erledigung in einem schon abgeschlossenen Monat,
+// zählt sie zum laufenden: Ein festgeschriebener Monat ändert sich nicht mehr.
+func (s *Service) Approve(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		auth.HTTPError(w, http.StatusBadRequest, "Ungültige ID")
+		return
+	}
+
+	tx, err := s.db.Begin()
+	if err != nil {
+		auth.HTTPError(w, http.StatusInternalServerError, "Server-Fehler")
+		return
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	var userID, reward int
+	var title string
+	var done time.Time
+	err = tx.QueryRow(`
+		SELECT cc.user_id, cc.points_awarded, c.title, cc.completed_at
+		FROM chore_completions cc JOIN chores c ON c.id = cc.chore_id
+		WHERE cc.id = ? AND cc.pending = 1`, id).Scan(&userID, &reward, &title, &done)
+	if errors.Is(err, sql.ErrNoRows) {
+		auth.HTTPError(w, http.StatusConflict, "Diese Aufgabe ist schon entschieden")
+		return
+	}
+	if err != nil {
+		auth.HTTPError(w, http.StatusInternalServerError, "Server-Fehler")
+		return
+	}
+
+	wann := done
+	if done.Format("2006-01") != time.Now().Format("2006-01") {
+		wann = time.Now()
+	}
+	if _, err := tx.Exec(`
+		INSERT INTO point_events (user_id, source, reference_id, points, note, created_at)
+		VALUES (?, ?, ?, ?, ?, ?)`,
+		userID, points.SourceChore, id, reward, title, wann.UTC().Format("2006-01-02 15:04:05")); err != nil {
+		auth.HTTPError(w, http.StatusInternalServerError, "Server-Fehler")
+		return
+	}
+	if _, err := tx.Exec(
+		`UPDATE chore_completions SET pending = 0, verified = 1 WHERE id = ?`, id); err != nil {
+		auth.HTTPError(w, http.StatusInternalServerError, "Server-Fehler")
+		return
+	}
+	if err := tx.Commit(); err != nil {
+		auth.HTTPError(w, http.StatusInternalServerError, "Server-Fehler")
+		return
+	}
+	auth.WriteJSON(w, map[string]any{"user_id": userID, "points_awarded": reward, "title": title})
+}
+
+// Reject lehnt ab: noch nicht richtig gemacht. Die Erledigung verschwindet,
+// die Aufgabe ist wieder fällig, Punkte gab es keine.
+func (s *Service) Reject(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		auth.HTTPError(w, http.StatusBadRequest, "Ungültige ID")
+		return
+	}
+
+	tx, err := s.db.Begin()
+	if err != nil {
+		auth.HTTPError(w, http.StatusInternalServerError, "Server-Fehler")
+		return
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	var offen int
+	if err := tx.QueryRow(
+		`SELECT COUNT(*) FROM chore_completions WHERE id = ? AND pending = 1`, id).Scan(&offen); err != nil || offen == 0 {
+		auth.HTTPError(w, http.StatusConflict, "Diese Aufgabe ist schon entschieden")
+		return
+	}
+	if err := points.RevokeCompletion(tx, id); err != nil {
+		log.Error().Err(err).Msg("Ablehnen fehlgeschlagen")
+		auth.HTTPError(w, http.StatusInternalServerError, "Server-Fehler")
+		return
+	}
+	if err := tx.Commit(); err != nil {
+		auth.HTTPError(w, http.StatusInternalServerError, "Server-Fehler")
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 // bereitsErledigt formuliert die Absage so, dass sie im Alltag weiterhilft:
@@ -612,7 +785,7 @@ func scanChore(row scanner, now time.Time) (Chore, error) {
 
 	if err := row.Scan(&c.ID, &c.Title, &c.Description, &c.IntervalDays, &c.Points, &c.Rotate,
 		&c.Assignment, &assignee, &lastDone, &nextDue, &c.CreatedAt, &c.UpdatedAt,
-		&c.OneOff, &name, &color, &emoji, &doneBy); err != nil {
+		&c.OneOff, &name, &color, &emoji, &doneBy, &c.NeedsCheck, &c.PendingCheck); err != nil {
 		return Chore{}, err
 	}
 

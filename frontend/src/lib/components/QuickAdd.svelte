@@ -181,6 +181,8 @@
           <span class="kachel-symbol" style="--ton: var(--ton-aufgaben)"><ListPlus class="h-5 w-5" /></span>
           Aufgabe
         </button>
+      {/if}
+      {#if admin || $session.device}
         <button
           class="schnell-knopf col-span-2"
           onclick={() => {

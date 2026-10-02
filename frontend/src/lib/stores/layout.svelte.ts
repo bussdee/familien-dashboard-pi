@@ -18,6 +18,7 @@ export interface WidgetMeta {
 export const WIDGETS: WidgetMeta[] = [
   { id: 'chores', label: 'Aufgaben', emoji: '⭐', hint: 'Was ansteht, mit Punkten' },
   { id: 'shopping', label: 'Einkaufen', emoji: '🛒', hint: 'Gemeinsame Liste, live' },
+  { id: 'goal', label: 'Familienziel', emoji: '🎯', hint: 'Gemeinsam auf etwas hinarbeiten' },
   { id: 'calendar', label: 'Kalender', emoji: '📅', hint: 'Termine der nächsten Tage' },
   { id: 'meals', label: 'Essensplan', emoji: '🍝', hint: 'Was es heute und die nächsten Tage gibt' },
   { id: 'links', label: 'Links', emoji: '🔗', hint: 'Angepinnte Lesezeichen' },

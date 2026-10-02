@@ -200,6 +200,22 @@ export interface Chore {
   one_off: boolean;
   /** Nur bei einmaligen Aufgaben: abgehakt und damit endgültig fertig. */
   done: boolean;
+  /** Kinder bekommen die Punkte erst, wenn ein Elternteil bestätigt hat. */
+  needs_check: boolean;
+  /** Die letzte Erledigung wartet auf diese Bestätigung. */
+  pending_check: boolean;
+}
+
+/** Eine Erledigung, die auf ein Elternteil wartet. */
+export interface PendingCompletion {
+  completion_id: number;
+  chore_id: number;
+  title: string;
+  user_id: number;
+  user_name: string;
+  user_emoji: string;
+  points: number;
+  completed_at: string;
 }
 
 /** Eine Zeile einer Monatsrangliste. */
@@ -563,4 +579,30 @@ export interface ShoppingSuggestion {
   name: string;
   category: string;
   uses: number;
+}
+
+/** Das Familienziel: gemeinsam statt gegeneinander. */
+export interface FamilyGoal {
+  id: number;
+  title: string;
+  emoji: string;
+  target: number;
+  started_at: string;
+  reached_at?: string;
+  closed_at?: string;
+}
+
+export interface GoalContribution {
+  user_id: number;
+  name: string;
+  avatar_emoji: string;
+  color: string;
+  points: number;
+}
+
+export interface GoalOverview {
+  goal: FamilyGoal | null;
+  progress: number;
+  contributions: GoalContribution[];
+  reached: FamilyGoal[];
 }

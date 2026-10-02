@@ -8,6 +8,8 @@
     LogOut, Menu, Monitor, Moon, Shield, Sparkles, Sun, WifiOff, X, UserRound,
   } from 'lucide-svelte';
   import { punkte } from '$lib/stores/punkte.svelte';
+  import { eltern } from '$lib/stores/eltern.svelte';
+  import { LockKeyholeOpen } from 'lucide-svelte';
   import { aktiv, menu, zieleFuer } from '$lib/stores/navigation.svelte';
 
   const themes: { value: Theme; label: string; icon: typeof Sun }[] = [
@@ -140,7 +142,19 @@
         Menü verschwunden waren: Punkte vergeben und die Verwaltung. Ohne sie
         war die Punktebuchung zwar da, aber nicht mehr zu finden.
       -->
-      {#if user?.role === 'admin'}
+      <!-- Am Wandgerät: Solange eine Eltern-PIN gilt, steht hier wer und wie
+           lange noch — mit einem Tipp lässt sie sich vorzeitig sperren. -->
+      {#if geraet && eltern.aktiv}
+        <button
+          class="flex items-center gap-1.5 rounded-full bg-amber-500/15 px-3 py-1.5 text-xs font-medium text-amber-700 dark:text-amber-400"
+          onclick={() => eltern.sperren()}
+          title="Eltern-Freigabe jetzt beenden"
+        >
+          <LockKeyholeOpen class="h-4 w-4" />
+          {eltern.aktiv.name} · {Math.floor(eltern.rest / 60)}:{String(eltern.rest % 60).padStart(2, '0')}
+        </button>
+      {/if}
+      {#if user?.role === 'admin' || geraet}
         <button
           class="btn-ghost gap-1.5 rounded-xl px-2 text-sm text-muted-foreground hover:text-foreground"
           onclick={() => punkte.oeffnen()}
@@ -150,6 +164,7 @@
           <Sparkles class="h-5 w-5" />
           <span class="hidden xl:inline">Punkte</span>
         </button>
+        {#if user?.role === 'admin'}
         <a
           href="/admin"
           class="btn-ghost rounded-xl px-2 {path === '/admin' ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}"
@@ -159,6 +174,7 @@
         >
           <Shield class="h-5 w-5" />
         </a>
+        {/if}
       {/if}
 
       {#if user}
