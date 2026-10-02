@@ -2,8 +2,9 @@
   import { goto } from '$app/navigation';
   import { page } from '$app/stores';
   import {
-    CalendarPlus, ListPlus, NotebookPen, Plus, ShoppingCart, UtensilsCrossed,
+    CalendarPlus, ListPlus, NotebookPen, Plus, ShoppingCart, Sparkles, UtensilsCrossed,
   } from 'lucide-svelte';
+  import { punkte } from '$lib/stores/punkte.svelte';
   import { ApiError, shoppingApi } from '$lib/api';
   import { session } from '$lib/stores';
   import { layout } from '$lib/stores/layout.svelte';
@@ -179,6 +180,16 @@
         <button class="schnell-knopf" onclick={() => oeffne('aufgabe')}>
           <span class="kachel-symbol" style="--ton: var(--ton-aufgaben)"><ListPlus class="h-5 w-5" /></span>
           Aufgabe
+        </button>
+        <button
+          class="schnell-knopf col-span-2"
+          onclick={() => {
+            schnell.offen = false;
+            punkte.oeffnen();
+          }}
+        >
+          <span class="kachel-symbol" style="--ton: var(--ton-belohnung)"><Sparkles class="h-5 w-5" /></span>
+          Punkte vergeben oder abziehen
         </button>
       {/if}
     </div>

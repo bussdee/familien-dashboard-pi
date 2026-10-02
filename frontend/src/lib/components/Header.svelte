@@ -5,8 +5,9 @@
   import { AKZENTE, akzent, connection, session, theme, type Theme } from '$lib/stores';
   import { board } from '$lib/stores/scores.svelte';
   import {
-    LogOut, Menu, Monitor, Moon, Sun, WifiOff, X, UserRound,
+    LogOut, Menu, Monitor, Moon, Shield, Sparkles, Sun, WifiOff, X, UserRound,
   } from 'lucide-svelte';
+  import { punkte } from '$lib/stores/punkte.svelte';
   import { aktiv, menu, zieleFuer } from '$lib/stores/navigation.svelte';
 
   const themes: { value: Theme; label: string; icon: typeof Sun }[] = [
@@ -131,6 +132,32 @@
           {#if myMedal}<span class="leading-none">{myMedal}</span>{/if}
           <span class="font-semibold tabular-nums">{me.total_points}</span>
           <span class="hidden text-xs text-muted-foreground sm:inline">Punkte</span>
+        </a>
+      {/if}
+
+      <!--
+        Für Eltern zwei Wege, die bis 2.0 in der Leiste standen und dann im
+        Menü verschwunden waren: Punkte vergeben und die Verwaltung. Ohne sie
+        war die Punktebuchung zwar da, aber nicht mehr zu finden.
+      -->
+      {#if user?.role === 'admin'}
+        <button
+          class="btn-ghost gap-1.5 rounded-xl px-2 text-sm text-muted-foreground hover:text-foreground"
+          onclick={() => punkte.oeffnen()}
+          aria-label="Punkte vergeben oder abziehen"
+          title="Punkte vergeben oder abziehen"
+        >
+          <Sparkles class="h-5 w-5" />
+          <span class="hidden xl:inline">Punkte</span>
+        </button>
+        <a
+          href="/admin"
+          class="btn-ghost rounded-xl px-2 {path === '/admin' ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}"
+          aria-label="Verwaltung"
+          title="Verwaltung"
+          aria-current={path === '/admin' ? 'page' : undefined}
+        >
+          <Shield class="h-5 w-5" />
         </a>
       {/if}
 

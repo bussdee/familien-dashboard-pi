@@ -20,6 +20,7 @@
   import BottomNav from '$lib/components/BottomNav.svelte';
   import QuickAdd from '$lib/components/QuickAdd.svelte';
   import Toasts from '$lib/components/Toasts.svelte';
+  import PunkteBuchen from '$lib/components/PunkteBuchen.svelte';
 
   let { children } = $props();
 
@@ -165,6 +166,11 @@
   {/if}
 
   <Toasts />
+
+  <!-- Punkte vergeben ist Elternsache; das Fenster gibt es nur für sie. -->
+  {#if $session.user?.role === 'admin'}
+    <PunkteBuchen />
+  {/if}
 
   <!-- Outside the isLogin guard: a confirmation can be asked from anywhere. -->
   <ConfirmDialog />

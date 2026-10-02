@@ -1,16 +1,17 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, untrack } from 'svelte';
   import { goto } from '$app/navigation';
   import {
     Check, ChevronDown, ChevronUp, Database, Download, HardDriveDownload,
     ChevronRight, CornerLeftUp, Folder, MonitorSmartphone, Music, Plus, RefreshCw,
-    RotateCcw, Shield, Sparkles, Trash2, TriangleAlert, Undo2, Users, X, Zap,
+    Minus, RotateCcw, Shield, Sparkles, Trash2, TriangleAlert, Undo2, Users, X, Zap,
   } from 'lucide-svelte';
   import { formatDistanceToNow, parseISO } from 'date-fns';
   import { de } from 'date-fns/locale';
   import { ApiError, adminApi, authApi } from '$lib/api';
   import { session } from '$lib/stores';
-  import { board } from '$lib/stores/scores.svelte';
+  import { board, mitVorzeichen, quelle } from '$lib/stores/scores.svelte';
+  import { punkte } from '$lib/stores/punkte.svelte';
   import type {
     Activity, BackupFile, DeviceTarget, MusicDirListing, MusicStatus, User,
   } from '$lib/types';
@@ -77,15 +78,6 @@
   let history = $state<Activity[]>([]);
   let historyUser = $state(0);
   let pointsError = $state('');
-  let adjustUser = $state(0);
-  let adjustAmount = $state(-5);
-  let adjustNote = $state('');
-
-  const sourceLabel: Record<string, string> = {
-    chore: 'Aufgabe',
-    shopping: 'Einkauf',
-    bonus: 'Manuell',
-  };
 
   const relative = (iso: string) =>
     formatDistanceToNow(parseISO(iso), { addSuffix: true, locale: de });
@@ -97,6 +89,12 @@
       pointsError = e instanceof ApiError ? e.message : 'Verlauf konnte nicht geladen werden';
     }
   }
+
+  // Eine Buchung im Fenster „Punkte vergeben" soll hier sofort im Verlauf stehen.
+  $effect(() => {
+    if (punkte.gebucht === 0) return;
+    untrack(() => void loadHistory());
+  });
 
   async function revoke(entry: Activity) {
     const ok = await confirmAction({
@@ -115,23 +113,6 @@
       notice = 'Eintrag zurückgenommen';
     } catch (e) {
       pointsError = e instanceof ApiError ? e.message : 'Zurücknehmen fehlgeschlagen';
-    }
-  }
-
-  async function adjust(event: SubmitEvent) {
-    event.preventDefault();
-    if (!adjustUser || adjustAmount === 0) return;
-    pointsError = '';
-    busy = true;
-    try {
-      await adminApi.adjustPoints(adjustUser, adjustAmount, adjustNote.trim());
-      adjustNote = '';
-      await Promise.all([loadHistory(), board.refresh()]);
-      notice = adjustAmount > 0 ? 'Punkte gutgeschrieben' : 'Punkte abgezogen';
-    } catch (e) {
-      pointsError = e instanceof ApiError ? e.message : 'Buchung fehlgeschlagen';
-    } finally {
-      busy = false;
     }
   }
 
@@ -294,23 +275,33 @@
     }
   }
 
+  /**
+   * Jeder Teil lädt für sich. Bis 2.0 hing alles an einem gemeinsamen
+   * Promise.all: Schlug ein einziger Aufruf fehl — etwa die Liste der
+   * Sicherungen, weil der Ordner fehlt —, blieb auch die Personenliste leer,
+   * und Punkte liessen sich niemandem mehr zuordnen.
+   */
   async function load() {
-    try {
-      [users, backups, devices, history] = await Promise.all([
-        adminApi.listUsers(),
-        adminApi.listBackups(),
-        adminApi.listDevices(),
-        adminApi.pointHistory(),
-      ]);
-      // Die Musik darf nachkommen: Ist die Platte abgemeldet, soll das nicht
-      // die ganze Verwaltungsseite aufhalten.
-      void ladeMusik();
-      if (!board.loaded) void board.refresh();
-    } catch (e) {
-      error = e instanceof ApiError ? e.message : 'Laden fehlgeschlagen';
-    } finally {
-      loading = false;
-    }
+    const fehlgeschlagen: string[] = [];
+    const teil = async <T,>(name: string, fn: () => Promise<T>, setzen: (v: T) => void) => {
+      try {
+        setzen(await fn());
+      } catch {
+        fehlgeschlagen.push(name);
+      }
+    };
+    await Promise.all([
+      teil('Familienmitglieder', () => adminApi.listUsers(), (v) => (users = v)),
+      teil('Sicherungen', () => adminApi.listBackups(), (v) => (backups = v)),
+      teil('Geräte', () => adminApi.listDevices(), (v) => (devices = v)),
+      teil('Punkteverlauf', () => adminApi.pointHistory(), (v) => (history = v)),
+      board.loaded ? Promise.resolve() : board.refresh().catch(() => fehlgeschlagen.push('Rangliste')),
+    ]);
+    if (fehlgeschlagen.length > 0) error = `Nicht geladen: ${fehlgeschlagen.join(', ')}`;
+    loading = false;
+    // Die Musik darf nachkommen: Ist die Platte abgemeldet, soll das nicht
+    // die ganze Verwaltungsseite aufhalten.
+    void ladeMusik();
   }
 
   function startNew() {
@@ -670,33 +661,15 @@
       <RotateCcw class="h-4 w-4" /> Alle Punkte zurücksetzen
     </button>
 
-    <!-- Manuelle Buchung -->
-    <form class="mb-4 space-y-2 rounded-xl border border-border p-3" onsubmit={adjust}>
-      <p class="text-sm font-medium">Punkte gutschreiben oder abziehen</p>
-      <div class="grid gap-2 sm:grid-cols-[1fr_auto]">
-        <select class="input" bind:value={adjustUser} aria-label="Benutzer">
-          <option value={0}>Wer?</option>
-          {#each users as user (user.id)}
-            <option value={user.id}>{user.avatar_emoji} {user.name}</option>
-          {/each}
-        </select>
-        <input
-          class="input sm:w-28"
-          type="number"
-          bind:value={adjustAmount}
-          min="-10000"
-          max="10000"
-          aria-label="Punkte (negativ zum Abziehen)"
-        />
-      </div>
-      <input class="input" placeholder="Grund (optional)" bind:value={adjustNote} maxlength="80" />
-      <p class="text-xs text-muted-foreground">
-        Negative Zahl zieht ab, positive schreibt gut.
-      </p>
-      <button class="btn-primary w-full text-sm" disabled={busy || !adjustUser || adjustAmount === 0}>
-        {adjustAmount < 0 ? `${Math.abs(adjustAmount)} Punkte abziehen` : `${adjustAmount} Punkte gutschreiben`}
+    <!-- Manuelle Buchung: dasselbe Fenster wie in Rangliste und Kopfleiste. -->
+    <div class="mb-4 grid grid-cols-2 gap-2">
+      <button class="btn min-h-[48px] bg-success text-success-foreground hover:bg-success/90" onclick={() => punkte.oeffnen({ modus: 'plus' })}>
+        <Plus class="h-5 w-5" /> Gutschreiben
       </button>
-    </form>
+      <button class="btn min-h-[48px] bg-destructive text-destructive-foreground hover:bg-destructive/90" onclick={() => punkte.oeffnen({ modus: 'minus' })}>
+        <Minus class="h-5 w-5" /> Abziehen
+      </button>
+    </div>
 
     <!-- Verlauf mit Rücknahme -->
     <div class="mb-2 flex items-center justify-between gap-2">
@@ -727,7 +700,7 @@
               <p class="truncate text-sm">
                 <span class="font-medium">{entry.user_name}</span>
                 <span class="text-muted-foreground">
-                  · {sourceLabel[entry.source] ?? entry.source}
+                  · {quelle(entry).label}
                 </span>
               </p>
               <p class="truncate text-[11px] text-muted-foreground">
@@ -739,7 +712,7 @@
                 ? 'text-destructive'
                 : 'text-primary'}"
             >
-              {entry.points > 0 ? '+' : ''}{entry.points}
+              {mitVorzeichen(entry.points)}
             </span>
             <button
               class="touch-target shrink-0 text-muted-foreground hover:text-destructive"

@@ -59,7 +59,7 @@ solange es im eigenen, vertrauenswürdigen Netz bleibt.
 | | |
 |---|---|
 | ⭐ **Aufgaben** | Müll, Geschirrspüler, Katzenklo. Jede Aufgabe hat ein Intervall und einen Punktwert. Zuständig ist wahlweise *reihum*, eine feste Person, *alle* oder *wer mag*. Einmal erledigt ist erledigt — ein zweites Abhaken am selben Tag gibt es nicht. |
-| 🏆 **Punkte & Level** | Wer abhakt, bekommt Punkte. Level von *Neuling* bis *Legende*, Serien, elf Abzeichen, Siegertreppchen. Verklickt? Ein Elternteil nimmt es zurück — die Aufgabe wird dabei wieder fällig. |
+| 🏆 **Punkte & Level** | Wer abhakt, bekommt Punkte. Level von *Neuling* bis *Legende*, Serien, elf Abzeichen, Siegertreppchen. Verklickt? Ein Elternteil nimmt es zurück — die Aufgabe wird dabei wieder fällig. Eltern vergeben und ziehen Punkte auch von Hand ab, für eine Person oder mehrere auf einmal, mit Grund. |
 | 🎁 **Belohnungen** | Wofür die Punkte da sind: Die Eltern legen fest, was es gibt — Bildschirmzeit, ein Eis, den Film am Familienabend. Ein Kind löst ein, ein Elternteil bestätigt. Ausgegeben wird ein **Guthaben**; Level und Rangliste bleiben unberührt. |
 | 🛒 **Einkaufsliste** | Gemeinsam und **in Echtzeit**: Was im Laden abgehakt wird, verschwindet sofort auf allen Geräten. **Häufig gekaufte Artikel** stehen als Vorschläge zum Antippen bereit, und im Laden gibt es eine eigene Ansicht — nach Abteilung sortiert, der Bildschirm bleibt an. Punkte gibt es auch dafür. |
 | 🍝 **Essensplan** | Was gibt's heute — und die ganze Woche. Mit Zutaten, die **mit einem Tipp auf die Einkaufsliste** wandern, ohne Doppelte. Gerichte der letzten Monate stehen zum Wiederverwenden bereit. |
@@ -420,7 +420,7 @@ make up
 make verify
 ```
 
-Erwartet: **64 Prüfungen bestanden.** Wenn hier etwas rot ist, hilft
+Erwartet: **68 Prüfungen bestanden.** Wenn hier etwas rot ist, hilft
 [INSTALL.md](INSTALL.md) weiter.
 
 **Im Browser öffnen** und anmelden. Es sind drei Benutzer angelegt — **Papa**,
@@ -512,7 +512,7 @@ Damit du nicht enttäuscht wirst:
 make setup       Einrichten (einmalig)
 make preflight   Prüfen, ob das Gerät passt (ändert nichts)
 make up          Starten                 make down     Stoppen
-make logs        Logs ansehen            make verify   64 Prüfungen
+make logs        Logs ansehen            make verify   68 Prüfungen
 make backup      Sichern                 make restore  Zurückspielen
 make dev         Entwicklungsmodus mit Hot-Reload
 make clean       Aufräumen

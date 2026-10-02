@@ -180,6 +180,21 @@ for e in json.load(sys.stdin):
   fi
 
   echo ""
+  echo "Punkte von Hand"
+  # Gutschreiben und Abziehen über denselben Weg wie das Fenster „Punkte
+  # vergeben". Beide Buchungen werden danach zurückgenommen: Der Test darf
+  # keinen Punktestand verändern.
+  for wert in 5 -5; do
+    BUCHUNG="$(curl -s -b "$JAR" -X POST -H 'Content-Type: application/json' \
+      -d "{\"user_ids\":[${USER_ID:-1}],\"points\":$wert,\"note\":\"Smoke-Test\"}" "$BASE/api/admin/points")"
+    B_ID="$(printf '%s' "$BUCHUNG" | python3 -c 'import json,sys; print(json.load(sys.stdin)["ids"][0])' 2>/dev/null)"
+    check "Punkte buchen ($wert)"          ja "$([ -n "$B_ID" ] && echo ja || echo nein)"
+    if [ -n "$B_ID" ]; then
+      check "Buchung zurücknehmen ($wert)" 204 "$(code -b "$JAR" -X DELETE "$BASE/api/admin/points/$B_ID")"
+    fi
+  done
+
+  echo ""
   echo "Dateien"
   # Eine hochgeladene Datei darf der Browser niemals anzeigen, sondern nur
   # speichern. Sonst könnte eine abgelegte HTML-Datei unter der Adresse des
