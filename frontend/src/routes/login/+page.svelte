@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n';
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { ApiError, authApi } from '$lib/api';
@@ -18,7 +19,7 @@
       users = await authApi.roster();
       if (users.length === 1) selected = users[0];
     } catch (e) {
-      error = e instanceof ApiError ? e.message : 'Server nicht erreichbar';
+      error = e instanceof ApiError ? e.message : t('Server nicht erreichbar');
     } finally {
       loadingRoster = false;
     }
@@ -67,7 +68,7 @@
       session.set(user);
       await goto('/');
     } catch (e) {
-      error = e instanceof ApiError ? e.message : 'Anmeldung fehlgeschlagen';
+      error = e instanceof ApiError ? e.message : t('Anmeldung fehlgeschlagen');
       pin = '';
       if (navigator.vibrate) navigator.vibrate([40, 60, 40]);
     } finally {
@@ -85,15 +86,15 @@
 
 <svelte:window onkeydown={onKeydown} />
 
-<svelte:head><title>Anmelden · Familien Dashboard</title></svelte:head>
+<svelte:head><title>{t('Anmelden · Familien Dashboard')}</title></svelte:head>
 
 <div class="flex min-h-screen items-center justify-center p-4">
   <div class="w-full max-w-sm">
     <div class="mb-8 text-center">
       <div class="mb-2 text-5xl">🏠</div>
-      <h1 class="text-2xl font-semibold">Familien Dashboard</h1>
+      <h1 class="text-2xl font-semibold">{t('Familien Dashboard')}</h1>
       <p class="text-sm text-muted-foreground">
-        {selected ? `PIN für ${selected.name} eingeben` : 'Wer bist du?'}
+        {selected ? t('PIN für {0} eingeben', [selected.name]) : t('Wer bist du?')}
       </p>
     </div>
 
@@ -104,9 +105,9 @@
     {:else if users.length === 0}
       <div class="card p-6 text-center">
         <TriangleAlert class="mx-auto mb-2 h-8 w-8 text-destructive" />
-        <p class="text-sm">{error || 'Keine Benutzer gefunden.'}</p>
+        <p class="text-sm">{error || t('Keine Benutzer gefunden.')}</p>
         <button class="btn-outline mt-4 w-full" onclick={() => location.reload()}>
-          Erneut versuchen
+          {t('Erneut versuchen')}
         </button>
       </div>
     {:else if !selected}
@@ -121,7 +122,7 @@
             <span class="font-medium">{user.name}</span>
             {#if user.pin_is_default}
               <span class="rounded-full bg-amber-500/15 px-2 py-0.5 text-[11px] text-amber-600 dark:text-amber-400">
-                Standard-PIN
+                {t('Standard-PIN')}
               </span>
             {/if}
           </button>
@@ -136,7 +137,7 @@
           <span class="text-4xl">{selected.avatar_emoji}</span>
           <span>
             <span class="block font-medium">{selected.name}</span>
-            <span class="block text-xs text-muted-foreground">wechseln</span>
+            <span class="block text-xs text-muted-foreground">{t('wechseln')}</span>
           </span>
         </button>
 
@@ -177,7 +178,7 @@
             class="btn-outline h-14"
             onclick={backspace}
             disabled={loading || pin.length === 0}
-            aria-label="Löschen"
+            aria-label={t('Löschen')}
           >
             <Delete class="h-5 w-5" />
           </button>
@@ -192,7 +193,7 @@
     {/if}
 
     <p class="mt-6 text-center text-xs text-muted-foreground">
-      Läuft lokal im Heimnetz · keine Cloud
+      {t('Läuft lokal im Heimnetz · keine Cloud')}
     </p>
     <p class="mt-2 flex items-center justify-center gap-2 text-[11px] text-muted-foreground">
       <a

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t, intlLocale } from '$lib/i18n';
   import { onMount } from 'svelte';
   import { Download, FileText, HardDrive, TriangleAlert, Trash2, Upload, X } from 'lucide-svelte';
   import { ApiError, filesApi } from '$lib/api';
@@ -32,7 +33,7 @@
   }
 
   const datum = (iso: string) =>
-    new Date(iso).toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: '2-digit' });
+    new Date(iso).toLocaleDateString(intlLocale, { day: '2-digit', month: '2-digit', year: '2-digit' });
 
   async function load() {
     try {
@@ -57,14 +58,14 @@
       const ergebnis = await filesApi.upload(liste, (prozent) => (progress = prozent));
       const uebersprungen = Object.entries(ergebnis.skipped ?? {});
       message =
-        ergebnis.count === 1 ? '1 Datei hinzugefügt' : `${ergebnis.count} Dateien hinzugefügt`;
+        ergebnis.count === 1 ? t('1 Datei hinzugefügt') : t('{0} Dateien hinzugefügt', [ergebnis.count]);
       if (uebersprungen.length > 0) {
         error = uebersprungen.map(([name, grund]) => `${name}: ${grund}`).join(' · ');
       }
       await load();
       setTimeout(() => (message = ''), 4000);
     } catch (e) {
-      error = e instanceof ApiError ? e.message : 'Upload fehlgeschlagen';
+      error = e instanceof ApiError ? e.message : t('Upload fehlgeschlagen');
     } finally {
       uploading = false;
       progress = 0;
@@ -74,15 +75,15 @@
 
   async function entfernen(datei: StoredFile) {
     const ok = await confirmAction({
-      title: 'Datei löschen?',
-      message: `„${datei.name}“ wird endgültig entfernt.`,
+      title: t('Datei löschen?'),
+      message: t('„{0}“ wird endgültig entfernt.', [datei.name]),
     });
     if (!ok) return;
     try {
       await filesApi.remove(datei.name);
       await load();
     } catch (e) {
-      error = e instanceof ApiError ? e.message : 'Löschen fehlgeschlagen';
+      error = e instanceof ApiError ? e.message : t('Löschen fehlgeschlagen');
     }
   }
 
@@ -100,12 +101,12 @@
 
 {#snippet zeile()}
   {#if loading}
-    Lade…
+    {t('Lade…')}
   {:else if dateien.length === 0}
-    Noch nichts abgelegt
+    {t('Noch nichts abgelegt')}
   {:else}
     {dateien.length}
-    {dateien.length === 1 ? 'Datei' : 'Dateien'} · {groesse(listing?.used_bytes ?? 0)}
+    {dateien.length === 1 ? t('Datei') : t('Dateien')} · {groesse(listing?.used_bytes ?? 0)}
   {/if}
 {/snippet}
 
@@ -115,7 +116,7 @@
       class="btn-primary px-3"
       onclick={() => fileInput?.click()}
       disabled={uploading}
-      aria-label="Dateien hochladen"
+      aria-label={t('Dateien hochladen')}
     >
       <Upload class="h-5 w-5" />
     </button>
@@ -123,7 +124,7 @@
 {/snippet}
 
 <Kachel ton="var(--ton-dateien)"
-  titel="Dateien"
+  titel={t('Dateien')}
   icon={FileText}
   {zeile}
   {aktionen}
@@ -166,7 +167,7 @@
       <div
         class="mb-3 flex items-center justify-center gap-2 rounded-lg bg-primary/10 px-3 py-4 text-sm font-medium text-primary"
       >
-        <Upload class="h-5 w-5" /> Dateien hier ablegen
+        <Upload class="h-5 w-5" /> {t('Dateien hier ablegen')}
       </div>
     {/if}
 
@@ -180,22 +181,22 @@
       {#if istAdmin}
         <KachelLeer
           icon={Upload}
-          titel="Noch nichts abgelegt"
-          hinweis="Anleitungen, Formulare, Elternbriefe. Antippen, oder Dateien einfach hierher ziehen — bis {groesse(
+          titel={t('Noch nichts abgelegt')}
+          hinweis={t('Anleitungen, Formulare, Elternbriefe. Antippen, oder Dateien einfach hierher ziehen — bis {0} je Datei.', [groesse(
             listing?.max_file_bytes ?? 0,
-          )} je Datei."
+          )])}
         >
           {#snippet aktion()}
             <button class="btn-outline text-sm" onclick={() => fileInput?.click()}>
-              <Upload class="h-4 w-4" /> Dateien hinzufügen
+              <Upload class="h-4 w-4" /> {t('Dateien hinzufügen')}
             </button>
           {/snippet}
         </KachelLeer>
       {:else}
         <KachelLeer
           icon={FileText}
-          titel="Noch nichts abgelegt"
-          hinweis="Hier legt ein Elternteil Anleitungen und Formulare ab."
+          titel={t('Noch nichts abgelegt')}
+          hinweis={t('Hier legt ein Elternteil Anleitungen und Formulare ab.')}
         />
       {/if}
     {:else}
@@ -225,7 +226,7 @@
               <button
                 class="touch-target shrink-0 text-muted-foreground hover:text-destructive"
                 onclick={() => entfernen(datei)}
-                aria-label="{datei.name} löschen"
+                aria-label={t('{0} löschen', [datei.name])}
               >
                 <Trash2 class="h-4 w-4" />
               </button>
@@ -246,14 +247,13 @@
       >
         <TriangleAlert class="mt-0.5 h-3.5 w-3.5 shrink-0" />
         <span>
-          Auf dem Datenträger sind nur noch {groesse(listing.free_bytes)} frei. Zeit,
-          etwas aufzuräumen.
+          {t('Auf dem Datenträger sind nur noch {0} frei. Zeit, etwas aufzuräumen.', [groesse(listing.free_bytes)])}
         </span>
       </p>
     {:else if istAdmin && (listing?.free_bytes ?? 0) > 0 && dateien.length > 0}
       <p class="mt-3 flex items-center gap-1.5 text-[11px] text-muted-foreground">
         <HardDrive class="h-3 w-3 shrink-0" />
-        {groesse(listing?.free_bytes ?? 0)} frei
+        {t('{0} frei', [groesse(listing?.free_bytes ?? 0)])}
       </p>
     {/if}
   </div>

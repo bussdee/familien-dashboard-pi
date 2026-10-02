@@ -1,3 +1,4 @@
+import { t } from '$lib/i18n';
 /**
  * Kurze Rückmeldungen am unteren Rand: „Auf der Liste", „Angefragt".
  *

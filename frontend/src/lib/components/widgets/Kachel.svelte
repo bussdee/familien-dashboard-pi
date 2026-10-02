@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n';
   import { X } from 'lucide-svelte';
   // ComponentType statt Component: Die Symbole von lucide-svelte sind noch
   // Komponenten der vierten Fassung. Der neue Component-Typ passt nicht auf
@@ -94,7 +95,7 @@
         <p class="flex items-start justify-between gap-2 rounded-lg bg-success/10 px-3 py-2 text-sm text-success">
           <span class="min-w-0 flex-1">{hinweis}</span>
           {#if onHinweisZu}
-            <button onclick={onHinweisZu} aria-label="Schließen">
+            <button onclick={onHinweisZu} aria-label={t('Schließen')}>
               <X class="h-4 w-4 shrink-0" />
             </button>
           {/if}
@@ -104,7 +105,7 @@
         <p class="flex items-start justify-between gap-2 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
           <span class="min-w-0 flex-1">{fehler}</span>
           {#if onFehlerZu}
-            <button onclick={onFehlerZu} aria-label="Schließen">
+            <button onclick={onFehlerZu} aria-label={t('Schließen')}>
               <X class="h-4 w-4 shrink-0" />
             </button>
           {/if}

@@ -1,11 +1,11 @@
 <script lang="ts">
+  import { t, dfLocale } from '$lib/i18n';
   import { untrack } from 'svelte';
   import { schnell } from '$lib/stores/schnell.svelte';
   import {
     CalendarDays, FileText, Lock, Pencil, Plus, Repeat, Trash2,
   } from 'lucide-svelte';
   import { addDays, differenceInCalendarDays, format, isToday, isTomorrow, parseISO } from 'date-fns';
-  import { de } from 'date-fns/locale';
   import { ApiError, calendarApi } from '$lib/api';
   import Kachel from './Kachel.svelte';
   import KachelLeer from './KachelLeer.svelte';
@@ -31,16 +31,16 @@
   } = $props();
 
   const repeats: { value: EventRepeat; label: string }[] = [
-    { value: 'none', label: 'Einmalig' },
-    { value: 'daily', label: 'Jeden Tag' },
-    { value: 'weekly', label: 'Jede Woche' },
-    { value: 'monthly', label: 'Jeden Monat' },
-    { value: 'yearly', label: 'Jedes Jahr' },
+    { value: 'none', label: t('Einmalig') },
+    { value: 'daily', label: t('Jeden Tag') },
+    { value: 'weekly', label: t('Jede Woche') },
+    { value: 'monthly', label: t('Jeden Monat') },
+    { value: 'yearly', label: t('Jedes Jahr') },
   ];
 
   // 0 = Montag, so wie ein Kalender gelesen wird — nicht wie JavaScript zählt.
   const wochentage = [
-    'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag',
+    t('Montag'), t('Dienstag'), t('Mittwoch'), t('Donnerstag'), t('Freitag'), t('Samstag'), t('Sonntag'),
   ];
 
   /** Der Wochentag eines Datums in derselben Zählung. */
@@ -108,16 +108,16 @@
       .map(([key, list]) => {
         const date = parseISO(key);
         const label = isToday(date)
-          ? 'Heute'
+          ? t('Heute')
           : isTomorrow(date)
-            ? 'Morgen'
-            : format(date, 'EEEE, d. MMMM', { locale: de });
+            ? t('Morgen')
+            : format(date, t('EEEE, d. MMMM'), { locale: dfLocale });
         return { label, events: list };
       });
   });
 
   function timeLabel(event: CalendarEvent): string {
-    if (event.all_day) return 'Ganztägig';
+    if (event.all_day) return t('Ganztägig');
     const start = parseISO(event.start);
     const end = parseISO(event.end);
     return differenceInCalendarDays(end, start) === 0
@@ -200,7 +200,7 @@
       selectedId = null;
       await onRefresh();
     } catch (e) {
-      error = e instanceof ApiError ? e.message : 'Termin konnte nicht gespeichert werden';
+      error = e instanceof ApiError ? e.message : t('Termin konnte nicht gespeichert werden');
     } finally {
       busy = false;
     }
@@ -209,9 +209,9 @@
   async function remove(event: CalendarEvent) {
     if (!event.event_id) return;
     const ok = await confirmAction({
-      title: `„${event.title}“ löschen?`,
+      title: t('„{0}“ löschen?', [event.title]),
       message: event.recurring
-        ? 'Alle Wiederholungen dieses Termins werden entfernt.'
+        ? t('Alle Wiederholungen dieses Termins werden entfernt.')
         : undefined,
     });
     if (!ok) return;
@@ -220,26 +220,26 @@
       selectedId = null;
       await onRefresh();
     } catch (e) {
-      error = e instanceof ApiError ? e.message : 'Termin konnte nicht gelöscht werden';
+      error = e instanceof ApiError ? e.message : t('Termin konnte nicht gelöscht werden');
     }
   }
 </script>
 
 {#snippet zeile()}
-  {events.length === 0 ? 'Keine Termine' : `${events.length} Termine`}
+  {events.length === 0 ? t('Keine Termine') : t('{0} Termine', [events.length])}
 {/snippet}
 
 {#snippet aktionen()}
   <button
     class="btn-primary px-3"
     onclick={startNew}
-    aria-label="Termin hinzufügen"
+    aria-label={t('Termin hinzufügen')}
   >
     <Plus class="h-5 w-5" />
   </button>
 {/snippet}
 
-<Kachel ton="var(--ton-kalender)" titel="Kalender" icon={CalendarDays} {zeile} {aktionen}>
+<Kachel ton="var(--ton-kalender)" titel={t('Kalender')} icon={CalendarDays} {zeile} {aktionen}>
 
   {#if error && !showForm}
     <p class="mb-3 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>
@@ -251,16 +251,16 @@
     Termin bearbeiten will, steht dann irgendwo weiter unten auf der Seite
     und sieht nicht, dass sich oben etwas geöffnet hat.
   -->
-  <Modal bind:open={showForm} title={editingId !== null ? 'Termin bearbeiten' : 'Neuer Termin'}>
+  <Modal bind:open={showForm} title={editingId !== null ? t('Termin bearbeiten') : t('Neuer Termin')}>
     {#if error}
       <p class="mb-3 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>
     {/if}
     <form class="space-y-2" onsubmit={save}>
-      <input class="input" placeholder="Was steht an?" bind:value={draft.title} maxlength="120" />
+      <input class="input" placeholder={t('Was steht an?')} bind:value={draft.title} maxlength="120" />
 
       <div class="grid grid-cols-2 gap-2">
         <label class="text-xs text-muted-foreground">
-          Datum
+          {t('Datum')}
           <input
             class="input mt-1"
             type="date"
@@ -269,7 +269,7 @@
           />
         </label>
         <label class="text-xs text-muted-foreground">
-          Wiederholung
+          {t('Wiederholung')}
           <select class="input mt-1" bind:value={draft.repeat}>
             {#each repeats as option}<option value={option.value}>{option.label}</option>{/each}
           </select>
@@ -278,7 +278,7 @@
 
       {#if draft.repeat === 'weekly'}
         <label class="block text-xs text-muted-foreground">
-          Jede Woche am
+          {t('Jede Woche am')}
           <select
             class="input mt-1"
             value={String(draft.weekday)}
@@ -295,9 +295,9 @@
         beide gehören in denselben Kalender.
       -->
       <label class="block text-xs text-muted-foreground">
-        Für wen
+        {t('Für wen')}
         <select class="input mt-1" value={String(draft.user_id)} onchange={(e) => (draft.user_id = Number(e.currentTarget.value))}>
-          <option value="0">👪 Die ganze Familie</option>
+          <option value="0">{t('👪 Die ganze Familie')}</option>
           {#each users as u (u.id)}
             <option value={String(u.id)}>{u.avatar_emoji} {u.name}</option>
           {/each}
@@ -306,32 +306,32 @@
 
       <label class="flex items-center gap-2 text-sm">
         <input type="checkbox" class="h-4 w-4 rounded" bind:checked={draft.all_day} />
-        Ganztägig
+        {t('Ganztägig')}
       </label>
 
       {#if !draft.all_day}
         <div class="grid grid-cols-2 gap-2">
           <label class="text-xs text-muted-foreground">
-            Von
+            {t('Von')}
             <input class="input mt-1" type="time" bind:value={draft.start_time} />
           </label>
           <label class="text-xs text-muted-foreground">
-            Bis
+            {t('Bis')}
             <input class="input mt-1" type="time" bind:value={draft.end_time} />
           </label>
         </div>
       {/if}
 
-      <input class="input" placeholder="Ort (optional)" bind:value={draft.location} maxlength="120" />
+      <input class="input" placeholder={t('Ort (optional)')} bind:value={draft.location} maxlength="120" />
       <input
         class="input"
-        placeholder="Notiz (optional)"
+        placeholder={t('Notiz (optional)')}
         bind:value={draft.description}
         maxlength="300"
       />
 
       <div class="text-xs text-muted-foreground">
-        Farbe
+        {t('Farbe')}
         <div class="mt-1 flex flex-wrap gap-2">
           {#each colors as color}
             <button
@@ -340,7 +340,7 @@
                 ? 'scale-110 ring-2 ring-offset-2 ring-offset-card'
                 : ''}"
               style="background-color: {color}; --tw-ring-color: {color}"
-              aria-label="Farbe {color}"
+              aria-label={t('Farbe {0}', [color])}
               onclick={() => (draft.color = color)}
             ></button>
           {/each}
@@ -348,7 +348,7 @@
       </div>
 
       <button class="btn-primary w-full" disabled={busy || !draft.title.trim()}>
-        {editingId !== null ? 'Änderungen speichern' : 'Termin eintragen'}
+        {editingId !== null ? t('Änderungen speichern') : t('Termin eintragen')}
       </button>
     </form>
   </Modal>
@@ -356,8 +356,8 @@
   {#if groups.length === 0}
     <KachelLeer
       icon={CalendarDays}
-      titel="Keine Termine in nächster Zeit"
-      hinweis="Mit + eintragen, oder eine .ics-Datei in data/ics/ ablegen."
+      titel={t('Keine Termine in nächster Zeit')}
+      hinweis={t('Mit + eintragen, oder eine .ics-Datei in data/ics/ ablegen.')}
     />
   {:else}
     <div class="scrollbar-thin max-h-[340px] space-y-4 overflow-y-auto pr-1">
@@ -389,8 +389,8 @@
                       {#if event.user_emoji}
                         <span
                           class="shrink-0"
-                          title="Termin von {event.user_name}"
-                          aria-label="Termin von {event.user_name}"
+                          title={t('Termin von {0}', [event.user_name])}
+                          aria-label={t('Termin von {0}', [event.user_name])}
                         >
                           {event.user_emoji}
                         </span>
@@ -421,13 +421,13 @@
                     {#if event.editable}
                       <div class="flex gap-2">
                         <button class="btn-outline flex-1 text-sm" onclick={() => startEdit(event)}>
-                          <Pencil class="h-4 w-4" /> Bearbeiten
+                          <Pencil class="h-4 w-4" /> {t('Bearbeiten')}
                         </button>
                         <button
                           class="btn-outline flex-1 text-sm text-destructive"
                           onclick={() => remove(event)}
                         >
-                          <Trash2 class="h-4 w-4" /> Löschen
+                          <Trash2 class="h-4 w-4" /> {t('Löschen')}
                         </button>
                       </div>
                     {:else}
@@ -439,10 +439,8 @@
                       <p class="flex items-start gap-2 text-xs text-muted-foreground">
                         <FileText class="mt-0.5 h-3.5 w-3.5 shrink-0" />
                         <span>
-                          Kommt aus der Kalenderdatei
-                          <strong>{event.calendar}.ics</strong> und lässt sich hier nicht ändern.
-                          Ändere ihn in der App, aus der du exportiert hast — oder lege ihn
-                          mit <strong>+</strong> als eigenen Termin neu an.
+                          {t('Kommt aus der Kalenderdatei')}
+                          <strong>{event.calendar}.ics</strong> {t('und lässt sich hier nicht ändern. Ändere ihn in der App, aus der du exportiert hast — oder lege ihn mit')} <strong>+</strong> {t('als eigenen Termin neu an.')}
                         </span>
                       </p>
                     {/if}

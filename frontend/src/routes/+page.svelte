@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t, intlLocale } from '$lib/i18n';
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { RefreshCw, TriangleAlert } from 'lucide-svelte';
@@ -47,14 +48,14 @@
 
   const greeting = $derived.by(() => {
     const hour = new Date().getHours();
-    if (hour < 5) return 'Gute Nacht';
-    if (hour < 11) return 'Guten Morgen';
-    if (hour < 18) return 'Hallo';
-    return 'Guten Abend';
+    if (hour < 5) return t('Gute Nacht');
+    if (hour < 11) return t('Guten Morgen');
+    if (hour < 18) return t('Hallo');
+    return t('Guten Abend');
   });
 
   const today = $derived(
-    new Date().toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' }),
+    new Date().toLocaleDateString(intlLocale, { weekday: 'long', day: 'numeric', month: 'long' }),
   );
 
   const me = $derived(board.for($session.user?.id));
@@ -74,14 +75,14 @@
     };
 
     await Promise.all([
-      run('Wetter', () => weatherApi.get(), (v) => (weather = v)),
-      run('Kalender', () => calendarApi.events(45), (v) => (events = v.events)),
-      run('Einkaufsliste', () => shoppingApi.list(), (v) => (shopping = v)),
-      run('Notizen', () => notesApi.list(), (v) => (notes = v)),
-      run('Aufgaben', () => choresApi.list(), (v) => (chores = v)),
-      run('Geräte', () => devicesApi.list(), (v) => (devices = v)),
-      run('Rangliste', () => board.refresh(), () => {}),
-      run('Essensplan', () => mealsApi.list(format(new Date(), 'yyyy-MM-dd'), 4), (v) => (meals = v.meals)),
+      run(t('Wetter'), () => weatherApi.get(), (v) => (weather = v)),
+      run(t('Kalender'), () => calendarApi.events(45), (v) => (events = v.events)),
+      run(t('Einkaufsliste'), () => shoppingApi.list(), (v) => (shopping = v)),
+      run(t('Notizen'), () => notesApi.list(), (v) => (notes = v)),
+      run(t('Aufgaben'), () => choresApi.list(), (v) => (chores = v)),
+      run(t('Geräte'), () => devicesApi.list(), (v) => (devices = v)),
+      run(t('Rangliste'), () => board.refresh(), () => {}),
+      run(t('Essensplan'), () => mealsApi.list(format(new Date(), 'yyyy-MM-dd'), 4), (v) => (meals = v.meals)),
       // Die Zeiten sind eine Zugabe für die Heute-Leiste. Fehlen sie, steht
       // dort ein Verweis — keine Meldung wert.
       timesApi.overview(undefined, 1).then((v) => (zeitenHeute = v.days[0] ?? null)).catch(() => {}),
@@ -167,7 +168,7 @@
 
 </script>
 
-<svelte:head><title>Familien Dashboard</title></svelte:head>
+<svelte:head><title>{t('Familien Dashboard')}</title></svelte:head>
 
 <!-- Jede Berührung schiebt den Ruhezustand nach hinten. -->
 <svelte:window onpointerdown={ruheNeuStarten} onkeydown={ruheNeuStarten} />
@@ -190,7 +191,7 @@
         {#if $session.device}
           <!-- Familien-Modus: das Gerät grüßt niemanden persönlich, weil es
                nicht weiß (und nicht wissen soll), wer gerade davorsteht. -->
-          {greeting}<span class="font-medium italic">, Familie</span>
+          {greeting}<span class="font-medium italic">{t(', Familie')}</span>
         {:else}
           {greeting}{$session.user ? ',' : ''}
           {#if $session.user}
@@ -217,8 +218,8 @@
       class="btn-ghost absolute right-0 top-0 shrink-0 rounded-full px-2 text-muted-foreground"
       onclick={manualRefresh}
       disabled={refreshing}
-      aria-label="Alles aktualisieren"
-      title="Alles aktualisieren"
+      aria-label={t('Alles aktualisieren')}
+      title={t('Alles aktualisieren')}
     >
       <RefreshCw class="h-5 w-5 {refreshing ? 'animate-spin' : ''}" />
     </button>
@@ -245,14 +246,14 @@
       class="mb-4 flex items-center gap-2 rounded-xl bg-amber-500/10 px-4 py-3 text-sm text-amber-700 transition-colors hover:bg-amber-500/15 dark:text-amber-400"
     >
       <TriangleAlert class="h-4 w-4 shrink-0" />
-      Du benutzt noch die Standard-PIN. Jetzt in den Einstellungen ändern →
+      {t('Du benutzt noch die Standard-PIN. Jetzt in den Einstellungen ändern →')}
     </a>
   {/if}
 
   {#if failures.length > 0}
     <p class="mb-4 flex items-center gap-2 rounded-xl bg-muted px-4 py-2.5 text-sm text-muted-foreground">
       <TriangleAlert class="h-4 w-4 shrink-0" />
-      Nicht geladen: {failures.join(', ')}
+      {t('Nicht geladen: {0}', [failures.join(', ')])}
     </p>
   {/if}
 
@@ -307,8 +308,8 @@
     {#if layout.visible.length === 0}
       <section class="card p-8 text-center">
         <LayoutGrid class="mx-auto mb-3 h-10 w-10 text-muted-foreground opacity-40" />
-        <p class="font-medium">Alle Fenster ausgeblendet</p>
-        <a href="/ansicht" class="btn-primary mt-4 inline-flex">Ansicht anpassen</a>
+        <p class="font-medium">{t('Alle Fenster ausgeblendet')}</p>
+        <a href="/ansicht" class="btn-primary mt-4 inline-flex">{t('Ansicht anpassen')}</a>
       </section>
     {:else}
       <a
@@ -316,7 +317,7 @@
         class="mt-5 flex items-center justify-center gap-2 rounded-xl py-3 text-sm text-muted-foreground transition-colors hover:bg-accent"
       >
         <LayoutGrid class="h-4 w-4" />
-        Fenster anordnen oder ausblenden
+        {t('Fenster anordnen oder ausblenden')}
       </a>
     {/if}
   {/if}

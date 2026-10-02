@@ -1,3 +1,4 @@
+import { t } from '$lib/i18n';
 /**
  * Vollbild für die Diashow — der Weg aus dem Browserkorsett.
  *

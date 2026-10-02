@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n';
   import { untrack } from 'svelte';
   import { schnell } from '$lib/stores/schnell.svelte';
   import { FileText, Pin, PinOff, Plus, Trash2, X } from 'lucide-svelte';
@@ -88,7 +89,7 @@
       showForm = false;
       editing = null;
     } catch (e) {
-      error = e instanceof ApiError ? e.message : 'Konnte nicht speichern';
+      error = e instanceof ApiError ? e.message : t('Konnte nicht speichern');
     }
   }
 
@@ -97,28 +98,28 @@
       const updated = await notesApi.update(note.id, { pinned: !note.pinned });
       notes = notes.map((n) => (n.id === updated.id ? updated : n));
     } catch (e) {
-      error = e instanceof ApiError ? e.message : 'Konnte nicht anpinnen';
+      error = e instanceof ApiError ? e.message : t('Konnte nicht anpinnen');
     }
   }
 
   async function remove(note: Note) {
     const ok = await confirmAction({
-      title: `„${note.title}“ löschen?`,
-      message: 'Auch die Markdown-Datei wird entfernt.',
+      title: t('„{0}“ löschen?', [note.title]),
+      message: t('Auch die Markdown-Datei wird entfernt.'),
     });
     if (!ok) return;
     try {
       await notesApi.remove(note.id);
       notes = notes.filter((n) => n.id !== note.id);
     } catch (e) {
-      error = e instanceof ApiError ? e.message : 'Konnte nicht löschen';
+      error = e instanceof ApiError ? e.message : t('Konnte nicht löschen');
     }
   }
 </script>
 
 {#snippet zeile()}
   {notes.length === 0
-    ? 'Noch nichts notiert'
+    ? t('Noch nichts notiert')
     : `${notes.length} ${notes.length === 1 ? 'Eintrag' : 'Einträge'}`}
 {/snippet}
 
@@ -126,13 +127,13 @@
   <button
     class="btn-primary px-3"
     onclick={() => (showForm ? (showForm = false) : startNew())}
-    aria-label={showForm ? 'Abbrechen' : 'Notiz hinzufügen'}
+    aria-label={showForm ? t('Abbrechen') : t('Notiz hinzufügen')}
   >
     {#if showForm}<X class="h-5 w-5" />{:else}<Plus class="h-5 w-5" />{/if}
   </button>
 {/snippet}
 
-<Kachel ton="var(--ton-notizen)" titel="Notizen" icon={FileText} {zeile} {aktionen}>
+<Kachel ton="var(--ton-notizen)" titel={t('Notizen')} icon={FileText} {zeile} {aktionen}>
 
   {#if error}
     <p class="mb-3 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>
@@ -140,27 +141,27 @@
 
   {#if showForm}
     <form class="mb-4 space-y-2 rounded-lg border border-border p-3" onsubmit={save}>
-      <input class="input" placeholder="Titel" bind:value={draft.title} maxlength="120" />
+      <input class="input" placeholder={t('Titel')} bind:value={draft.title} maxlength="120" />
       <textarea
         class="input min-h-[120px] font-mono text-sm"
-        placeholder="Inhalt (Markdown)"
+        placeholder={t('Inhalt (Markdown)')}
         bind:value={draft.content}
       ></textarea>
-      <input class="input" placeholder="Tags, kommagetrennt" bind:value={draft.tags} />
+      <input class="input" placeholder={t('Tags, kommagetrennt')} bind:value={draft.tags} />
       <div class="flex flex-wrap gap-4 text-sm">
         <label class="flex items-center gap-2">
           <input type="checkbox" class="h-4 w-4 rounded" bind:checked={draft.pinned} />
-          Anpinnen
+          {t('Anpinnen')}
         </label>
         {#if !editing}
           <label class="flex items-center gap-2">
             <input type="checkbox" class="h-4 w-4 rounded" bind:checked={draft.shared} />
-            Für alle sichtbar
+            {t('Für alle sichtbar')}
           </label>
         {/if}
       </div>
       <button class="btn-primary w-full" disabled={!draft.title.trim()}>
-        {editing ? 'Speichern' : 'Anlegen'}
+        {editing ? t('Speichern') : t('Anlegen')}
       </button>
     </form>
   {/if}
@@ -168,8 +169,8 @@
   {#if notes.length === 0}
     <KachelLeer
       icon={FileText}
-      titel="Noch keine Notizen"
-      hinweis="Mit + eine anlegen. Notizen liegen als Markdown-Dateien auf dem Server und bleiben auch ohne dieses Programm lesbar."
+      titel={t('Noch keine Notizen')}
+      hinweis={t('Mit + eine anlegen. Notizen liegen als Markdown-Dateien auf dem Server und bleiben auch ohne dieses Programm lesbar.')}
     />
   {:else}
     <ul class="scrollbar-thin max-h-[340px] space-y-2 overflow-y-auto pr-1">
@@ -200,21 +201,21 @@
               <button
                 class="touch-target text-muted-foreground"
                 onclick={() => togglePin(note)}
-                aria-label={note.pinned ? 'Loslösen' : 'Anpinnen'}
+                aria-label={note.pinned ? t('Loslösen') : t('Anpinnen')}
               >
                 {#if note.pinned}<PinOff class="h-4 w-4" />{:else}<Pin class="h-4 w-4" />{/if}
               </button>
               <button
                 class="touch-target text-muted-foreground"
                 onclick={() => startEdit(note)}
-                aria-label="Bearbeiten"
+                aria-label={t('Bearbeiten')}
               >
                 <FileText class="h-4 w-4" />
               </button>
               <button
                 class="touch-target text-muted-foreground"
                 onclick={() => remove(note)}
-                aria-label="Löschen"
+                aria-label={t('Löschen')}
               >
                 <Trash2 class="h-4 w-4" />
               </button>
@@ -235,8 +236,7 @@
     </ul>
   {/if}
 </Kachel>
-
-<style>
+}<style>
   /* marked output needs a little structure back — Tailwind's preflight strips it. */
   .prose-sm :global(h1),
   .prose-sm :global(h2),

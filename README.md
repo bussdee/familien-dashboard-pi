@@ -7,6 +7,8 @@
 Wer bringt heute den Müll raus? Was fehlt beim Einkaufen? Wann ist der
 Elternabend? Und ab wann sind eigentlich alle zu Hause?
 
+**Deutsch** · [English](README.en.md)
+
 [Was ist das?](#was-ist-das) · [Bilder](#so-sieht-es-aus) · [Installation](#installation) · [Erste Schritte](#erste-schritte-nach-der-installation) · [Ehrlich gesagt](#ehrlich-gesagt-die-grenzen)
 
 [![CI](https://github.com/bussdee/familien-dashboard-pi/actions/workflows/ci.yml/badge.svg)](https://github.com/bussdee/familien-dashboard-pi/actions/workflows/ci.yml) ![Lizenz](https://img.shields.io/badge/Lizenz-MIT-blue) ![Nur LAN](https://img.shields.io/badge/Nur%20f%C3%BCrs-Heimnetz-orange) ![Ohne Cloud](https://img.shields.io/badge/Cloud-nein%20danke-green)
@@ -46,7 +48,7 @@ Anwendung, die im Internet steht:
 - Es gibt **keine Verschlüsselung der Inhalte**, keine Zwei-Faktor-Anmeldung,
   keine Zugriffsprotokolle.
 - **Stelle es nicht ins Internet.** Keine Portweiterleitung im Router. Wer von
-  unterwegs zugreifen will, nimmt ein VPN (WireGuard oder Tailscale).
+  unterwegs zugreifen will, nimmt ein VPN (zum Beispiel WireGuard, auf dem eigenen Router oder Pi).
 
 Das ist eine bewusste Entscheidung: Ein Familien-Dashboard soll man mit einem
 Tippen bedienen, nicht mit einem Passwortmanager. Diese Einfachheit gilt nur,
@@ -58,9 +60,10 @@ solange es im eigenen, vertrauenswürdigen Netz bleibt.
 
 | | |
 |---|---|
-| ⭐ **Aufgaben** | Müll, Geschirrspüler, Katzenklo. Jede Aufgabe hat ein Intervall und einen Punktwert. Zuständig ist wahlweise *reihum*, eine feste Person, *alle* oder *wer mag*. Einmal erledigt ist erledigt — ein zweites Abhaken am selben Tag gibt es nicht. |
-| 🏆 **Punkte & Level** | Wer abhakt, bekommt Punkte. Level von *Neuling* bis *Legende*, Serien, elf Abzeichen, Siegertreppchen. Verklickt? Ein Elternteil nimmt es zurück — die Aufgabe wird dabei wieder fällig. Eltern vergeben und ziehen Punkte auch von Hand ab, für eine Person oder mehrere auf einmal, mit Grund. |
+| ⭐ **Aufgaben** | Müll, Geschirrspüler, Katzenklo. Jede Aufgabe hat ein Intervall und einen Punktwert. Zuständig ist wahlweise *reihum*, eine feste Person, *alle* oder *wer mag*. Einmal erledigt ist erledigt — ein zweites Abhaken am selben Tag gibt es nicht. Auf Wunsch **bestätigt ein Elternteil**, bevor es Punkte gibt — *Zimmer aufräumen* heisst dann auch aufgeräumt. |
+| 🏆 **Punkte & Level** | Wer abhakt, bekommt Punkte. Level von *Neuling* bis *Legende*, Serien, elf Abzeichen, Siegertreppchen. Verklickt? Ein Elternteil nimmt es zurück — die Aufgabe wird dabei wieder fällig. Eltern vergeben und ziehen Punkte auch von Hand ab, für eine Person oder mehrere auf einmal, mit Grund — am Handy oder am Wandtablet mit der **Eltern-PIN**. |
 | 🎁 **Belohnungen** | Wofür die Punkte da sind: Die Eltern legen fest, was es gibt — Bildschirmzeit, ein Eis, den Film am Familienabend. Ein Kind löst ein, ein Elternteil bestätigt. Ausgegeben wird ein **Guthaben**; Level und Rangliste bleiben unberührt. |
+| 🎯 **Familienziel** | Etwas, worauf alle gemeinsam hinarbeiten: Pizza-Abend, Zoo, Kino. Jeder verdiente Punkt zählt dazu, der Balken zeigt, wer wie viel beigetragen hat. Abzüge zählen nicht dagegen. |
 | 🛒 **Einkaufsliste** | Gemeinsam und **in Echtzeit**: Was im Laden abgehakt wird, verschwindet sofort auf allen Geräten. **Häufig gekaufte Artikel** stehen als Vorschläge zum Antippen bereit, und im Laden gibt es eine eigene Ansicht — nach Abteilung sortiert, der Bildschirm bleibt an. Punkte gibt es auch dafür. |
 | 🍝 **Essensplan** | Was gibt's heute — und die ganze Woche. Mit Zutaten, die **mit einem Tipp auf die Einkaufsliste** wandern, ohne Doppelte. Gerichte der letzten Monate stehen zum Wiederverwenden bereit. |
 | 📅 **Kalender** | Termine direkt eintragen, einmalig oder wiederkehrend. Oder eine `.ics` aus Apple, Google oder Outlook ablegen. |
@@ -71,14 +74,22 @@ solange es im eigenen, vertrauenswürdigen Netz bleibt.
 | 🎵 **Musik & Hörspiele** | Ein eigener Ordner voller MP3s — vom Pi, vom NAS oder von einer angesteckten Platte. Geblättert wird nach Ordnern, sortiert nach Dateiname: Ein Hörspiel läuft von Teil 1 bis Teil 12. Die Leiste unten bleibt beim Seitenwechsel stehen, die Musik läuft weiter. Titel und Knöpfe erscheinen auch auf dem Sperrbildschirm des Handys. |
 | 📎 **Dateien** | Bedienungsanleitung, Elternbrief, Formular fürs Ferienlager. Ein Elternteil legt ab, alle laden herunter — auch am Wandgerät. |
 | 🕗 **Arbeit & Schule** | Wer wann weg ist — und daraus: **ab wann sind alle da**. Das Kind trägt seinen Stundenplan als festen Wochenplan ein, die Eltern ihre Schichten als Kalenderblatt für vier Wochen. Ein eingetragener Tag sticht den Wochenplan, ein Feiertag hebt ihn also auf, ohne ihn zu löschen. |
-| 🏠 **Familien-Modus fürs Wandtablet** | Ein Tablet im Flur wird zum Familiengerät: dauerhaft angemeldet, aber ohne persönliche Daten. Wer abhakt, tippt kurz auf sein Gesicht — **keine PIN**, und die Punkte landen beim Richtigen. Wer es mit aufs Sofa nimmt, meldet sich an und ist danach wieder im Familien-Modus. |
+| 🏠 **Familien-Modus fürs Wandtablet** | Ein Tablet im Flur wird zum Familiengerät: dauerhaft angemeldet, aber ohne persönliche Daten. Wer abhakt, tippt kurz auf sein Gesicht — **keine PIN**, und die Punkte landen beim Richtigen. Wer es mit aufs Sofa nimmt, meldet sich an und ist danach wieder im Familien-Modus. Punkte vergeben und Aufgaben bestätigen geht hier mit der PIN eines Elternteils — ohne dass jemand angemeldet bleibt. |
 | 📱 **Geräte-Status** | Läuft Plex, Kavita, der NAS? Kachel antippen öffnet die Oberfläche. |
 | ➕ **Ein Plus für alles** | Unten in der Mitte (am Rechner: Taste **N**): Einkauf, Termin, Notiz, Aufgabe oder Essen eintragen, egal auf welcher Seite man gerade ist. Auf dem Handy liegen die wichtigsten Ziele in einer Leiste am unteren Rand — dort, wo der Daumen ist. |
 | ☀️ **Heute auf einen Blick** | Unter der Begrüssung: nächster Termin, das Essen, offene Aufgaben, die Einkaufsliste und ab wann alle zu Hause sind. |
 | 🎛️ **Pro Person** | Jeder ordnet sich die Fenster selbst an (per Ziehen) und blendet aus, was er nicht braucht. Zwei Oberflächen zur Wahl — *Nachtlicht* (offen, mit feinen Linien) und *Glas* (Fenster als milchige Scheiben) — jeweils hell oder dunkel, dazu **sechs Akzentfarben**. |
+| 🇬🇧 **Deutsch oder Englisch** | Pro Gerät umschaltbar, samt Datum, Wetter, Level und Meldungen. Was ihr eintragt, bleibt, wie ihr es geschrieben habt. |
 | 📲 **Wie eine App** | Zum Startbildschirm hinzufügen: eigenes Symbol, keine Browserleiste, Offline-Ansicht. |
 
 ---
+
+## Neu in 2.2
+
+- **Punkte am Wandtablet** mit der PIN eines Elternteils — gilt zwei Minuten, niemand wird angemeldet
+- **Eltern bestätigen** erledigte Aufgaben, bevor es Punkte gibt
+- **Familienziel**: gemeinsam auf einen Pizza-Abend oder den Zoo sparen
+- **Englische Oberfläche**, pro Gerät umschaltbar
 
 ## Neu in 2.0
 
@@ -420,7 +431,7 @@ make up
 make verify
 ```
 
-Erwartet: **68 Prüfungen bestanden.** Wenn hier etwas rot ist, hilft
+Erwartet: **74 Prüfungen bestanden.** Wenn hier etwas rot ist, hilft
 [INSTALL.md](INSTALL.md) weiter.
 
 **Im Browser öffnen** und anmelden. Es sind drei Benutzer angelegt — **Papa**,
@@ -454,6 +465,12 @@ Einstellungen, keine privaten Lesezeichen. Hakt jemand eine
 Aufgabe ab, fragt es kurz **„Wer war das?"** und zeigt die Gesichter. Ein
 Tipp genügt, die Punkte landen beim Richtigen.
 
+Für alles, was Eltern entscheiden — Punkte vergeben oder abziehen, eine
+erledigte Aufgabe bestätigen —, fragt das Tablet nach einem Elternteil:
+Gesicht antippen, PIN eingeben. Die Freigabe gilt zwei Minuten und steht oben
+in der Leiste; ein Tipp darauf beendet sie sofort. Angemeldet wird dabei
+niemand.
+
 Nach fünf Minuten ohne Berührung wird daraus von selbst ein Bilderrahmen.
 Und wer das Tablet mit aufs Sofa nimmt, meldet sich oben rechts an — nach dem
 Abmelden ist es wieder das Familiengerät.
@@ -470,15 +487,19 @@ Safari → Teilen) beziehungsweise „App installieren" (Android: Chrome-Menü).
 
 Damit du nicht enttäuscht wirst:
 
-- **Nur auf Deutsch.** Eine Übersetzungsebene gibt es noch nicht.
+- **Zwei Sprachen: Deutsch und Englisch.** Eine weitere lässt sich ergänzen
+  (siehe [CONTRIBUTING.md](CONTRIBUTING.md#übersetzungen)); was ihr selbst
+  eintragt, übersetzt niemand.
 - **Keine ernsthafte Zugangssicherung.** Vierstellige PIN, sonst nichts. Siehe
   ganz oben.
-- **Am Wandgerät gibt es gar keine PIN.** Wer das Tablet im Flur in der Hand
-  hält, kann Aufgaben für jedes Familienmitglied abhaken und damit Punkte
+- **Abhaken am Wandgerät braucht keine PIN.** Wer das Tablet im Flur in der
+  Hand hält, kann Aufgaben für jedes Familienmitglied abhaken und damit Punkte
   buchen. Das ist Absicht: Ein Kind soll im Vorbeigehen abhaken können, ohne
-  sich anzumelden. Alles, was wehtut — Punkte korrigieren, Benutzer verwalten,
-  PIN ändern — bleibt hinter der Anmeldung. Wer das nicht will, richtet den
-  Familien-Modus einfach nicht ein.
+  sich anzumelden. Wo das zu grosszügig ist, bekommt die Aufgabe *Eltern
+  bestätigen* — dann gibt es die Punkte erst nach einem Blick der Eltern.
+  Punkte von Hand vergeben oder abziehen fragt am Wandgerät nach der PIN
+  eines Elternteils; Benutzer verwalten und PINs ändern bleibt hinter der
+  Anmeldung. Wer das alles nicht will, richtet den Familien-Modus nicht ein.
 - **Offline-Modus und App-Installation brauchen ein Zertifikat, dem das Gerät
   traut.** Über `http://` und eine LAN-Adresse verweigern Browser den Service
   Worker. HTTPS liegt auf Port **8443** bereit, aber das mitgelieferte
@@ -512,7 +533,7 @@ Damit du nicht enttäuscht wirst:
 make setup       Einrichten (einmalig)
 make preflight   Prüfen, ob das Gerät passt (ändert nichts)
 make up          Starten                 make down     Stoppen
-make logs        Logs ansehen            make verify   68 Prüfungen
+make logs        Logs ansehen            make verify   74 Prüfungen
 make backup      Sichern                 make restore  Zurückspielen
 make dev         Entwicklungsmodus mit Hot-Reload
 make clean       Aufräumen
@@ -571,10 +592,10 @@ DOMPurify. Das Backend startet nicht ohne gesetztes `JWT_SECRET`.
 ```
 familien-dashboard/
 ├── backend/internal/     auth · calendar · chores · points · shopping
-│                         meals · rewards · notes · links · devices
+│                         meals · rewards · goals · notes · links · devices
 │                         photos · weather · times · music · files
 │                         backup · config · store
-├── frontend/src/         SvelteKit (Routen, Widgets, Stores)
+├── frontend/src/         SvelteKit (Routen, Widgets, Stores, i18n)
 ├── traefik/              Reverse Proxy
 ├── scripts/              Einrichtung, Sicherung, Tests, Release
 └── backend/data/         ← eure Daten, nie im Repository

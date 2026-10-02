@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n';
   import { goto } from '$app/navigation';
   import { page } from '$app/stores';
   import {
@@ -50,36 +51,36 @@
       name = '';
       vorschlaege = vorschlaege.filter((v) => v.name.toLowerCase() !== text.toLowerCase());
       if (item.existing) {
-        toast(`„${item.name}" steht schon auf der Liste`);
+        toast(t('„{0}" steht schon auf der Liste', [item.name]));
         return;
       }
-      toast(`„${item.name}" steht auf der Liste`, {
+      toast(t('„{0}" steht auf der Liste', [item.name]), {
         ton: 'erfolg',
         aktion: {
-          label: 'Rückgängig',
+          label: t('Rückgängig'),
           run: async () => {
             await shoppingApi.remove(item.id).catch(() => {});
           },
         },
       });
     } catch (e) {
-      toast(e instanceof ApiError ? e.message : 'Konnte nicht hinzufügen', { ton: 'fehler' });
+      toast(e instanceof ApiError ? e.message : t('Konnte nicht hinzufügen'), { ton: 'fehler' });
     } finally {
       busy = false;
     }
   }
 
   const kachelFuer: Record<SchnellZiel, { id: string; label: string }> = {
-    termin: { id: 'calendar', label: 'Kalender' },
-    notiz: { id: 'notes', label: 'Notizen' },
-    aufgabe: { id: 'chores', label: 'Aufgaben' },
+    termin: { id: 'calendar', label: t('Kalender') },
+    notiz: { id: 'notes', label: t('Notizen') },
+    aufgabe: { id: 'chores', label: t('Aufgaben') },
   };
 
   async function oeffne(ziel: SchnellZiel) {
     schnell.offen = false;
     const kachel = kachelFuer[ziel];
     if (layout.isHidden(kachel.id)) {
-      toast(`Die Kachel „${kachel.label}" ist ausgeblendet — unter „Ansicht anpassen" einblenden.`);
+      toast(t('Die Kachel „{0}" ist ausgeblendet — unter „Ansicht anpassen" einblenden.', [kachel.label]));
       return;
     }
     schnell.anfrage = ziel;
@@ -120,23 +121,23 @@
   class="fixed right-6 z-40 hidden h-14 w-14 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-[rgb(var(--akzent-rgb)/0.35)] transition-transform hover:scale-105 active:scale-95 lg:flex
     {player.aktiv ? 'bottom-24' : 'bottom-6'}"
   onclick={() => (schnell.offen = true)}
-  aria-label="Schnell hinzufügen"
-  title="Schnell hinzufügen (Taste N)"
+  aria-label={t('Schnell hinzufügen')}
+  title={t('Schnell hinzufügen (Taste N)')}
 >
   <Plus class="h-7 w-7" />
 </button>
 
-<Modal bind:open={schnell.offen} title="Schnell hinzufügen">
+<Modal bind:open={schnell.offen} title={t('Schnell hinzufügen')}>
   <div class="space-y-5">
     <div>
       <label for="schnell-einkauf" class="mb-1.5 flex items-center gap-2 text-sm font-medium">
-        <ShoppingCart class="h-4 w-4 text-[color:var(--ton-einkaufen)]" /> Auf die Einkaufsliste
+        <ShoppingCart class="h-4 w-4 text-[color:var(--ton-einkaufen)]" /> {t('Auf die Einkaufsliste')}
       </label>
       <div class="flex gap-2">
         <input
           id="schnell-einkauf"
           class="input flex-1"
-          placeholder="Milch, Brot, Waschmittel …"
+          placeholder={t('Milch, Brot, Waschmittel …')}
           bind:value={name}
           maxlength="80"
           onkeydown={onEnter}
@@ -146,13 +147,13 @@
           class="btn-primary shrink-0 px-4"
           onclick={() => hinzufuegen(name)}
           disabled={!name.trim() || busy}
-          aria-label="Hinzufügen"
+          aria-label={t('Hinzufügen')}
         >
           <Plus class="h-5 w-5" />
         </button>
       </div>
       {#if vorschlaege.length > 0}
-        <div class="mt-2.5 flex flex-wrap gap-1.5" aria-label="Häufig gekauft">
+        <div class="mt-2.5 flex flex-wrap gap-1.5" aria-label={t('Häufig gekauft')}>
           {#each vorschlaege as v (v.name)}
             <button class="chip" onclick={() => hinzufuegen(v.name, v.category)} disabled={busy}>
               <Plus class="h-3.5 w-3.5 opacity-60" />
@@ -166,20 +167,20 @@
     <div class="grid grid-cols-2 gap-2">
       <button class="schnell-knopf" onclick={() => oeffne('termin')}>
         <span class="kachel-symbol" style="--ton: var(--ton-kalender)"><CalendarPlus class="h-5 w-5" /></span>
-        Termin
+        {t('Termin')}
       </button>
       <button class="schnell-knopf" onclick={essenPlanen}>
         <span class="kachel-symbol" style="--ton: var(--ton-essen)"><UtensilsCrossed class="h-5 w-5" /></span>
-        Essen planen
+        {t('Essen planen')}
       </button>
       <button class="schnell-knopf" onclick={() => oeffne('notiz')}>
         <span class="kachel-symbol" style="--ton: var(--ton-notizen)"><NotebookPen class="h-5 w-5" /></span>
-        Notiz
+        {t('Notiz')}
       </button>
       {#if admin}
         <button class="schnell-knopf" onclick={() => oeffne('aufgabe')}>
           <span class="kachel-symbol" style="--ton: var(--ton-aufgaben)"><ListPlus class="h-5 w-5" /></span>
-          Aufgabe
+          {t('Aufgabe')}
         </button>
       {/if}
       {#if admin || $session.device}
@@ -191,7 +192,7 @@
           }}
         >
           <span class="kachel-symbol" style="--ton: var(--ton-belohnung)"><Sparkles class="h-5 w-5" /></span>
-          Punkte vergeben oder abziehen
+          {t('Punkte vergeben oder abziehen')}
         </button>
       {/if}
     </div>

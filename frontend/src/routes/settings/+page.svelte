@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t, SPRACHEN, sprache, setzeSprache } from '$lib/i18n';
   import { onMount } from 'svelte';
   import {
     Check, KeyRound, LayoutGrid, Layers, Minus, Monitor, Moon, Palette, Sun, User as UserIcon,
@@ -17,14 +18,14 @@
   let saving = $state(false);
 
   const themes: { value: Theme; label: string; hint: string; icon: typeof Sun }[] = [
-    { value: 'light', label: 'Hell', hint: 'Immer hell', icon: Sun },
-    { value: 'dark', label: 'Dunkel', hint: 'Immer dunkel', icon: Moon },
-    { value: 'system', label: 'System', hint: 'Folgt dem Gerät', icon: Monitor },
+    { value: 'light', label: t('Hell'), hint: t('Immer hell'), icon: Sun },
+    { value: 'dark', label: t('Dunkel'), hint: t('Immer dunkel'), icon: Moon },
+    { value: 'system', label: t('System'), hint: t('Folgt dem Gerät'), icon: Monitor },
   ];
 
   const oberflaechen: { value: Oberflaeche; label: string; hint: string; icon: typeof Sun }[] = [
-    { value: 'nachtlicht', label: 'Nachtlicht', hint: 'Offen, mit feinen Linien', icon: Minus },
-    { value: 'glas', label: 'Glas', hint: 'Fenster als Scheiben', icon: Layers },
+    { value: 'nachtlicht', label: t('Nachtlicht'), hint: t('Offen, mit feinen Linien'), icon: Minus },
+    { value: 'glas', label: t('Glas'), hint: t('Fenster als Scheiben'), icon: Layers },
   ];
 
   const user = $derived($session.user);
@@ -80,7 +81,7 @@
       profileSaved = true;
       setTimeout(() => (profileSaved = false), 3000);
     } catch (e) {
-      profileError = e instanceof ApiError ? e.message : 'Profil konnte nicht gespeichert werden';
+      profileError = e instanceof ApiError ? e.message : t('Profil konnte nicht gespeichert werden');
     } finally {
       savingProfile = false;
     }
@@ -92,15 +93,15 @@
     pinSaved = false;
 
     if (!/^\d{4}$/.test(newPin)) {
-      pinError = 'Die neue PIN muss aus genau 4 Ziffern bestehen';
+      pinError = t('Die neue PIN muss aus genau 4 Ziffern bestehen');
       return;
     }
     if (newPin !== confirmPin) {
-      pinError = 'Die beiden neuen PINs stimmen nicht überein';
+      pinError = t('Die beiden neuen PINs stimmen nicht überein');
       return;
     }
     if (newPin === currentPin) {
-      pinError = 'Die neue PIN entspricht der alten';
+      pinError = t('Die neue PIN entspricht der alten');
       return;
     }
 
@@ -113,7 +114,7 @@
       const me = await authApi.me();
       if (!('device' in me)) session.set(me);
     } catch (e) {
-      pinError = e instanceof ApiError ? e.message : 'Konnte PIN nicht ändern';
+      pinError = e instanceof ApiError ? e.message : t('Konnte PIN nicht ändern');
     } finally {
       saving = false;
     }
@@ -122,15 +123,15 @@
   onMount(() => theme.init());
 </script>
 
-<svelte:head><title>Einstellungen · Familien Dashboard</title></svelte:head>
+<svelte:head><title>{t('Einstellungen · Familien Dashboard')}</title></svelte:head>
 
 <div class="mx-auto max-w-2xl px-4 py-6">
-  <h1 class="seiten-titel mb-6">Einstellungen</h1>
+  <h1 class="seiten-titel mb-6">{t('Einstellungen')}</h1>
 
   {#if user}
     <section class="card mb-4 p-5">
       <h2 class="mb-4 flex items-center gap-2 font-semibold">
-        <UserIcon class="h-5 w-5" /> Mein Profil
+        <UserIcon class="h-5 w-5" /> {t('Mein Profil')}
       </h2>
 
       <form class="space-y-4" onsubmit={saveProfile}>
@@ -142,13 +143,13 @@
             {profileEmoji}
           </span>
           <label class="min-w-0 flex-1 text-sm">
-            Name
+            {t('Name')}
             <input class="input mt-1" bind:value={profileName} maxlength="40" required />
           </label>
         </div>
 
         <div class="text-sm">
-          Avatar
+          {t('Avatar')}
           <div class="mt-1.5 grid grid-cols-10 gap-1">
             {#each emojis as emoji}
               <button
@@ -156,7 +157,7 @@
                 class="flex h-10 items-center justify-center rounded-lg text-xl transition-colors
                   {profileEmoji === emoji ? 'bg-primary/15 ring-2 ring-primary' : 'hover:bg-accent'}"
                 onclick={() => (profileEmoji = emoji)}
-                aria-label="Avatar {emoji}"
+                aria-label={t('Avatar {0}', [emoji])}
                 aria-pressed={profileEmoji === emoji}
               >
                 {emoji}
@@ -166,7 +167,7 @@
         </div>
 
         <div class="text-sm">
-          Farbe
+          {t('Farbe')}
           <div class="mt-1.5 flex flex-wrap gap-2">
             {#each colors as color}
               <button
@@ -175,7 +176,7 @@
                   ? 'scale-110 ring-2 ring-offset-2 ring-offset-card'
                   : ''}"
                 style="background-color: {color}; --tw-ring-color: {color}"
-                aria-label="Farbe {color}"
+                aria-label={t('Farbe {0}', [color])}
                 aria-pressed={profileColor === color}
                 onclick={() => (profileColor = color)}
               ></button>
@@ -190,18 +191,17 @@
         {/if}
         {#if profileSaved}
           <p class="flex items-center gap-2 rounded-lg bg-success/10 px-3 py-2 text-sm text-success">
-            <Check class="h-4 w-4" /> Profil gespeichert
+            <Check class="h-4 w-4" /> {t('Profil gespeichert')}
           </p>
         {/if}
 
         <button class="btn-primary w-full" disabled={!profileChanged || savingProfile}>
-          {savingProfile ? 'Wird gespeichert…' : 'Profil speichern'}
+          {savingProfile ? t('Wird gespeichert…') : t('Profil speichern')}
         </button>
       </form>
 
       <p class="mt-3 text-xs text-muted-foreground">
-        Rolle: {user.role === 'admin' ? 'Administrator' : 'Familienmitglied'} – die ändert
-        nur ein Administrator.
+        {t('Rolle: {0} – die ändert nur ein Administrator.', [user.role === 'admin' ? t('Administrator') : t('Familienmitglied')])}
       </p>
     </section>
   {/if}
@@ -212,9 +212,9 @@
   >
     <LayoutGrid class="h-5 w-5 shrink-0" />
     <span class="min-w-0 flex-1">
-      <span class="block font-semibold">Ansicht anpassen</span>
+      <span class="block font-semibold">{t('Ansicht anpassen')}</span>
       <span class="block text-sm text-muted-foreground">
-        Welche Fenster die Übersicht zeigt und in welcher Reihenfolge
+        {t('Welche Fenster die Übersicht zeigt und in welcher Reihenfolge')}
       </span>
     </span>
     <span class="shrink-0 text-muted-foreground">→</span>
@@ -222,7 +222,7 @@
 
   <section class="card mb-4 p-5">
     <h2 class="mb-4 flex items-center gap-2 font-semibold">
-      <Palette class="h-5 w-5" /> Darstellung
+      <Palette class="h-5 w-5" /> {t('Darstellung')}
     </h2>
     <div class="grid grid-cols-3 gap-2">
       {#each themes as option}
@@ -240,7 +240,7 @@
       {/each}
     </div>
 
-    <h3 class="mb-3 mt-6 text-sm font-medium text-muted-foreground">Oberfläche</h3>
+    <h3 class="mb-3 mt-6 text-sm font-medium text-muted-foreground">{t('Oberfläche')}</h3>
     <div class="grid grid-cols-2 gap-2">
       {#each oberflaechen as option}
         <button
@@ -256,7 +256,22 @@
         </button>
       {/each}
     </div>
-    <h3 class="mb-3 mt-6 text-sm font-medium text-muted-foreground">Akzentfarbe</h3>
+    <h3 class="mb-3 mt-6 text-sm font-medium text-muted-foreground">{t('Sprache')}</h3>
+    <div class="grid grid-cols-2 gap-2">
+      {#each SPRACHEN as option (option.value)}
+        <button
+          class="flex items-center justify-center gap-2 rounded-lg border p-3 text-sm font-medium transition-colors
+            {sprache === option.value ? 'border-primary bg-primary/5' : 'border-border hover:bg-accent'}"
+          onclick={() => setzeSprache(option.value)}
+          aria-pressed={sprache === option.value}
+          lang={option.value}
+        >
+          {option.value === 'de' ? '🇩🇪' : '🇬🇧'} {option.label}
+        </button>
+      {/each}
+    </div>
+
+    <h3 class="mb-3 mt-6 text-sm font-medium text-muted-foreground">{t('Akzentfarbe')}</h3>
     <div class="grid grid-cols-3 gap-2 sm:grid-cols-6">
       {#each AKZENTE as a (a.value)}
         <button
@@ -274,26 +289,24 @@
     </div>
 
     <p class="mt-3 text-[11px] text-muted-foreground">
-      Glas sieht auf einem hellen Hintergrund am besten aus. Auf sehr alten
-      Geräten kann das Weichzeichnen ruckeln — dann lieber Nachtlicht. Farbe,
-      Oberfläche und hell/dunkel gelten nur für dieses Gerät.
+      {t('Glas sieht auf einem hellen Hintergrund am besten aus. Auf sehr alten Geräten kann das Weichzeichnen ruckeln — dann lieber Nachtlicht. Farbe, Oberfläche und hell/dunkel gelten nur für dieses Gerät.')}
     </p>
   </section>
 
   <section class="card p-5">
     <h2 class="mb-4 flex items-center gap-2 font-semibold">
-      <KeyRound class="h-5 w-5" /> PIN ändern
+      <KeyRound class="h-5 w-5" /> {t('PIN ändern')}
     </h2>
 
     {#if user?.pin_is_default}
       <p class="mb-4 rounded-lg bg-amber-500/10 px-3 py-2 text-sm text-amber-700 dark:text-amber-400">
-        Du benutzt noch die Standard-PIN <strong>1234</strong>. Bitte ändere sie.
+        {t('Du benutzt noch die Standard-PIN')} <strong>1234</strong>{t('. Bitte ändere sie.')}
       </p>
     {/if}
 
     <form class="space-y-3" onsubmit={changePin}>
       <label class="block text-sm">
-        Aktuelle PIN
+        {t('Aktuelle PIN')}
         <input
           class="input mt-1 tracking-[0.4em]"
           type="password"
@@ -304,7 +317,7 @@
         />
       </label>
       <label class="block text-sm">
-        Neue PIN
+        {t('Neue PIN')}
         <input
           class="input mt-1 tracking-[0.4em]"
           type="password"
@@ -315,7 +328,7 @@
         />
       </label>
       <label class="block text-sm">
-        Neue PIN wiederholen
+        {t('Neue PIN wiederholen')}
         <input
           class="input mt-1 tracking-[0.4em]"
           type="password"
@@ -331,7 +344,7 @@
       {/if}
       {#if pinSaved}
         <p class="flex items-center gap-2 rounded-lg bg-success/10 px-3 py-2 text-sm text-success">
-          <Check class="h-4 w-4" /> PIN geändert
+          <Check class="h-4 w-4" /> {t('PIN geändert')}
         </p>
       {/if}
 
@@ -339,12 +352,12 @@
         class="btn-primary w-full"
         disabled={saving || !currentPin || !newPin || !confirmPin}
       >
-        PIN speichern
+        {t('PIN speichern')}
       </button>
     </form>
   </section>
 
   <p class="mt-6 text-center text-xs text-muted-foreground">
-    Familien Dashboard · läuft lokal im Heimnetz
+    {t('Familien Dashboard · läuft lokal im Heimnetz')}
   </p>
 </div>

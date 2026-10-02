@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t, tServer } from '$lib/i18n';
   import { format, parseISO } from 'date-fns';
   import type { WeatherData } from '$lib/types';
   import { dauer, fensterSatz, naechstesFenster, zeitpunkt } from '$lib/utils/trockenfenster';
@@ -22,8 +23,8 @@
    */
   const regenSatz = $derived.by(() => {
     const r = weather?.rain;
-    if (r?.now) return r.ends_at ? `Es regnet — trocken ab ${zeitpunkt(r.ends_at)}` : 'Es regnet';
-    if (r?.starts_at) return `Regen ab ${zeitpunkt(r.starts_at)}`;
+    if (r?.now) return r.ends_at ? t('Es regnet — trocken ab {0}', [zeitpunkt(r.ends_at)]) : t('Es regnet');
+    if (r?.starts_at) return t('Regen ab {0}', [zeitpunkt(r.starts_at)]);
     return null;
   });
 
@@ -82,7 +83,7 @@
   <a
     href="/wetter"
     class="flex flex-wrap items-end gap-x-8 gap-y-4 rounded-2xl transition-colors hover:bg-muted/20"
-    title="Wetterdetails und Ort einstellen"
+    title={t('Wetterdetails und Ort einstellen')}
   >
     <!-- Die Temperatur ist die Zahl, die man aus dem Flur noch lesen soll -->
     <div class="flex items-end gap-4">
@@ -99,7 +100,7 @@
           <p class="mt-0.5 text-xs font-light text-sky-300">{regenSatz}</p>
         {/if}
         <p class="mt-0.5 text-xs font-light text-muted-foreground">
-          {current.description} · gefühlt {Math.round(current.feels_like)}°
+          {t('{0} · gefühlt {1}°', [tServer(current.description), Math.round(current.feels_like)])}
         </p>
         <p class="text-xs font-light text-muted-foreground">
           {weather?.location.name ?? ''}
@@ -115,7 +116,7 @@
           class="h-16 w-full"
           preserveAspectRatio="none"
           role="img"
-          aria-label="Temperaturverlauf der nächsten Stunden, nasse Stunden hinterlegt"
+          aria-label={t('Temperaturverlauf der nächsten Stunden, nasse Stunden hinterlegt')}
         >
           <defs>
             <linearGradient id="wetterFlaeche" x1="0" y1="0" x2="0" y2="1">

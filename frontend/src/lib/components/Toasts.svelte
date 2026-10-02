@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n';
   import { Check, CircleAlert, Info, X } from 'lucide-svelte';
   import { toasts } from '$lib/stores/toast.svelte';
 
@@ -14,38 +15,38 @@
   style="bottom: calc(var(--unten-leiste, 0px) + 1rem)"
   aria-live="polite"
 >
-  {#each toasts.liste as t (t.id)}
-    {@const Icon = symbol[t.ton]}
+  {#each toasts.liste as eintrag (eintrag.id)}
+    {@const Icon = symbol[eintrag.ton]}
     <div
       class="pointer-events-auto flex w-full max-w-md animate-slide-up items-center gap-3 rounded-2xl border border-[color:var(--haarlinie-stark)] bg-card/95 px-4 py-3 text-sm shadow-xl backdrop-blur"
       role="status"
     >
       <span
         class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full
-          {t.ton === 'erfolg'
+          {eintrag.ton === 'erfolg'
           ? 'bg-success/15 text-success'
-          : t.ton === 'fehler'
+          : eintrag.ton === 'fehler'
             ? 'bg-destructive/15 text-destructive'
             : 'bg-primary/15 text-primary'}"
       >
         <Icon class="h-4 w-4" />
       </span>
-      <span class="min-w-0 flex-1">{t.text}</span>
-      {#if t.aktion}
+      <span class="min-w-0 flex-1">{eintrag.text}</span>
+      {#if eintrag.aktion}
         <button
           class="shrink-0 rounded-lg px-2 py-1 font-semibold text-primary hover:bg-primary/10"
           onclick={async () => {
-            toasts.weg(t.id);
-            await t.aktion?.run();
+            toasts.weg(eintrag.id);
+            await eintrag.aktion?.run();
           }}
         >
-          {t.aktion.label}
+          {eintrag.aktion.label}
         </button>
       {/if}
       <button
         class="shrink-0 text-muted-foreground hover:text-foreground"
-        onclick={() => toasts.weg(t.id)}
-        aria-label="Schließen"
+        onclick={() => toasts.weg(eintrag.id)}
+        aria-label={t('Schließen')}
       >
         <X class="h-4 w-4" />
       </button>

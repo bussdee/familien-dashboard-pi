@@ -12,6 +12,85 @@ Deshalb gibt es hier **keine 1.4.5**. Sie stand eine Weile in dieser Datei,
 wurde aber nie veröffentlicht: Auf GitHub steht v1.4.4, und der Pi läuft
 darauf. Was unter 1.4.5 gesammelt war, ist in 1.5.0 aufgegangen.
 
+## [2.2.0] — 2026-10-02
+
+Mehr Mitsprache für die Eltern, ohne dass das Wandtablet seine Einfachheit
+verliert. Dazu etwas, worauf die ganze Familie hinarbeitet, und eine
+englische Oberfläche. Alles läuft weiter nur bei euch zu Hause — kein
+neuer Dienst, kein Konto, nichts, was das Haus verlässt.
+
+Bestehende Installationen übernehmen alles ohne Zutun: Die neue Tabelle und
+die zwei neuen Spalten legt das Backend beim ersten Start selbst an.
+
+### Hinzugefügt
+
+- **Punkte am Wandtablet — mit der PIN eines Elternteils.** Bisher ging
+  Punkte vergeben und abziehen nur angemeldet, also nur am eigenen Handy.
+  Am Tablet in der Küche steht jetzt ebenfalls der Stern oben. Vor dem
+  Buchen fragt es nach einem Elternteil: Gesicht antippen, PIN eingeben.
+
+  - Die Freigabe gilt **zwei Minuten** und nur auf diesem Tablet. Oben
+    steht, wer freigegeben hat und wie lange noch; ein Tipp darauf beendet
+    sie sofort.
+  - Es wird **niemand angemeldet**. Die PIN geht mit jeder Buchung mit und
+    wird jedes Mal geprüft, sie liegt nur im Arbeitsspeicher der Seite. Nach
+    dem Neuladen ist sie weg.
+  - Es gilt dieselbe Sperre wie bei der Anmeldung: nach fünf falschen
+    Versuchen fünf Minuten Pause. Die PIN eines Kindes öffnet nichts.
+  - Alles andere aus der Verwaltung — Personen, PINs, Geräte, Sicherung —
+    bleibt am Tablet zu, auch mit Freigabe.
+
+- **Eltern bestätigen erledigte Aufgaben.** Bei einer Aufgabe lässt sich
+  *Eltern bestätigen* ankreuzen, etwa für *Zimmer aufräumen*. Hakt ein Kind
+  sie ab, gilt sie als erledigt, die Punkte kommen aber erst, wenn ein
+  Elternteil drübergeschaut hat.
+
+  - In der Aufgaben-Kachel erscheint oben **Zu bestätigen**, mit ✓ und ✗.
+    Am Tablet fragt es dafür nach der Eltern-PIN.
+  - **✓** bucht die Punkte — mit dem Tag, an dem die Aufgabe erledigt wurde,
+    damit sie in der richtigen Woche zählen.
+  - **✗** macht die Aufgabe wieder fällig: „Noch einmal ran."
+  - Hakt ein Elternteil selbst ab, gibt es nichts zu bestätigen.
+  - Aufgaben ohne das Kreuz verhalten sich wie bisher.
+
+- **Familienziel.** Eine neue Kachel: Die Familie spart gemeinsam auf etwas
+  — einen Pizza-Abend, einen Ausflug in den Zoo. Ein Elternteil legt Ziel
+  und Punktzahl fest, danach zählt **jeder verdiente Punkt aller** dazu.
+
+  - Der Balken zeigt in den Farben der Personen, wer wie viel beigetragen
+    hat. Es geht ums Gemeinsame, nicht um die Rangliste.
+  - **Abzüge zählen nicht dagegen.** Ein Abzug für Streit soll nicht den
+    Zoobesuch der Geschwister kosten.
+  - Ist das Ziel erreicht, sagt die Kachel es laut. Ein Tipp auf
+    *Eingelöst* legt es zu den erreichten Zielen; danach kann ein neues
+    kommen. Ein Ziel, das nicht mehr passt, lässt sich auch aufgeben.
+  - Das Guthaben für Belohnungen bleibt davon unberührt.
+
+- **Englische Oberfläche.** *Einstellungen → Sprache* oder im Menü: Deutsch
+  oder English, pro Gerät, so wie hell und dunkel. Ohne Wahl entscheidet die
+  Sprache des Geräts. Übersetzt sind alle Seiten, Daten und Uhrzeiten
+  (britisches Format, 24 Stunden), Wetterbeschreibungen, Level, Abzeichen
+  und die Meldungen des Servers. Was ihr selbst eintragt — Aufgaben,
+  Gerichte, Einkäufe — bleibt natürlich, wie es ist.
+
+  `npm run check` prüft jetzt, dass jeder Text eine Übersetzung hat. Wie man
+  Texte hinzufügt, steht in [CONTRIBUTING.md](CONTRIBUTING.md#übersetzungen).
+
+- **Englische Anleitung:** [README.en.md](README.en.md).
+
+- **Der Rauchtest prüft das Wandgerät:** ohne Eltern-PIN abgewiesen, mit PIN
+  gebucht und zurückgenommen, die Verwaltung bleibt zu. Dazu Familienziel und
+  die Liste der zu bestätigenden Aufgaben. 74 Prüfungen statt 68.
+
+### Behoben
+
+- **Abhaken hätte sich mit der neuen Bestätigung aufgehängt.** Gefunden vor
+  dem ersten Lauf, nicht bei euch: Die Rolle der Person wurde innerhalb der
+  Buchung über einen zweiten Weg zur Datenbank gelesen. Die Datenbank hat
+  absichtlich nur eine Verbindung — die Abfrage hätte ewig auf sich selbst
+  gewartet. Sie läuft jetzt innerhalb derselben Buchung, und Tests mit
+  echter Datenbank decken alle drei Abläufe ab.
+
 ## [2.1.0] — 2026-10-02
 
 ### Behoben

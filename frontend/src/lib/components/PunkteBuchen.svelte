@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n';
   import { untrack } from 'svelte';
   import { Minus, Plus, Sparkles } from 'lucide-svelte';
   import { ApiError, adminApi } from '$lib/api';
@@ -21,8 +22,8 @@
    */
   const BETRAEGE = [5, 10, 20, 50];
   const GRUENDE = {
-    plus: ['Toll geholfen', 'Ohne Aufforderung', 'Hausaufgaben', 'Lieb zu den Geschwistern', 'Zimmer aufgeräumt'],
-    minus: ['Aufgabe vergessen', 'Streit', 'Nicht aufgeräumt', 'Verklickt'],
+    plus: [t('Toll geholfen'), t('Ohne Aufforderung'), t('Hausaufgaben'), t('Lieb zu den Geschwistern'), t('Zimmer aufgeräumt')],
+    minus: [t('Aufgabe vergessen'), t('Streit'), t('Nicht aufgeräumt'), t('Verklickt')],
   };
 
   let auswahl = $state<number[]>([]);
@@ -61,13 +62,15 @@
 
   const namen = $derived.by(() => {
     const n = gewaehlt.map((p) => p.name);
-    if (n.length <= 2) return n.join(' und ');
-    return `${n.slice(0, -1).join(', ')} und ${n[n.length - 1]}`;
+    if (n.length <= 2) return n.join(t(' und '));
+    return t('{0} und {1}', [n.slice(0, -1).join(', '), n[n.length - 1]]);
   });
   const knopf = $derived(
     gewaehlt.length === 0
-      ? 'Wer bekommt die Punkte?'
-      : `${mitVorzeichen(wert)} ${plus ? 'für' : 'bei'} ${namen}`,
+      ? t('Wer bekommt die Punkte?')
+      : plus
+        ? t('{0} für {1}', [mitVorzeichen(wert), namen])
+        : t('{0} bei {1}', [mitVorzeichen(wert), namen]),
   );
 
   function umschalten(id: number) {
@@ -82,7 +85,7 @@
     event.preventDefault();
     if (!bereit) return;
     // Am Wandgerät erst die Eltern-PIN; überall sonst ist das ein Durchwinken.
-    if (!(await eltern.brauche('Punkte vergeben oder abziehen'))) return;
+    if (!(await eltern.brauche(t('Punkte vergeben oder abziehen')))) return;
     arbeitet = true;
     fehler = '';
     const text = grund.trim();
@@ -96,31 +99,34 @@
       punkte.offen = false;
       punkte.gebucht++;
       await board.refresh().catch(() => {});
-      toast(`${mitVorzeichen(wert)} ${plus ? 'für' : 'bei'} ${wer}${text ? ` · ${text}` : ''}`, {
+      const satz = plus
+        ? t('{0} für {1}', [mitVorzeichen(wert), wer])
+        : t('{0} bei {1}', [mitVorzeichen(wert), wer]);
+      toast(text ? `${satz} · ${text}` : satz, {
         ton: plus ? 'erfolg' : 'info',
         aktion: {
-          label: 'Rückgängig',
+          label: t('Rückgängig'),
           run: async () => {
-            if (!(await eltern.brauche('Buchung zurücknehmen'))) return;
+            if (!(await eltern.brauche(t('Buchung zurücknehmen')))) return;
             await Promise.all(res.ids.map((id) => adminApi.revokePoints(id).catch(() => {})));
             punkte.gebucht++;
             await board.refresh().catch(() => {});
-            toast('Buchung zurückgenommen');
+            toast(t('Buchung zurückgenommen'));
           },
         },
       });
     } catch (e) {
-      fehler = e instanceof ApiError ? e.message : 'Buchung fehlgeschlagen';
+      fehler = e instanceof ApiError ? e.message : t('Buchung fehlgeschlagen');
     } finally {
       arbeitet = false;
     }
   }
 </script>
 
-<Modal bind:open={punkte.offen} title="Punkte vergeben">
+<Modal bind:open={punkte.offen} title={t('Punkte vergeben')}>
   <form class="space-y-5" onsubmit={buchen}>
     <!-- Erst die Richtung: zwei grosse Knöpfe statt eines Minuszeichens. -->
-    <div class="grid grid-cols-2 gap-2 rounded-2xl bg-muted/50 p-1" role="radiogroup" aria-label="Gutschreiben oder abziehen">
+    <div class="grid grid-cols-2 gap-2 rounded-2xl bg-muted/50 p-1" role="radiogroup" aria-label={t('Gutschreiben oder abziehen')}>
       <button
         type="button"
         role="radio"
@@ -129,7 +135,7 @@
           {plus ? 'bg-card text-success shadow-sm' : 'text-muted-foreground'}"
         onclick={() => (punkte.modus = 'plus')}
       >
-        <Plus class="h-5 w-5" /> Gutschreiben
+        <Plus class="h-5 w-5" /> {t('Gutschreiben')}
       </button>
       <button
         type="button"
@@ -139,16 +145,16 @@
           {!plus ? 'bg-card text-destructive shadow-sm' : 'text-muted-foreground'}"
         onclick={() => (punkte.modus = 'minus')}
       >
-        <Minus class="h-5 w-5" /> Abziehen
+        <Minus class="h-5 w-5" /> {t('Abziehen')}
       </button>
     </div>
 
     <div>
       <div class="mb-2 flex items-center justify-between">
-        <p class="text-sm font-medium">Für wen?</p>
+        <p class="text-sm font-medium">{t('Für wen?')}</p>
         {#if personen.length > 1}
           <button type="button" class="text-xs font-medium text-primary" onclick={alle}>
-            {alleGewaehlt ? 'Keinen' : 'Alle'}
+            {alleGewaehlt ? t('Keinen') : t('Alle')}
           </button>
         {/if}
       </div>
@@ -176,7 +182,7 @@
     </div>
 
     <div>
-      <p class="mb-2 text-sm font-medium">Wie viele?</p>
+      <p class="mb-2 text-sm font-medium">{t('Wie viele?')}</p>
       <div class="flex flex-wrap items-center gap-1.5">
         {#each BETRAEGE as b (b)}
           <button
@@ -196,15 +202,15 @@
           inputmode="numeric"
           pattern="[0-9]*"
           maxlength="5"
-          placeholder="Andere"
-          aria-label="Andere Anzahl"
+          placeholder={t('Andere')}
+          aria-label={t('Andere Anzahl')}
           bind:value={eigener}
         />
       </div>
     </div>
 
     <div>
-      <p class="mb-2 text-sm font-medium">Wofür? <span class="font-normal text-muted-foreground">(steht im Verlauf)</span></p>
+      <p class="mb-2 text-sm font-medium">{t('Wofür?')} <span class="font-normal text-muted-foreground">{t('(steht im Verlauf)')}</span></p>
       <div class="mb-2 flex flex-wrap gap-1.5">
         {#each GRUENDE[punkte.modus] as g (g)}
           <button type="button" class="chip" aria-pressed={grund === g} onclick={() => (grund = grund === g ? '' : g)}>
@@ -212,7 +218,7 @@
           </button>
         {/each}
       </div>
-      <input class="input" placeholder="Oder eigener Grund" bind:value={grund} maxlength="80" />
+      <input class="input" placeholder={t('Oder eigener Grund')} bind:value={grund} maxlength="80" />
     </div>
 
     {#if fehler}
@@ -225,11 +231,11 @@
       disabled={!bereit}
     >
       {#if plus}<Sparkles class="h-5 w-5" />{:else}<Minus class="h-5 w-5" />{/if}
-      <span class="truncate">{arbeitet ? 'Wird gebucht…' : knopf}</span>
+      <span class="truncate">{arbeitet ? t('Wird gebucht…') : knopf}</span>
     </button>
     {#if !plus}
       <p class="-mt-3 text-center text-[11px] text-muted-foreground">
-        Ein Abzug senkt Punkte und Guthaben. Verklickt? Danach unten „Rückgängig".
+        {t('Ein Abzug senkt Punkte und Guthaben. Verklickt? Danach unten „Rückgängig".')}
       </p>
     {/if}
   </form>

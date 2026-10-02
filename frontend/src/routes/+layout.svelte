@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n';
   import '../app.css';
   import { onMount } from 'svelte';
   import { page } from '$app/stores';
@@ -140,7 +141,7 @@
           <div
             class="w-8 h-8 rounded-full border-2 border-border border-t-primary animate-spin"
           ></div>
-          <p class="text-sm">Lade Dashboard…</p>
+          <p class="text-sm">{t('Lade Dashboard…')}</p>
         </div>
       </div>
     {/if}

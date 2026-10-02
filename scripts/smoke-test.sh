@@ -5,7 +5,7 @@ set -uo pipefail
 
 BASE="${BASE:-http://localhost:${HTTP_PORT:-8088}}"
 JAR="$(mktemp)"
-trap 'rm -f "$JAR" "$JAR.txt"' EXIT
+trap 'rm -f "$JAR" "$JAR.txt" "$JAR.geraet"' EXIT
 
 pass=0
 fail=0
@@ -102,7 +102,8 @@ else
             music:/api/music/status musikordner:/api/music/browse \
             zeiten:/api/times wochenplan:/api/times/weekly \
             essen:/api/meals gerichte:/api/meals/recent \
-            belohnungen:/api/rewards vorschlaege:/api/shopping/suggestions; do
+            belohnungen:/api/rewards vorschlaege:/api/shopping/suggestions \
+            ziel:/api/goal bestaetigen:/api/chores/pending; do
     name="${ep%%:*}"; path="${ep#*:}"
     status="$(code -b "$JAR" "$BASE$path")"
     # Wetter darf 503 sein, wenn der Server (noch) kein Internet hatte.
@@ -193,6 +194,30 @@ for e in json.load(sys.stdin):
       check "Buchung zurücknehmen ($wert)" 204 "$(code -b "$JAR" -X DELETE "$BASE/api/admin/points/$B_ID")"
     fi
   done
+
+  echo ""
+  echo "Wandgerät mit Eltern-PIN"
+  # Ein eigener Keks-Topf, damit die Anmeldung oben unberührt bleibt. Der
+  # Gerätemodus ist nur ein Cookie — auf dem Server bleibt nichts zurück.
+  # Eine falsche PIN wird bewusst nicht probiert: Sie zählte als Fehlversuch
+  # und sperrte nach fünf Läufen den Elternteil aus.
+  curl -s -o /dev/null -c "$JAR.geraet" -X POST -H 'Content-Type: application/json' \
+    -d "{\"user_id\":${USER_ID:-1},\"pin\":\"$PIN\"}" "$BASE/api/auth/login"
+  curl -s -o /dev/null -b "$JAR.geraet" -c "$JAR.geraet" -X POST "$BASE/api/auth/device"
+  check "Punkte am Gerät ohne PIN (403)"   403 \
+    "$(code -b "$JAR.geraet" -X POST -H 'Content-Type: application/json' \
+       -d "{\"user_ids\":[${USER_ID:-1}],\"points\":5}" "$BASE/api/admin/points")"
+  G_BUCHUNG="$(curl -s -b "$JAR.geraet" -X POST -H 'Content-Type: application/json' \
+    -H "X-Eltern-Id: ${USER_ID:-1}" -H "X-Eltern-Pin: $PIN" \
+    -d "{\"user_ids\":[${USER_ID:-1}],\"points\":5,\"note\":\"Smoke-Test\"}" "$BASE/api/admin/points")"
+  G_ID="$(printf '%s' "$G_BUCHUNG" | python3 -c 'import json,sys; print(json.load(sys.stdin)["ids"][0])' 2>/dev/null)"
+  check "Punkte am Gerät mit Eltern-PIN"    ja "$([ -n "$G_ID" ] && echo ja || echo nein)"
+  if [ -n "$G_ID" ]; then
+    check "… und wieder zurücknehmen"       204 \
+      "$(code -b "$JAR.geraet" -H "X-Eltern-Id: ${USER_ID:-1}" -H "X-Eltern-Pin: $PIN" \
+         -X DELETE "$BASE/api/admin/points/$G_ID")"
+  fi
+  check "Verwaltung bleibt am Gerät zu"     403 "$(code -b "$JAR.geraet" "$BASE/api/admin/users")"
 
   echo ""
   echo "Dateien"

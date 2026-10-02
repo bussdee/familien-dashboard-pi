@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t, intlLocale } from '$lib/i18n';
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import { Check, Clock, Copy, Plus, Trash2, X } from 'lucide-svelte';
@@ -22,14 +23,14 @@
   type Reiter = 'wochenplan' | 'kalender';
   let reiter = $state<Reiter>('kalender');
 
-  const WOCHENTAGE = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag'];
+  const WOCHENTAGE = [t('Montag'), t('Dienstag'), t('Mittwoch'), t('Donnerstag'), t('Freitag'), t('Samstag'), t('Sonntag')];
   const ARTEN: { wert: TimeKind; label: string }[] = [
-    { wert: 'arbeit', label: 'Arbeit' },
-    { wert: 'schule', label: 'Schule' },
-    { wert: 'frei', label: 'Frei' },
-    { wert: 'urlaub', label: 'Urlaub' },
-    { wert: 'krank', label: 'Krank' },
-    { wert: 'sonstiges', label: 'Sonstiges' },
+    { wert: 'arbeit', label: t('Arbeit') },
+    { wert: 'schule', label: t('Schule') },
+    { wert: 'frei', label: t('Frei') },
+    { wert: 'urlaub', label: t('Urlaub') },
+    { wert: 'krank', label: t('Krank') },
+    { wert: 'sonstiges', label: t('Sonstiges') },
   ];
 
   let personen = $state<TimePerson[]>([]);
@@ -69,10 +70,10 @@
       });
       muster = await timesApi.weekly();
       neuNotiz = '';
-      hinweis = 'Eingetragen';
+      hinweis = t('Eingetragen');
       setTimeout(() => (hinweis = ''), 3000);
     } catch (e) {
-      fehler = e instanceof ApiError ? e.message : 'Speichern fehlgeschlagen';
+      fehler = e instanceof ApiError ? e.message : t('Speichern fehlgeschlagen');
     } finally {
       busy = false;
     }
@@ -80,14 +81,14 @@
 
   async function musterEntfernen(m: WeeklyTime) {
     const ok = await confirmAction({
-      title: `${WOCHENTAGE[m.weekday]} ${m.start_time}–${m.end_time} entfernen?`,
+      title: t('{0} {1}–{2} entfernen?', [WOCHENTAGE[m.weekday], m.start_time, m.end_time]),
     });
     if (!ok) return;
     try {
       await timesApi.removeWeekly(m.id);
       muster = await timesApi.weekly();
     } catch (e) {
-      fehler = e instanceof ApiError ? e.message : 'Löschen fehlgeschlagen';
+      fehler = e instanceof ApiError ? e.message : t('Löschen fehlgeschlagen');
     }
   }
 
@@ -152,7 +153,7 @@
       for (const t of tage) if (neu[t].length === 0) neu[t] = [leer()];
       entwurf = neu;
     } catch (e) {
-      fehler = e instanceof ApiError ? e.message : 'Zeiten konnten nicht geladen werden';
+      fehler = e instanceof ApiError ? e.message : t('Zeiten konnten nicht geladen werden');
     }
   }
 
@@ -191,7 +192,7 @@
       setTimeout(() => (hinweis = ''), 4000);
       await tageLaden();
     } catch (e) {
-      fehler = e instanceof ApiError ? e.message : 'Speichern fehlgeschlagen';
+      fehler = e instanceof ApiError ? e.message : t('Speichern fehlgeschlagen');
     } finally {
       busy = false;
     }
@@ -201,8 +202,8 @@
     const d = new Date(iso + 'T12:00:00');
     // Ohne Punkt und Komma hinter dem Wochentag — auf einem Handy zählt
     // jedes Zeichen in dieser Spalte.
-    const tag = d.toLocaleDateString('de-DE', { weekday: 'short' }).replace('.', '');
-    return `${tag} ${d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' })}`;
+    const tag = d.toLocaleDateString(intlLocale, { weekday: 'short' }).replace('.', '');
+    return `${tag} ${d.toLocaleDateString(intlLocale, { day: '2-digit', month: '2-digit' })}`;
   };
 
   const istWochenende = (iso: string) => {
@@ -228,7 +229,7 @@
         fuer = ich?.id ?? personen[0]?.id ?? 0;
         await tageLaden();
       } catch (e) {
-        fehler = e instanceof ApiError ? e.message : 'Laden fehlgeschlagen';
+        fehler = e instanceof ApiError ? e.message : t('Laden fehlgeschlagen');
       } finally {
         loading = false;
       }
@@ -246,15 +247,14 @@
   });
 </script>
 
-<svelte:head><title>Zeiten · Familien Dashboard</title></svelte:head>
+<svelte:head><title>{t('Zeiten · Familien Dashboard')}</title></svelte:head>
 
 <div class="mx-auto max-w-4xl px-4 py-6">
   <h1 class="mb-2 flex items-center gap-2 text-2xl font-semibold">
-    <Clock class="h-6 w-6" /> Arbeit & Schule
+    <Clock class="h-6 w-6" /> {t('Arbeit & Schule')}
   </h1>
   <p class="mb-6 text-sm text-muted-foreground">
-    Wer wann weg ist. Daraus rechnet die Übersicht aus, ab wann alle zu Hause
-    sind.
+    {t('Wer wann weg ist. Daraus rechnet die Übersicht aus, ab wann alle zu Hause sind.')}
   </p>
 
   {#if fehler}
@@ -268,11 +268,11 @@
   {/if}
 
   {#if loading}
-    <p class="py-10 text-center text-sm text-muted-foreground">Lade…</p>
+    <p class="py-10 text-center text-sm text-muted-foreground">{t('Lade…')}</p>
   {:else}
     {#if bearbeitbar.length > 1}
       <label class="mb-4 block text-sm">
-        Für wen
+        {t('Für wen')}
         <select class="input mt-1" bind:value={fuer}>
           {#each bearbeitbar as p (p.id)}
             <option value={p.id}>{p.avatar_emoji} {p.name}</option>
@@ -288,7 +288,7 @@
           : 'text-muted-foreground'}"
         onclick={() => (reiter = 'kalender')}
       >
-        Nächste vier Wochen
+        {t('Nächste vier Wochen')}
       </button>
       <button
         class="flex-1 rounded-lg px-3 py-2 text-sm transition-colors {reiter === 'wochenplan'
@@ -296,46 +296,43 @@
           : 'text-muted-foreground'}"
         onclick={() => (reiter = 'wochenplan')}
       >
-        Fester Wochenplan
+        {t('Fester Wochenplan')}
       </button>
     </div>
 
     {#if reiter === 'wochenplan'}
       <section class="card p-5">
         <p class="mb-4 text-sm text-muted-foreground">
-          Für alles, was jede Woche gleich ist — ein Stundenplan zum Beispiel.
-          Gilt, bis er geändert wird. <strong>Ein eingetragener Tag im
-          Kalender sticht den Wochenplan</strong>, ein Feiertag hebt ihn also
-          auf, ohne ihn zu löschen.
+          {t('Für alles, was jede Woche gleich ist — ein Stundenplan zum Beispiel. Gilt, bis er geändert wird.')} <strong>{t('Ein eingetragener Tag im Kalender sticht den Wochenplan')}</strong>{t(', ein Feiertag hebt ihn also auf, ohne ihn zu löschen.')}
         </p>
 
         <form class="mb-5 grid gap-2 sm:grid-cols-[1fr_auto_auto_auto]" onsubmit={musterAnlegen}>
-          <select class="input min-w-0" bind:value={neuerTag} aria-label="Wochentag">
+          <select class="input min-w-0" bind:value={neuerTag} aria-label={t('Wochentag')}>
             {#each WOCHENTAGE as tag, i (tag)}
               <option value={i}>{tag}</option>
             {/each}
           </select>
-          <input class="input min-w-0 sm:w-28" type="time" bind:value={neuVon} aria-label="Von" />
-          <input class="input min-w-0 sm:w-28" type="time" bind:value={neuBis} aria-label="Bis" />
-          <select class="input min-w-0 sm:w-36" bind:value={neuArt} aria-label="Art">
+          <input class="input min-w-0 sm:w-28" type="time" bind:value={neuVon} aria-label={t('Von')} />
+          <input class="input min-w-0 sm:w-28" type="time" bind:value={neuBis} aria-label={t('Bis')} />
+          <select class="input min-w-0 sm:w-36" bind:value={neuArt} aria-label={t('Art')}>
             {#each ARTEN.filter((a) => a.wert === 'schule' || a.wert === 'arbeit' || a.wert === 'sonstiges') as a (a.wert)}
               <option value={a.wert}>{a.label}</option>
             {/each}
           </select>
           <input
             class="input sm:col-span-3"
-            placeholder="Notiz, z. B. „mit Bus 4“ (optional)"
+            placeholder={t('Notiz, z. B. „mit Bus 4“ (optional)')}
             bind:value={neuNotiz}
             maxlength="60"
           />
           <button class="btn-primary sm:col-span-1" disabled={busy}>
-            <Plus class="h-4 w-4" /> Eintragen
+            <Plus class="h-4 w-4" /> {t('Eintragen')}
           </button>
         </form>
 
         {#if meinMuster.length === 0}
           <p class="py-6 text-center text-sm text-muted-foreground">
-            Noch kein fester Wochenplan.
+            {t('Noch kein fester Wochenplan.')}
           </p>
         {:else}
           <ul class="space-y-1.5">
@@ -350,7 +347,7 @@
                 <button
                   class="touch-target shrink-0 text-muted-foreground hover:text-destructive"
                   onclick={() => musterEntfernen(m)}
-                  aria-label="Eintrag entfernen"
+                  aria-label={t('Eintrag entfernen')}
                 >
                   <Trash2 class="h-4 w-4" />
                 </button>
@@ -362,29 +359,25 @@
     {:else}
       <section class="card p-5">
         <p class="mb-4 text-sm text-muted-foreground">
-          Vier Wochen am Stück. Leere Felder heissen „nichts Besonderes" —
-          dann gilt der Wochenplan, falls es einen gibt. Gespeichert wird
-          alles auf einmal.
+          {t('Vier Wochen am Stück. Leere Felder heissen „nichts Besonderes" — dann gilt der Wochenplan, falls es einen gibt. Gespeichert wird alles auf einmal.')}
           <br /><br />
-          <strong>Nachtschicht:</strong> Endet die Zeit vor ihrem Anfang, läuft
-          sie über Mitternacht. 20:00 bis 07:00 ist also eine Nachtschicht.
-          <strong>Teildienst:</strong> Mit „+ zweite Zeit an diesem Tag" bekommt
-          ein Tag mehrere Blöcke.
+          <strong>{t('Nachtschicht:')}</strong> {t('Endet die Zeit vor ihrem Anfang, läuft sie über Mitternacht. 20:00 bis 07:00 ist also eine Nachtschicht.')}
+          <strong>{t('Teildienst:')}</strong> {t('Mit „+ zweite Zeit an diesem Tag" bekommt ein Tag mehrere Blöcke.')}
         </p>
 
         {#each [0, 1, 2, 3] as woche (woche)}
           <div class="mb-4">
             <div class="mb-1.5 flex items-center justify-between">
               <h2 class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Woche {woche + 1}
+                {t('Woche {0}', [woche + 1])}
               </h2>
               {#if woche > 0}
                 <button
                   class="btn-ghost px-2 text-xs text-muted-foreground"
                   onclick={() => wocheKopieren(woche)}
-                  title="Die Woche darüber übernehmen"
+                  title={t('Die Woche darüber übernehmen')}
                 >
-                  <Copy class="h-3.5 w-3.5" /> wie Woche {woche}
+                  <Copy class="h-3.5 w-3.5" /> {t('wie Woche {0}', [woche])}
                 </button>
               {/if}
             </div>
@@ -414,18 +407,18 @@
                         class="input min-w-0 flex-1 py-1.5 text-sm"
                         type="time"
                         bind:value={block.von}
-                        aria-label="Von am {tag}, Block {i + 1}"
+                        aria-label={t('Von am {0}, Block {1}', [tag, i + 1])}
                       />
                       <input
                         class="input min-w-0 flex-1 py-1.5 text-sm"
                         type="time"
                         bind:value={block.bis}
-                        aria-label="Bis am {tag}, Block {i + 1}"
+                        aria-label={t('Bis am {0}, Block {1}', [tag, i + 1])}
                       />
                       <select
                         class="input w-full shrink-0 py-1.5 text-sm sm:w-28"
                         bind:value={block.art}
-                        aria-label="Art am {tag}, Block {i + 1}"
+                        aria-label={t('Art am {0}, Block {1}', [tag, i + 1])}
                       >
                         {#each ARTEN as a (a.wert)}
                           <option value={a.wert}>{a.label}</option>
@@ -438,7 +431,7 @@
                           type="button"
                           class="touch-target shrink-0 text-muted-foreground hover:text-destructive"
                           onclick={() => blockWeg(tag, i)}
-                          aria-label="Block {i + 1} am {tag} entfernen"
+                          aria-label={t('Block {0} am {1} entfernen', [i + 1, tag])}
                         >
                           <X class="h-4 w-4" />
                         </button>
@@ -452,7 +445,7 @@
                     -->
                     {#if ueberMitternacht(block)}
                       <p class="ml-[5.5rem] mt-0.5 text-[11px] text-primary sm:ml-28">
-                        Nachtschicht — endet am nächsten Tag um {block.bis}
+                        {t('Nachtschicht — endet am nächsten Tag um {0}', [block.bis])}
                       </p>
                     {/if}
                   {/each}
@@ -462,7 +455,7 @@
                     class="ml-[5.5rem] mt-1 text-[11px] text-muted-foreground hover:text-foreground sm:ml-28"
                     onclick={() => blockDazu(tag)}
                   >
-                    + zweite Zeit an diesem Tag
+                    {t('+ zweite Zeit an diesem Tag')}
                   </button>
                 </div>
               {/each}
@@ -472,7 +465,7 @@
 
         <button class="btn-primary w-full" onclick={speichern} disabled={busy}>
           <Check class="h-4 w-4" />
-          {busy ? 'Speichere…' : 'Vier Wochen speichern'}
+          {busy ? t('Speichere…') : t('Vier Wochen speichern')}
         </button>
       </section>
     {/if}

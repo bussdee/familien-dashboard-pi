@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n';
   import { onMount } from 'svelte';
   import { RefreshCw } from 'lucide-svelte';
 
@@ -63,9 +64,9 @@
   >
     <RefreshCw class="h-5 w-5 shrink-0 text-primary" />
     <p class="min-w-0 flex-1 text-sm">
-      <span class="font-medium">Neue Version verfügbar</span>
-      <span class="block text-xs text-muted-foreground">Neu laden, um sie zu benutzen.</span>
+      <span class="font-medium">{t('Neue Version verfügbar')}</span>
+      <span class="block text-xs text-muted-foreground">{t('Neu laden, um sie zu benutzen.')}</span>
     </p>
-    <button class="btn-primary shrink-0 px-3 text-sm" onclick={reload}>Neu laden</button>
+    <button class="btn-primary shrink-0 px-3 text-sm" onclick={reload}>{t('Neu laden')}</button>
   </div>
 {/if}

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t, intlLocale } from '$lib/i18n';
   import { onMount } from 'svelte';
   import { Clock, House, Pencil } from 'lucide-svelte';
   import { timesApi } from '$lib/api';
@@ -23,7 +24,7 @@
     (tag?.blocks ?? []).filter((b) => ['arbeit', 'schule', 'sonstiges'].includes(b.kind));
 
   const kurz = (iso: string) =>
-    new Date(iso + 'T12:00:00').toLocaleDateString('de-DE', { weekday: 'short' });
+    new Date(iso + 'T12:00:00').toLocaleDateString(intlLocale, { weekday: 'short' });
 
   /**
    * Wie eine Zeit dasteht. Bei einer Nachtschicht ist die nackte Angabe
@@ -31,7 +32,7 @@
    * Tag. Deshalb steht dazu, wohin sie reicht.
    */
   const spanne = (b: TimeBlock) => {
-    if (!b.start_time || !b.end_time) return 'den ganzen Tag';
+    if (!b.start_time || !b.end_time) return t('den ganzen Tag');
     if (b.continues_tomorrow) return `ab ${b.start_time}, bis morgen ${b.end_time}`;
     if (b.from_yesterday) return `seit gestern, bis ${b.end_time}`;
     return `${b.start_time}–${b.end_time}`;
@@ -58,14 +59,13 @@
 
 {#snippet zeile()}
   {#if loading}
-    Lade…
+    {t('Lade…')}
   {:else if unterwegs(heute).length === 0}
-    Heute sind alle da
+    {t('Heute sind alle da')}
   {:else if heute?.all_home_from}
-    Ab {heute.all_home_from} sind alle da
+    {t('Ab {0} sind alle da', [heute.all_home_from])}
   {:else}
-    {unterwegs(heute).length}
-    {unterwegs(heute).length === 1 ? 'Person' : 'Personen'} unterwegs
+    {unterwegs(heute).length === 1 ? t('1 Person unterwegs') : t('{0} Personen unterwegs', [unterwegs(heute).length])}
   {/if}
 {/snippet}
 
@@ -73,13 +73,13 @@
   <!-- Eintragen gehört einer Person. Am Wandgerät führt der Weg nur in eine
        Sperre, deshalb dort kein Knopf. -->
   {#if !$session.device}
-    <a class="btn-ghost px-2 text-muted-foreground" href="/zeiten" aria-label="Zeiten eintragen">
+    <a class="btn-ghost px-2 text-muted-foreground" href="/zeiten" aria-label={t('Zeiten eintragen')}>
       <Pencil class="h-4 w-4" />
     </a>
   {/if}
 {/snippet}
 
-<Kachel ton="var(--ton-zeiten)" titel="Arbeit & Schule" icon={Clock} {zeile} {aktionen}>
+<Kachel ton="var(--ton-zeiten)" titel={t('Arbeit & Schule')} icon={Clock} {zeile} {aktionen}>
   {#if loading}
     <div class="space-y-2">
       {#each Array(3) as _, i (i)}
@@ -89,14 +89,14 @@
   {:else if (daten?.days ?? []).every((t) => unterwegs(t).length === 0)}
     <KachelLeer
       icon={House}
-      titel="Keine Zeiten eingetragen"
+      titel={t('Keine Zeiten eingetragen')}
       hinweis={$session.device
-        ? 'Wer seinen Stundenplan oder seine Schichten einträgt, sieht hier, wann alle da sind.'
-        : 'Trag deinen Stundenplan oder deine Schichten ein — dann steht hier, ab wann alle da sind.'}
+        ? t('Wer seinen Stundenplan oder seine Schichten einträgt, sieht hier, wann alle da sind.')
+        : t('Trag deinen Stundenplan oder deine Schichten ein — dann steht hier, ab wann alle da sind.')}
     >
       {#snippet aktion()}
         {#if !$session.device}
-          <a href="/zeiten" class="btn-outline text-sm">Zeiten eintragen</a>
+          <a href="/zeiten" class="btn-outline text-sm">{t('Zeiten eintragen')}</a>
         {/if}
       {/snippet}
     </KachelLeer>
@@ -115,8 +115,8 @@
             <span class="min-w-0 flex-1">
               <span class="block truncate text-sm font-medium">{b.user_name}</span>
               <span class="block truncate text-xs text-muted-foreground">
-                {b.kind === 'schule' ? 'Schule' : b.kind === 'arbeit' ? 'Arbeit' : 'Unterwegs'}
-                {#if b.continues_tomorrow}· Nachtschicht{/if}
+                {b.kind === 'schule' ? t('Schule') : b.kind === 'arbeit' ? t('Arbeit') : t('Unterwegs')}
+                {#if b.continues_tomorrow}{t('· Nachtschicht')}{/if}
                 {#if b.note}· {b.note}{/if}
               </span>
             </span>
@@ -126,14 +126,14 @@
       </ul>
     {:else}
       <p class="rounded-lg bg-success/10 px-3 py-2.5 text-sm text-success">
-        Heute sind alle da.
+        {t('Heute sind alle da.')}
       </p>
     {/if}
 
     {#if heute?.all_home_from}
       <p class="mt-3 flex items-center gap-2 rounded-lg bg-primary/10 px-3 py-2.5 text-sm text-primary">
         <House class="h-4 w-4 shrink-0" />
-        Ab <strong>{heute.all_home_from}</strong> sind heute alle zu Hause.
+        Ab <strong>{heute.all_home_from}</strong> {t('sind heute alle zu Hause.')}
       </p>
     {:else if unterwegs(heute).some((b) => b.continues_tomorrow)}
       <!--
@@ -143,7 +143,7 @@
       -->
       <p class="mt-3 flex items-center gap-2 rounded-lg bg-muted/40 px-3 py-2.5 text-sm text-muted-foreground">
         <House class="h-4 w-4 shrink-0" />
-        Heute kommt nicht mehr jeder zurück — Nachtschicht.
+        {t('Heute kommt nicht mehr jeder zurück — Nachtschicht.')}
       </p>
     {/if}
 

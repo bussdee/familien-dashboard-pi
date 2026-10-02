@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t, dfLocale } from '$lib/i18n';
   import { onMount } from 'svelte';
   import { page } from '$app/stores';
   import { replaceState } from '$app/navigation';
@@ -6,7 +7,6 @@
     ChevronLeft, ChevronRight, Plus, ShoppingCart, Trash2, UtensilsCrossed,
   } from 'lucide-svelte';
   import { addDays, addWeeks, format, isToday, parseISO, startOfWeek } from 'date-fns';
-  import { de } from 'date-fns/locale';
   import { ApiError, mealsApi } from '$lib/api';
   import { confirmAction } from '$lib/stores/confirm.svelte';
   import { toast } from '$lib/stores/toast.svelte';
@@ -31,10 +31,10 @@
   const wochenLabel = $derived.by(() => {
     const heute = startOfWeek(new Date(), { weekStartsOn: 1 });
     const diff = Math.round((woche.getTime() - heute.getTime()) / (7 * 86_400_000));
-    if (diff === 0) return 'Diese Woche';
-    if (diff === 1) return 'Nächste Woche';
-    if (diff === -1) return 'Letzte Woche';
-    return `${format(woche, 'd. MMM', { locale: de })} – ${format(addDays(woche, 6), 'd. MMM', { locale: de })}`;
+    if (diff === 0) return t('Diese Woche');
+    if (diff === 1) return t('Nächste Woche');
+    if (diff === -1) return t('Letzte Woche');
+    return `${format(woche, t('d. MMM'), { locale: dfLocale })} – ${format(addDays(woche, 6), t('d. MMM'), { locale: dfLocale })}`;
   });
 
   const geplant = $derived(tage.filter((d) => essenAm(d)).length);
@@ -45,7 +45,7 @@
     try {
       meals = (await mealsApi.list(tagKey(woche), 7)).meals;
     } catch (e) {
-      fehler = e instanceof ApiError ? e.message : 'Der Essensplan konnte nicht geladen werden.';
+      fehler = e instanceof ApiError ? e.message : t('Der Essensplan konnte nicht geladen werden.');
     } finally {
       laden = false;
     }
@@ -98,7 +98,7 @@
       else toast(`${m.title} eingetragen`, { ton: 'erfolg' });
       void mealsApi.recent().then((r) => (recent = r)).catch(() => {});
     } catch (e) {
-      toast(e instanceof ApiError ? e.message : 'Konnte nicht speichern', { ton: 'fehler' });
+      toast(e instanceof ApiError ? e.message : t('Konnte nicht speichern'), { ton: 'fehler' });
     } finally {
       speichert = false;
     }
@@ -106,9 +106,9 @@
 
   async function loeschen() {
     const ok = await confirmAction({
-      title: 'Eintrag entfernen?',
-      message: 'Der Tag ist danach wieder frei.',
-      confirmLabel: 'Entfernen',
+      title: t('Eintrag entfernen?'),
+      message: t('Der Tag ist danach wieder frei.'),
+      confirmLabel: t('Entfernen'),
     });
     if (!ok) return;
     try {
@@ -116,22 +116,22 @@
       meals = meals.filter((m) => m.day !== tag);
       offen = false;
     } catch (e) {
-      toast(e instanceof ApiError ? e.message : 'Konnte nicht löschen', { ton: 'fehler' });
+      toast(e instanceof ApiError ? e.message : t('Konnte nicht löschen'), { ton: 'fehler' });
     }
   }
 
   async function aufDieListe(day: string) {
     try {
       const r = await mealsApi.toShopping(day);
-      if (r.added === 0) toast('Alle Zutaten stehen schon auf der Einkaufsliste');
+      if (r.added === 0) toast(t('Alle Zutaten stehen schon auf der Einkaufsliste'));
       else
         toast(
-          `${r.added} ${r.added === 1 ? 'Zutat' : 'Zutaten'} auf der Einkaufsliste` +
-            (r.skipped > 0 ? ` · ${r.skipped} standen schon drauf` : ''),
+          t('{0} {1} auf der Einkaufsliste', [r.added, r.added === 1 ? t('Zutat') : t('Zutaten')]) +
+            (r.skipped > 0 ? t(' · {0} standen schon drauf', [r.skipped]) : ''),
           { ton: 'erfolg' },
         );
     } catch (e) {
-      toast(e instanceof ApiError ? e.message : 'Konnte nicht übernehmen', { ton: 'fehler' });
+      toast(e instanceof ApiError ? e.message : t('Konnte nicht übernehmen'), { ton: 'fehler' });
     }
   }
 
@@ -149,22 +149,22 @@
   });
 </script>
 
-<svelte:head><title>Essensplan · Familien Dashboard</title></svelte:head>
+<svelte:head><title>{t('Essensplan · Familien Dashboard')}</title></svelte:head>
 
 <div class="mx-auto w-full max-w-3xl px-4 py-5 sm:py-7">
   <header class="mb-5 flex flex-wrap items-end justify-between gap-3">
     <div>
       <p class="text-[11px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
-        {geplant} von 7 Tagen geplant
+        {t('{0} von 7 Tagen geplant', [geplant])}
       </p>
-      <h1 class="seiten-titel mt-1">Was gibt's?</h1>
+      <h1 class="seiten-titel mt-1">{t('Was gibt\'s?')}</h1>
     </div>
     <div class="flex items-center gap-1">
-      <button class="btn-ghost rounded-full px-2" onclick={() => blaettern(-1)} aria-label="Woche zurück">
+      <button class="btn-ghost rounded-full px-2" onclick={() => blaettern(-1)} aria-label={t('Woche zurück')}>
         <ChevronLeft class="h-5 w-5" />
       </button>
       <span class="min-w-[8.5rem] text-center text-sm font-medium">{wochenLabel}</span>
-      <button class="btn-ghost rounded-full px-2" onclick={() => blaettern(1)} aria-label="Woche vor">
+      <button class="btn-ghost rounded-full px-2" onclick={() => blaettern(1)} aria-label={t('Woche vor')}>
         <ChevronRight class="h-5 w-5" />
       </button>
     </div>
@@ -189,7 +189,7 @@
             {heute ? 'bg-primary text-primary-foreground' : 'bg-muted'}"
         >
           <span class="text-[10px] font-semibold uppercase tracking-wider opacity-80">
-            {format(d, 'EEE', { locale: de })}
+            {format(d, 'EEE', { locale: dfLocale })}
           </span>
           <span class="font-display text-xl leading-none">{format(d, 'd')}</span>
         </div>
@@ -198,16 +198,16 @@
           {#if m}
             <p class="truncate text-base font-semibold">{m.title}</p>
             <p class="truncate text-xs text-muted-foreground">
-              {#if heute}<span class="font-medium text-primary">Heute</span>{/if}
+              {#if heute}<span class="font-medium text-primary">{t('Heute')}</span>{/if}
               {#if m.note}{heute ? ' · ' : ''}{m.note}{/if}
               {#if m.ingredients.length > 0}
                 {heute || m.note ? ' · ' : ''}{m.ingredients.length}
-                {m.ingredients.length === 1 ? 'Zutat' : 'Zutaten'}
+                {m.ingredients.length === 1 ? t('Zutat') : t('Zutaten')}
               {/if}
             </p>
           {:else}
             <p class="flex items-center gap-1.5 text-sm text-muted-foreground">
-              <Plus class="h-4 w-4" /> {heute ? 'Heute noch nichts geplant' : 'Noch nichts geplant'}
+              <Plus class="h-4 w-4" /> {heute ? t('Heute noch nichts geplant') : t('Noch nichts geplant')}
             </p>
           {/if}
         </button>
@@ -216,8 +216,8 @@
           <button
             class="touch-target shrink-0 rounded-xl text-muted-foreground hover:bg-accent hover:text-foreground"
             onclick={() => aufDieListe(m.day)}
-            aria-label="Zutaten für {m.title} auf die Einkaufsliste"
-            title="Zutaten auf die Einkaufsliste"
+            aria-label={t('Zutaten für {0} auf die Einkaufsliste', [m.title])}
+            title={t('Zutaten auf die Einkaufsliste')}
           >
             <ShoppingCart class="h-5 w-5" />
           </button>
@@ -230,8 +230,7 @@
     <p class="mt-6 flex items-start gap-3 rounded-2xl bg-muted/50 p-4 text-sm text-muted-foreground">
       <UtensilsCrossed class="mt-0.5 h-5 w-5 shrink-0" />
       <span>
-        Tippe auf einen Tag und trag ein, was es gibt. Mit Zutaten wandert der
-        Einkauf dafür mit einem Tipp auf die Einkaufsliste — ohne Doppelte.
+        {t('Tippe auf einen Tag und trag ein, was es gibt. Mit Zutaten wandert der Einkauf dafür mit einem Tipp auf die Einkaufsliste — ohne Doppelte.')}
       </span>
     </p>
   {/if}
@@ -239,14 +238,14 @@
 
 <Modal
   bind:open={offen}
-  title={tag ? format(parseISO(tag), 'EEEE, d. MMMM', { locale: de }) : 'Essen'}
+  title={tag ? format(parseISO(tag), t('EEEE, d. MMMM'), { locale: dfLocale }) : t('Essen')}
 >
   <form class="space-y-3" onsubmit={(e) => speichern(e)}>
-    <input class="input" placeholder="Was gibt es? z. B. Spaghetti" bind:value={entwurf.title} maxlength="80" />
+    <input class="input" placeholder={t('Was gibt es? z. B. Spaghetti')} bind:value={entwurf.title} maxlength="80" />
 
     {#if recent.length > 0}
       <div>
-        <p class="mb-1.5 text-xs text-muted-foreground">Schon mal gekocht</p>
+        <p class="mb-1.5 text-xs text-muted-foreground">{t('Schon mal gekocht')}</p>
         <div class="flex flex-wrap gap-1.5">
           {#each recent.slice(0, 10) as r (r.title)}
             <button
@@ -262,10 +261,10 @@
       </div>
     {/if}
 
-    <input class="input" placeholder="Notiz (optional) — z. B. Oma kommt" bind:value={entwurf.note} maxlength="500" />
+    <input class="input" placeholder={t('Notiz (optional) — z. B. Oma kommt')} bind:value={entwurf.note} maxlength="500" />
 
     <label class="block text-xs text-muted-foreground">
-      Zutaten — eine pro Zeile oder mit Komma getrennt
+      {t('Zutaten — eine pro Zeile oder mit Komma getrennt')}
       <textarea
         class="input mt-1 min-h-[7rem] resize-y"
         placeholder={'Spaghetti\nHackfleisch\nTomaten'}
@@ -275,12 +274,12 @@
 
     <div class="flex flex-wrap gap-2 pt-1">
       {#if vorhanden}
-        <button type="button" class="btn-outline px-3 text-destructive" onclick={loeschen} aria-label="Eintrag entfernen">
+        <button type="button" class="btn-outline px-3 text-destructive" onclick={loeschen} aria-label={t('Eintrag entfernen')}>
           <Trash2 class="h-4 w-4" />
         </button>
       {/if}
       <button class="btn-primary flex-1" disabled={!entwurf.title.trim() || speichert}>
-        Speichern
+        {t('Speichern')}
       </button>
     </div>
     {#if zutatenListe().length > 0}
@@ -290,7 +289,7 @@
         disabled={!entwurf.title.trim() || speichert}
         onclick={() => speichern(undefined, true)}
       >
-        <ShoppingCart class="h-4 w-4" /> Speichern und Zutaten auf die Liste
+        <ShoppingCart class="h-4 w-4" /> {t('Speichern und Zutaten auf die Liste')}
       </button>
     {/if}
   </form>

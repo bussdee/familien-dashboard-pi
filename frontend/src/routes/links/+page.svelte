@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n';
   import { onMount } from 'svelte';
   import {
     ExternalLink, Link as LinkIcon, Pencil, Pin, PinOff, Plus, Search, Trash2, Users, X,
@@ -23,7 +24,7 @@
       title: '',
       url: '',
       description: '',
-      category: 'Sonstiges',
+      category: t('Sonstiges'),
       emoji: '🔗',
       pinned: false,
       shared: false,
@@ -46,7 +47,7 @@
   const grouped = $derived.by(() => {
     const byCategory = new Map<string, Link[]>();
     for (const link of filtered) {
-      const key = link.category || 'Sonstiges';
+      const key = link.category || t('Sonstiges');
       const bucket = byCategory.get(key);
       if (bucket) bucket.push(link);
       else byCategory.set(key, [link]);
@@ -68,7 +69,7 @@
       links = data.links;
       suggested = data.suggested;
     } catch (e) {
-      error = e instanceof ApiError ? e.message : 'Links konnten nicht geladen werden';
+      error = e instanceof ApiError ? e.message : t('Links konnten nicht geladen werden');
     } finally {
       loading = false;
     }
@@ -112,7 +113,7 @@
       editingId = null;
       draft = emptyDraft();
     } catch (e) {
-      error = e instanceof ApiError ? e.message : 'Link konnte nicht gespeichert werden';
+      error = e instanceof ApiError ? e.message : t('Link konnte nicht gespeichert werden');
     }
   }
 
@@ -121,18 +122,18 @@
       const updated = await linksApi.togglePin(link.id);
       links = links.map((l) => (l.id === updated.id ? updated : l));
     } catch (e) {
-      error = e instanceof ApiError ? e.message : 'Konnte nicht anpinnen';
+      error = e instanceof ApiError ? e.message : t('Konnte nicht anpinnen');
     }
   }
 
   async function remove(link: Link) {
-    const ok = await confirmAction({ title: `„${link.title}“ löschen?` });
+    const ok = await confirmAction({ title: t('„{0}“ löschen?', [link.title]) });
     if (!ok) return;
     try {
       await linksApi.remove(link.id);
       links = links.filter((l) => l.id !== link.id);
     } catch (e) {
-      error = e instanceof ApiError ? e.message : 'Konnte nicht löschen';
+      error = e instanceof ApiError ? e.message : t('Konnte nicht löschen');
     }
   }
 
@@ -148,16 +149,16 @@
   onMount(load);
 </script>
 
-<svelte:head><title>Links · Familien Dashboard</title></svelte:head>
+<svelte:head><title>{t('Links · Familien Dashboard')}</title></svelte:head>
 
 <div class="mx-auto max-w-3xl px-4 py-5">
   <header class="mb-5 flex items-start justify-between gap-3">
     <div>
       <h1 class="flex items-center gap-2 text-2xl font-semibold">
-        <LinkIcon class="h-6 w-6" /> Links
+        <LinkIcon class="h-6 w-6" /> {t('Links')}
       </h1>
       <p class="text-sm text-muted-foreground">
-        Deine Lesezeichen. Angepinnte erscheinen auf der Übersicht.
+        {t('Deine Lesezeichen. Angepinnte erscheinen auf der Übersicht.')}
       </p>
     </div>
     <button class="btn-primary shrink-0 px-3" onclick={() => (showForm ? (showForm = false) : startNew())}>
@@ -172,33 +173,33 @@
   {#if showForm}
     <form class="card mb-4 space-y-3 p-4" onsubmit={save}>
       <div class="flex gap-2">
-        <select class="input w-20 shrink-0 text-center text-xl" bind:value={draft.emoji} aria-label="Symbol">
+        <select class="input w-20 shrink-0 text-center text-xl" bind:value={draft.emoji} aria-label={t('Symbol')}>
           {#each emojis as emoji}<option value={emoji}>{emoji}</option>{/each}
         </select>
-        <input class="input flex-1" placeholder="Name des Links" bind:value={draft.title} maxlength="80" />
+        <input class="input flex-1" placeholder={t('Name des Links')} bind:value={draft.title} maxlength="80" />
       </div>
 
       <input
         class="input"
-        placeholder="Adresse, z. B. wetter.orf.at"
+        placeholder={t('Adresse, z. B. wetter.orf.at')}
         bind:value={draft.url}
         inputmode="url"
         autocapitalize="off"
         spellcheck="false"
       />
       <p class="text-xs text-muted-foreground">
-        „https://" darf fehlen – das ergänzen wir automatisch.
+        {t('„https://" darf fehlen – das ergänzen wir automatisch.')}
       </p>
 
-      <input class="input" placeholder="Notiz (optional)" bind:value={draft.description} maxlength="200" />
+      <input class="input" placeholder={t('Notiz (optional)')} bind:value={draft.description} maxlength="200" />
 
       <label class="block text-sm">
-        Kategorie
+        {t('Kategorie')}
         <input
           class="input mt-1"
           list="link-categories"
           bind:value={draft.category}
-          placeholder="Sonstiges"
+          placeholder={t('Sonstiges')}
           maxlength="40"
         />
         <datalist id="link-categories">
@@ -209,16 +210,16 @@
       <div class="flex flex-wrap gap-4 text-sm">
         <label class="flex items-center gap-2">
           <input type="checkbox" class="h-4 w-4 rounded" bind:checked={draft.pinned} />
-          Auf der Übersicht anzeigen
+          {t('Auf der Übersicht anzeigen')}
         </label>
         <label class="flex items-center gap-2">
           <input type="checkbox" class="h-4 w-4 rounded" bind:checked={draft.shared} />
-          Für die ganze Familie
+          {t('Für die ganze Familie')}
         </label>
       </div>
 
       <button class="btn-primary w-full" disabled={!draft.title.trim() || !draft.url.trim()}>
-        {editingId !== null ? 'Änderungen speichern' : 'Link speichern'}
+        {editingId !== null ? t('Änderungen speichern') : t('Link speichern')}
       </button>
     </form>
   {/if}
@@ -226,7 +227,7 @@
   {#if links.length > 3}
     <div class="relative mb-4">
       <Search class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-      <input class="input pl-9" placeholder="Links durchsuchen" bind:value={search} />
+      <input class="input pl-9" placeholder={t('Links durchsuchen')} bind:value={search} />
     </div>
   {/if}
 
@@ -235,15 +236,15 @@
   {:else if links.length === 0}
     <section class="card p-8 text-center">
       <LinkIcon class="mx-auto mb-3 h-10 w-10 text-muted-foreground opacity-40" />
-      <p class="font-medium">Noch keine Links</p>
+      <p class="font-medium">{t('Noch keine Links')}</p>
       <p class="mt-1 text-sm text-muted-foreground">
-        Sammle hier, was du regelmäßig brauchst – Schulportal, Streaming, Bank.
+        {t('Sammle hier, was du regelmäßig brauchst – Schulportal, Streaming, Bank.')}
       </p>
-      <button class="btn-primary mt-4" onclick={startNew}>Ersten Link anlegen</button>
+      <button class="btn-primary mt-4" onclick={startNew}>{t('Ersten Link anlegen')}</button>
     </section>
   {:else if filtered.length === 0}
     <p class="py-8 text-center text-sm text-muted-foreground">
-      Nichts gefunden für „{search}".
+      {t('Nichts gefunden für „{0}".', [search])}
     </p>
   {:else}
     <div class="space-y-5">
@@ -278,7 +279,7 @@
                     </span>
                     {#if !link.editable && link.owner_name}
                       <span class="block text-[11px] text-muted-foreground">
-                        geteilt von {link.owner_name}
+                        {t('geteilt von {0}', [link.owner_name])}
                       </span>
                     {/if}
                   </span>
@@ -289,8 +290,8 @@
                     <button
                       class="touch-target {link.pinned ? 'text-primary' : 'text-muted-foreground'}"
                       onclick={() => togglePin(link)}
-                      aria-label={link.pinned ? 'Von der Übersicht nehmen' : 'Auf der Übersicht anzeigen'}
-                      title={link.pinned ? 'Von der Übersicht nehmen' : 'Auf der Übersicht anzeigen'}
+                      aria-label={link.pinned ? t('Von der Übersicht nehmen') : t('Auf der Übersicht anzeigen')}
+                      title={link.pinned ? t('Von der Übersicht nehmen') : t('Auf der Übersicht anzeigen')}
                     >
                       {#if link.pinned}<PinOff class="h-4 w-4" />{:else}<Pin class="h-4 w-4" />{/if}
                     </button>
@@ -304,7 +305,7 @@
                     <button
                       class="touch-target text-muted-foreground hover:text-destructive"
                       onclick={() => remove(link)}
-                      aria-label="{link.title} löschen"
+                      aria-label={t('{0} löschen', [link.title])}
                     >
                       <Trash2 class="h-4 w-4" />
                     </button>

@@ -1,3 +1,4 @@
+import { t, tServer } from '$lib/i18n';
 import { browser } from '$app/environment';
 import { goto } from '$app/navigation';
 import type {
@@ -61,14 +62,15 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   try {
     res = await fetch(`${BASE}${path}`, { ...init, headers, credentials: 'same-origin' });
   } catch {
-    throw new ApiError(0, 'Keine Verbindung zum Server');
+    throw new ApiError(0, t('Keine Verbindung zum Server'));
   }
 
   if (!res.ok) {
-    let message = `Fehler ${res.status}`;
+    let message = t('Fehler {0}', [res.status]);
     try {
       const body = await res.json();
-      if (body?.message) message = body.message;
+      // Der Server spricht Deutsch; tServer übersetzt, was es kennt.
+      if (body?.message) message = tServer(body.message);
     } catch {
       /* a plain-text or empty error body is fine */
     }
@@ -406,12 +408,12 @@ function uploadMitFortschritt<T>(
         resolve(payload as T);
       } else {
         const message =
-          (payload as { message?: string } | null)?.message ?? `Fehler ${xhr.status}`;
+          tServer((payload as { message?: string } | null)?.message ?? '') || t('Fehler {0}', [xhr.status]);
         reject(new ApiError(xhr.status, message));
       }
     };
-    xhr.onerror = () => reject(new ApiError(0, 'Upload fehlgeschlagen'));
-    xhr.onabort = () => reject(new ApiError(0, 'Upload abgebrochen'));
+    xhr.onerror = () => reject(new ApiError(0, t('Upload fehlgeschlagen')));
+    xhr.onabort = () => reject(new ApiError(0, t('Upload abgebrochen')));
 
     xhr.send(body);
   });
