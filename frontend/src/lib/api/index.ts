@@ -146,11 +146,15 @@ export const adminApi = {
     request<Activity[]>(
       `/admin/points?limit=${limit}${userId ? `&user_id=${userId}` : ''}`,
     ),
-  /** Positive adds a bonus, negative takes points back off. */
-  adjustPoints: (userId: number, points: number, note: string) =>
-    request<{ user_id: number; points: number; note: string }>('/admin/points', {
+  /**
+   * Positive adds a bonus, negative takes points back off. Mehrere Personen
+   * werden in einem Rutsch gebucht — alle oder keiner. Die Antwort nennt die
+   * neuen Einträge, damit sich die Buchung zurücknehmen lässt.
+   */
+  adjustPoints: (userIds: number[], points: number, note: string) =>
+    request<{ user_ids: number[]; ids: number[]; points: number; note: string }>('/admin/points', {
       method: 'POST',
-      ...json({ user_id: userId, points, note }),
+      ...json({ user_ids: userIds, points, note }),
     }),
   /** Removes one entry; a chore entry also becomes due again. */
   revokePoints: (id: number) => request<void>(`/admin/points/${id}`, { method: 'DELETE' }),

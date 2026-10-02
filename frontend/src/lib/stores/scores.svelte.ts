@@ -67,3 +67,16 @@ export const sourceLabels: Record<string, { label: string; emoji: string }> = {
   shopping: { label: 'Einkauf', emoji: '🛒' },
   bonus: { label: 'Bonus', emoji: '🎁' },
 };
+
+/**
+ * Wie ein Eintrag heisst. Eine manuelle Buchung mit Minus ist kein „Bonus" —
+ * das stand bis 2.0 so im Verlauf, neben einer roten Zahl.
+ */
+export function quelle(item: { source: string; points: number }): { label: string; emoji: string } {
+  if (item.source === 'bonus' && item.points < 0) return { label: 'Abzug', emoji: '➖' };
+  return sourceLabels[item.source] ?? { label: item.source, emoji: '•' };
+}
+
+/** „+10" oder „−10" — mit echtem Minuszeichen statt „+-10". */
+export const mitVorzeichen = (punkte: number) =>
+  punkte > 0 ? `+${punkte}` : punkte < 0 ? `−${Math.abs(punkte)}` : '0';

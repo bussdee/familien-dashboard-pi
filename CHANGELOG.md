@@ -12,6 +12,61 @@ Deshalb gibt es hier **keine 1.4.5**. Sie stand eine Weile in dieser Datei,
 wurde aber nie veröffentlicht: Auf GitHub steht v1.4.4, und der Pi läuft
 darauf. Was unter 1.4.5 gesammelt war, ist in 1.5.0 aufgegangen.
 
+## [2.1.0] — 2026-10-02
+
+### Behoben
+
+- **Punkte liessen sich nicht mehr von Hand vergeben oder abziehen.** Das
+  Formular gab es noch, aber es war praktisch nicht mehr zu erreichen. Drei
+  Gründe kamen zusammen:
+
+  - Mit 2.0 ist die *Verwaltung* aus der Kopfleiste ins Menü gewandert. Wer
+    sie oben suchte, wo sie seit 1.0 stand, fand sie nicht mehr. Das war
+    mein Fehler.
+  - Abziehen hiess: eine **negative Zahl** eintippen. Viele Handy-Tastaturen
+    zeigen im Zahlenfeld gar kein Minus.
+  - Die Verwaltung lud alles in einem Rutsch. Schlug ein einziger Teil fehl,
+    etwa die Liste der Sicherungen, blieb die **Personenauswahl leer** — ohne
+    Meldung. Punkte liessen sich dann niemandem zuordnen.
+
+  Jeder Teil der Verwaltung lädt jetzt für sich und sagt, was gefehlt hat.
+
+- **Ein Abzug stand in der Rangliste als „+-10".** Vor jeder Zahl stand fest
+  ein Plus. Jetzt steht dort „−10", in Rot, mit einem Minus davor. Im Verlauf
+  heisst ein manueller Abzug ausserdem „Abzug" statt „Bonus".
+
+- **Die Monatswertung blieb nach einer Buchung stehen**, bis man die Seite neu
+  lud. Sie zieht jetzt mit.
+
+### Hinzugefügt
+
+- **Ein eigenes Fenster „Punkte vergeben".** Statt einer Zahl mit Vorzeichen:
+
+  - zwei grosse Knöpfe, **Gutschreiben** oder **Abziehen** — die Zahl ist
+    immer positiv,
+  - **Gesichter** statt einer Auswahlliste, und **mehrere auf einmal**:
+    „Alle +10, weil der Garten fertig ist" ist eine Buchung, nicht drei,
+  - **Beträge zum Antippen** (5, 10, 20, 50) und ein Feld für andere,
+  - **Gründe zum Antippen** — *Toll geholfen*, *Hausaufgaben*, *Streit*,
+    *Aufgabe vergessen* — oder ein eigener; er steht danach im Verlauf,
+  - **Rückgängig** direkt nach dem Buchen, falls man sich verklickt hat.
+
+  Mehrere Personen werden in einem Zug gebucht: alle oder keiner. Eine halbe
+  Buchung kann im Verlauf nicht stehen bleiben.
+
+- **Überall dort, wo man es sucht.** Für Eltern öffnet sich das Fenster
+
+  - über den **Stern oben in der Kopfleiste**, auf jeder Seite,
+  - in der **Rangliste** über *Punkte vergeben* und über **+ und − in jeder
+    Zeile** — die Person ist dann schon ausgewählt,
+  - über das **Plus unten** (*Punkte vergeben oder abziehen*),
+  - in der **Verwaltung**, wie bisher.
+
+  Die Verwaltung selbst steht als Schild-Symbol ebenfalls wieder oben.
+
+- **Der Rauchtest bucht einmal plus und einmal minus** und nimmt beides
+  wieder zurück. 68 Prüfungen statt 64.
+
 ## [2.0.2] — 2026-09-28
 
 ### Behoben
@@ -833,6 +888,7 @@ Erste öffentliche Fassung.
 
 [2.0.2]: https://github.com/bussdee/familien-dashboard-pi/releases/tag/v2.0.2
 [2.0.1]: https://github.com/bussdee/familien-dashboard-pi/releases/tag/v2.0.1
+[2.1.0]: https://github.com/bussdee/familien-dashboard-pi/releases/tag/v2.1.0
 [2.0.0]: https://github.com/bussdee/familien-dashboard-pi/releases/tag/v2.0.0
 [1.4.5]: https://github.com/bussdee/familien-dashboard-pi/releases/tag/v1.4.5
 [1.4.4]: https://github.com/bussdee/familien-dashboard-pi/releases/tag/v1.4.4

@@ -1,9 +1,10 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, untrack } from 'svelte';
   import { formatDistanceToNow, parseISO } from 'date-fns';
   import { de } from 'date-fns/locale';
-  import { CalendarRange, Flame, ShoppingCart, Sparkles, Star, Trophy } from 'lucide-svelte';
-  import { board, sourceLabels } from '$lib/stores/scores.svelte';
+  import { CalendarRange, Flame, Minus, Plus, ShoppingCart, Sparkles, Star, Trophy } from 'lucide-svelte';
+  import { board, mitVorzeichen, quelle } from '$lib/stores/scores.svelte';
+  import { punkte } from '$lib/stores/punkte.svelte';
   import { scoreApi } from '$lib/api';
   import { session } from '$lib/stores';
   import LevelBar from '$lib/components/LevelBar.svelte';
@@ -44,6 +45,7 @@
   const stage = $derived([top3[1], top3[0], top3[2]].filter(Boolean));
   const rest = $derived(podium.slice(3));
   const me = $derived(board.for($session.user?.id));
+  const admin = $derived($session.user?.role === 'admin');
 
   const medals = ['🥇', '🥈', '🥉'];
   const heights = { 1: 'h-24', 2: 'h-16', 3: 'h-12' } as const;
@@ -64,6 +66,15 @@
       // Ohne Monatsranglisten bleibt der Rest der Seite brauchbar.
     }
   });
+
+  // Nach einer Buchung im Fenster „Punkte vergeben" stimmt der laufende Monat
+  // nicht mehr. Die Gesamtwertung lädt das Fenster selbst nach, den Monat hier.
+  $effect(() => {
+    if (punkte.gebucht === 0) return;
+    untrack(() => {
+      scoreApi.months().then((m) => (monate = m)).catch(() => {});
+    });
+  });
 </script>
 
 <svelte:head><title>Rangliste · Familien Dashboard</title></svelte:head>
@@ -78,7 +89,14 @@
         Punkte gibt es für erledigte Aufgaben und fürs Einkaufen.
       </p>
     </div>
-    <a href="/belohnungen" class="chip">🎁 Punkte eintauschen →</a>
+    <div class="flex flex-wrap gap-2">
+      {#if admin}
+        <button class="btn-primary text-sm" onclick={() => punkte.oeffnen()}>
+          <Sparkles class="h-4 w-4" /> Punkte vergeben
+        </button>
+      {/if}
+      <a href="/belohnungen" class="chip">🎁 Punkte eintauschen →</a>
+    </div>
   </header>
 
   {#if loading}
@@ -166,6 +184,29 @@
             <p class="text-lg font-bold tabular-nums">{score.total_points}</p>
             <p class="text-[11px] text-muted-foreground">Punkte</p>
           </div>
+
+          <!-- Eltern buchen direkt in der Zeile: plus oder minus, die Person
+               ist im Fenster dann schon ausgewählt. -->
+          {#if admin}
+            <div class="flex shrink-0 flex-col gap-1">
+              <button
+                class="flex h-9 w-9 items-center justify-center rounded-full bg-success/15 text-success transition-colors hover:bg-success/25"
+                onclick={() => punkte.oeffnen({ fuer: [score.id], modus: 'plus' })}
+                aria-label="{score.name} Punkte gutschreiben"
+                title="Gutschreiben"
+              >
+                <Plus class="h-4 w-4" />
+              </button>
+              <button
+                class="flex h-9 w-9 items-center justify-center rounded-full bg-destructive/10 text-destructive transition-colors hover:bg-destructive/20"
+                onclick={() => punkte.oeffnen({ fuer: [score.id], modus: 'minus' })}
+                aria-label="{score.name} Punkte abziehen"
+                title="Abziehen"
+              >
+                <Minus class="h-4 w-4" />
+              </button>
+            </div>
+          {/if}
         </div>
       {/each}
     </section>
@@ -297,15 +338,23 @@
                   <span class="font-medium">{item.user_name}</span>
                   {#if item.source === 'shopping'}
                     <ShoppingCart class="mx-1 inline h-3 w-3 text-muted-foreground" />
+                  {:else if item.points < 0}
+                    <Minus class="mx-1 inline h-3 w-3 text-destructive" />
                   {:else}
                     <Star class="mx-1 inline h-3 w-3 text-muted-foreground" />
                   {/if}
-                  {item.note || sourceLabels[item.source]?.label || item.source}
+                  {item.note || quelle(item).label}
                 </p>
                 <p class="text-[11px] text-muted-foreground">{relative(item.created_at)}</p>
               </div>
-              <span class="shrink-0 text-sm font-semibold tabular-nums text-primary">
-                +{item.points}
+              <!-- Bis 2.0 stand hier fest ein Plus davor — ein Abzug las sich
+                   als „+-10". -->
+              <span
+                class="shrink-0 text-sm font-semibold tabular-nums {item.points < 0
+                  ? 'text-destructive'
+                  : 'text-primary'}"
+              >
+                {mitVorzeichen(item.points)}
               </span>
             </li>
           {/each}

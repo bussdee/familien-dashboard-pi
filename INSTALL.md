@@ -108,7 +108,7 @@ Prüfen, ob alles läuft:
 make verify
 ```
 
-Erwartet: **64 Prüfungen bestanden.**
+Erwartet: **68 Prüfungen bestanden.**
 
 ---
 

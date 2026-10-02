@@ -394,20 +394,37 @@ func (s *Service) History(w http.ResponseWriter, r *http.Request) {
 // ------------------------------------------------------- Verwaltung (Admin)
 
 type adjustment struct {
-	UserID int    `json:"user_id"`
-	Points int    `json:"points"`
-	Note   string `json:"note"`
+	// UserID bucht für eine Person. UserIDs für mehrere auf einmal — „alle
+	// Kinder +10, weil der Garten fertig ist". Beides darf kommen, doppelte
+	// Kennungen zählen einmal.
+	UserID  int    `json:"user_id"`
+	UserIDs []int  `json:"user_ids"`
+	Points  int    `json:"points"`
+	Note    string `json:"note"`
 }
 
 // Adjust books a manual correction. Negative values are allowed — that is the
 // whole point of it, for when somebody tapped the wrong thing.
+//
+// Mehrere Personen werden in einer Transaktion gebucht: Entweder bekommen alle
+// ihre Punkte oder keiner. Die Antwort nennt die Kennungen der neuen Einträge,
+// damit die Oberfläche die Buchung mit einem Tipp zurücknehmen kann.
 func (s *Service) Adjust(w http.ResponseWriter, r *http.Request) {
 	var req adjustment
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		auth.HTTPError(w, http.StatusBadRequest, "Ungültige Anfrage")
 		return
 	}
-	if req.UserID <= 0 {
+
+	users := []int{}
+	seen := map[int]bool{}
+	for _, id := range append([]int{req.UserID}, req.UserIDs...) {
+		if id > 0 && !seen[id] {
+			seen[id] = true
+			users = append(users, id)
+		}
+	}
+	if len(users) == 0 {
 		auth.HTTPError(w, http.StatusBadRequest, "Kein Benutzer gewählt")
 		return
 	}
@@ -420,29 +437,56 @@ func (s *Service) Adjust(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var exists int
-	if err := s.db.QueryRow("SELECT COUNT(*) FROM users WHERE id = ?", req.UserID).Scan(&exists); err != nil || exists == 0 {
-		auth.HTTPError(w, http.StatusNotFound, "Benutzer nicht gefunden")
-		return
-	}
-
 	note := strings.TrimSpace(req.Note)
+	if len([]rune(note)) > 80 {
+		note = string([]rune(note)[:80])
+	}
 	if note == "" {
 		if req.Points > 0 {
 			note = "Bonus"
 		} else {
-			note = "Korrektur"
+			note = "Abzug"
 		}
 	}
 
-	if err := s.AwardDirect(req.UserID, SourceBonus, 0, req.Points, note); err != nil {
-		log.Error().Err(err).Msg("Failed to adjust points")
+	tx, err := s.db.Begin()
+	if err != nil {
+		auth.HTTPError(w, http.StatusInternalServerError, "Server-Fehler")
+		return
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	ids := make([]int64, 0, len(users))
+	for _, userID := range users {
+		var exists int
+		if err := tx.QueryRow("SELECT COUNT(*) FROM users WHERE id = ?", userID).Scan(&exists); err != nil || exists == 0 {
+			auth.HTTPError(w, http.StatusNotFound, "Benutzer nicht gefunden")
+			return
+		}
+		res, err := tx.Exec(`
+			INSERT INTO point_events (user_id, source, reference_id, points, note)
+			VALUES (?, ?, NULL, ?, ?)`, userID, SourceBonus, req.Points, note)
+		if err != nil {
+			log.Error().Err(err).Msg("Failed to adjust points")
+			auth.HTTPError(w, http.StatusInternalServerError, "Punkte konnten nicht gebucht werden")
+			return
+		}
+		id, _ := res.LastInsertId()
+		ids = append(ids, id)
+	}
+	if err := tx.Commit(); err != nil {
 		auth.HTTPError(w, http.StatusInternalServerError, "Punkte konnten nicht gebucht werden")
 		return
 	}
 
 	w.WriteHeader(http.StatusCreated)
-	auth.WriteJSON(w, map[string]any{"user_id": req.UserID, "points": req.Points, "note": note})
+	auth.WriteJSON(w, map[string]any{
+		"user_id":  users[0],
+		"user_ids": users,
+		"ids":      ids,
+		"points":   req.Points,
+		"note":     note,
+	})
 }
 
 // Revoke removes one entry from the history. For a chore it also deletes the
