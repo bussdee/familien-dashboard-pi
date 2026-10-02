@@ -5,6 +5,7 @@
   import { board, mitVorzeichen } from '$lib/stores/scores.svelte';
   import { punkte } from '$lib/stores/punkte.svelte';
   import { toast } from '$lib/stores/toast.svelte';
+  import { eltern } from '$lib/stores/eltern.svelte';
   import Modal from './Modal.svelte';
 
   /**
@@ -80,6 +81,8 @@
   async function buchen(event: SubmitEvent) {
     event.preventDefault();
     if (!bereit) return;
+    // Am Wandgerät erst die Eltern-PIN; überall sonst ist das ein Durchwinken.
+    if (!(await eltern.brauche('Punkte vergeben oder abziehen'))) return;
     arbeitet = true;
     fehler = '';
     const text = grund.trim();
@@ -98,6 +101,7 @@
         aktion: {
           label: 'Rückgängig',
           run: async () => {
+            if (!(await eltern.brauche('Buchung zurücknehmen'))) return;
             await Promise.all(res.ids.map((id) => adminApi.revokePoints(id).catch(() => {})));
             punkte.gebucht++;
             await board.refresh().catch(() => {});

@@ -2,15 +2,17 @@
   import { untrack } from 'svelte';
   import { schnell } from '$lib/stores/schnell.svelte';
   import {
-    CalendarClock, Check, CircleAlert, Eraser, ListChecks, Pencil, Plus, Trash2,
+    CalendarClock, Check, CircleAlert, Eraser, Eye, Hourglass, ListChecks, Pencil, Plus, Trash2, X,
   } from 'lucide-svelte';
   import { format, parseISO } from 'date-fns';
   import { de } from 'date-fns/locale';
-  import { ApiError, choresApi } from '$lib/api';
+  import { ApiError, choresApi, pendingApi } from '$lib/api';
+  import { eltern } from '$lib/stores/eltern.svelte';
+  import { toast } from '$lib/stores/toast.svelte';
   import { session } from '$lib/stores';
   import { board } from '$lib/stores/scores.svelte';
   import Modal from '$lib/components/Modal.svelte';
-  import type { Chore, User } from '$lib/types';
+  import type { Chore, PendingCompletion, User } from '$lib/types';
   import { confirmAction } from '$lib/stores/confirm.svelte';
   import Kachel from './Kachel.svelte';
   import KachelLeer from './KachelLeer.svelte';
@@ -40,6 +42,7 @@
       points: 10,
       zustaendig: 'rotate',
       einmalig: false,
+      pruefen: false,
     };
   }
 
@@ -56,6 +59,65 @@
   // tatsächlich geschafft wurde.
   const abgehakt = $derived(chores.filter((c) => c.done));
   const mine = $derived(chores.filter((c) => c.assignee_id === $session.user?.id));
+
+  // ---- Zu bestätigen ----
+  /**
+   * Was Kinder als erledigt gemeldet haben und auf ein Elternteil wartet.
+   * Sehen dürfen es alle — am Wandgerät ist „wartet auf Mama" genau die
+   * richtige Antwort auf „wo sind meine Punkte?". Bestätigen dürfen Eltern,
+   * am Wandgerät mit ihrer PIN.
+   */
+  let offene = $state<PendingCompletion[]>([]);
+  let entscheidet = $state<number | null>(null);
+  const darfBestaetigen = $derived(isAdmin || $session.device);
+
+  async function ladeOffene() {
+    try {
+      offene = await pendingApi.list();
+    } catch {
+      offene = [];
+    }
+  }
+
+  // Mit jeder neu geladenen Aufgabenliste auch die offenen Bestätigungen.
+  $effect(() => {
+    void chores;
+    void ladeOffene();
+  });
+
+  async function bestaetigen(p: PendingCompletion) {
+    if (entscheidet !== null) return;
+    if (!(await eltern.brauche(`${p.user_name}: „${p.title}“ bestätigen`))) return;
+    entscheidet = p.completion_id;
+    try {
+      const r = await pendingApi.approve(p.completion_id);
+      offene = offene.filter((x) => x.completion_id !== p.completion_id);
+      await onRefresh();
+      await board.award(r.user_id, r.points_awarded, `${p.user_name}: ${r.title}`);
+    } catch (e) {
+      error = e instanceof ApiError ? e.message : 'Konnte nicht bestätigen';
+      void ladeOffene();
+    } finally {
+      entscheidet = null;
+    }
+  }
+
+  async function ablehnen(p: PendingCompletion) {
+    if (entscheidet !== null) return;
+    if (!(await eltern.brauche(`${p.user_name}: „${p.title}“ ablehnen`))) return;
+    entscheidet = p.completion_id;
+    try {
+      await pendingApi.reject(p.completion_id);
+      offene = offene.filter((x) => x.completion_id !== p.completion_id);
+      await onRefresh();
+      toast(`„${p.title}“ ist wieder offen — noch einmal ran, ${p.user_name}.`);
+    } catch (e) {
+      error = e instanceof ApiError ? e.message : 'Konnte nicht ablehnen';
+      void ladeOffene();
+    } finally {
+      entscheidet = null;
+    }
+  }
 
   async function complete(chore: Chore) {
     if (completing !== null) return;
@@ -77,8 +139,16 @@
     try {
       const result = await choresApi.complete(chore.id, $session.device ? wer! : undefined);
       await onRefresh();
-      // The shared board handles the confetti and the level-up check.
-      if (wer !== null) {
+      if (result.pending) {
+        // Erledigt, aber die Punkte warten auf ein Elternteil. Kein Konfetti
+        // für etwas, das noch nicht feststeht — aber ein klares Wort.
+        toast(`Erledigt! Die ${result.points_pending ?? chore.points} Punkte gibt es, sobald Mama oder Papa nachgesehen hat.`, {
+          ton: 'erfolg',
+          dauer: 5000,
+        });
+        void ladeOffene();
+      } else if (wer !== null) {
+        // The shared board handles the confetti and the level-up check.
         await board.award(wer, result.points_awarded, result.title || chore.title);
       }
     } catch (e) {
@@ -119,6 +189,7 @@
           ? String(chore.assignee_id)
           : chore.assignment || 'rotate',
       einmalig: chore.one_off,
+      pruefen: chore.needs_check,
     };
     error = '';
     showForm = true;
@@ -139,6 +210,7 @@
       assignment: Number.isFinite(person) && person > 0 ? 'person' : draft.zustaendig,
       assignee_id: Number.isFinite(person) && person > 0 ? person : 0,
       one_off: draft.einmalig,
+      needs_check: draft.pruefen,
     };
     try {
       if (editingId !== null) await choresApi.update(editingId, payload);
@@ -224,6 +296,9 @@
   // Wer zuletzt dran war. Steht nur an erledigten Zeilen, dort ist es die
   // Antwort auf die naheliegende Frage "warum kann ich das nicht abhaken?".
   function doneLabel(chore: Chore): string {
+    if (chore.pending_check) {
+      return chore.last_done_by ? `${chore.last_done_by} · wartet auf Bestätigung` : 'Wartet auf Bestätigung';
+    }
     return chore.last_done_by ? `Erledigt von ${chore.last_done_by}` : 'Erledigt';
   }
 </script>
@@ -289,6 +364,18 @@
           </span>
         </span>
       </label>
+      <!-- Eltern bestätigen: Für „Zimmer aufräumen" lohnt sich ein Blick,
+           bevor die Punkte fliessen. Eltern selbst bekommen ihre sofort. -->
+      <label class="flex items-start gap-2 rounded-lg border border-border p-2.5 text-sm">
+        <input type="checkbox" class="mt-0.5 h-4 w-4 rounded" bind:checked={draft.pruefen} />
+        <span>
+          Eltern bestätigen
+          <span class="block text-xs text-muted-foreground">
+            Kinder bekommen die Punkte erst, wenn Mama oder Papa nachgesehen
+            hat. Bis dahin steht die Aufgabe als „wartet" da.
+          </span>
+        </span>
+      </label>
       <!-- Zwei Zahlen nebeneinander, die Zuständigkeit auf voller Breite:
            in drei Spalten war das Auswahlfeld so schmal, dass "Reihum"
            abgeschnitten wurde. -->
@@ -326,6 +413,44 @@
     </form>
   </Modal>
 
+  {#if offene.length > 0}
+    <section class="mb-3 rounded-xl border border-amber-500/30 bg-amber-500/5 p-2.5" aria-label="Zu bestätigen">
+      <p class="mb-1.5 flex items-center gap-1.5 px-1 text-xs font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-400">
+        <Eye class="h-3.5 w-3.5" /> Zu bestätigen · {offene.length}
+      </p>
+      <ul class="space-y-1">
+        {#each offene as p (p.completion_id)}
+          <li class="flex items-center gap-2 rounded-lg px-1 py-1.5">
+            <span class="text-xl">{p.user_emoji}</span>
+            <div class="min-w-0 flex-1">
+              <p class="truncate text-sm font-medium">{p.title}</p>
+              <p class="truncate text-xs text-muted-foreground">{p.user_name} · +{p.points}</p>
+            </div>
+            {#if darfBestaetigen}
+              <button
+                class="touch-target shrink-0 rounded-full text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                onclick={() => ablehnen(p)}
+                disabled={entscheidet !== null}
+                aria-label="{p.title} von {p.user_name} ablehnen"
+                title="Noch nicht — wieder offen"
+              >
+                <X class="h-5 w-5" />
+              </button>
+              <button
+                class="flex h-11 shrink-0 items-center gap-1 rounded-full bg-success px-3 text-sm font-semibold text-success-foreground hover:bg-success/90 disabled:opacity-50"
+                onclick={() => bestaetigen(p)}
+                disabled={entscheidet !== null}
+                aria-label="{p.title} von {p.user_name} bestätigen"
+              >
+                <Check class="h-4 w-4" /> +{p.points}
+              </button>
+            {/if}
+          </li>
+        {/each}
+      </ul>
+    </section>
+  {/if}
+
   {#if chores.length === 0}
     <KachelLeer
       icon={ListChecks}
@@ -355,6 +480,14 @@
                 <span class="text-lg leading-none">✓</span>
               {/if}
             </button>
+          {:else if chore.pending_check}
+            <!-- Erledigt gemeldet, wartet auf ein Elternteil. -->
+            <span
+              class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400"
+              title={doneLabel(chore)}
+            >
+              <Hourglass class="h-5 w-5" />
+            </span>
           {:else if isDone(chore)}
             <!-- Erledigt: kein Knopf, damit niemand dieselbe Aufgabe ein
                  zweites Mal abhakt und dafür noch einmal Punkte bekommt. -->

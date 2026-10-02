@@ -853,3 +853,14 @@ func httpError(w http.ResponseWriter, status int, message string) {
 // WriteJSON / HTTPError are the exported helpers other packages reuse.
 func WriteJSON(w http.ResponseWriter, v any)                  { writeJSON(w, v) }
 func HTTPError(w http.ResponseWriter, status int, msg string) { httpError(w, status, msg) }
+
+// AlsPerson markiert eine Anfrage, als hätte AuthMiddleware sie
+// durchgelassen. Gedacht für Tests anderer Pakete: Deren Handler lesen die
+// Person aus dem Kontext, und ein echtes Token samt Keks zu bauen hiesse,
+// in jedem Test die Anmeldung nachzuspielen.
+func AlsPerson(r *http.Request, userID int, role string, device bool) *http.Request {
+	ctx := context.WithValue(r.Context(), userIDKey, userID)
+	ctx = context.WithValue(ctx, userRoleKey, role)
+	ctx = context.WithValue(ctx, deviceKey, device)
+	return r.WithContext(ctx)
+}

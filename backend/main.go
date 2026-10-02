@@ -18,6 +18,7 @@ import (
 	"family-dashboard/backend/internal/config"
 	"family-dashboard/backend/internal/devices"
 	"family-dashboard/backend/internal/files"
+	"family-dashboard/backend/internal/goals"
 	"family-dashboard/backend/internal/links"
 	"family-dashboard/backend/internal/meals"
 	"family-dashboard/backend/internal/music"
@@ -83,6 +84,7 @@ func main() {
 	timesSvc := times.NewService(sql)
 	mealsSvc := meals.NewService(sql, shoppingSvc)
 	rewardsSvc := rewards.NewService(sql)
+	goalsSvc := goals.NewService(sql)
 	backupSvc := backup.NewService(sql, cfg.Database.Path, cfg.Database.BackupDir,
 		dataDir(cfg.Database.Path), cfg.Database.BackupRetention, cfg.Database.BackupCron)
 
@@ -213,6 +215,24 @@ func main() {
 			r.Delete("/chores/done", choresSvc.DeleteDone)
 			r.Delete("/chores/{id}", choresSvc.Delete)
 			r.Post("/chores/{id}/complete", choresSvc.Complete)
+			// Was auf ein Elternteil wartet. Lesen darf jeder, auch das
+			// Wandgerät; bestätigen nur Eltern (siehe unten).
+			r.Get("/chores/pending", choresSvc.ListPending)
+
+			// Das Familienziel sieht jeder — es gehört allen.
+			r.Get("/goal", goalsSvc.Get)
+
+			// Eltern-Wege: für Eltern immer, am Wandgerät mit der PIN eines
+			// Elternteils. So lassen sich dort Punkte vergeben und Aufgaben
+			// bestätigen, ohne das Tablet als Papa angemeldet zurückzulassen.
+			r.Group(func(r chi.Router) {
+				r.Use(authSvc.ElternMiddleware)
+				r.Post("/auth/eltern", authSvc.ElternPruefen)
+				r.Post("/admin/points", pointsSvc.Adjust)
+				r.Delete("/admin/points/{id}", pointsSvc.Revoke)
+				r.Post("/chores/pending/{id}/approve", choresSvc.Approve)
+				r.Post("/chores/pending/{id}/reject", choresSvc.Reject)
+			})
 
 			// The scoreboard spans chores and shopping, so it lives outside
 			// either one. /chores/stats stays as the historical path.
@@ -258,8 +278,6 @@ func main() {
 				r.Delete("/admin/users/{id}", authSvc.DeleteUser)
 				r.Put("/admin/weather/location", weatherSvc.SetLocation)
 				r.Get("/admin/points", pointsSvc.AdminHistory)
-				r.Post("/admin/points", pointsSvc.Adjust)
-				r.Delete("/admin/points/{id}", pointsSvc.Revoke)
 				r.Post("/admin/points/reset", pointsSvc.ResetUser)
 				r.Get("/admin/devices", devicesSvc.List)
 				r.Post("/admin/devices", devicesSvc.Create)
@@ -275,6 +293,9 @@ func main() {
 				r.Put("/admin/music/dir", musicSvc.SetDir)
 				r.Post("/files", filesSvc.Upload)
 				r.Delete("/files/{name}", filesSvc.Delete)
+				r.Post("/admin/goal", goalsSvc.Create)
+				r.Put("/admin/goal/{id}", goalsSvc.Update)
+				r.Post("/admin/goal/{id}/close", goalsSvc.Close)
 				r.Post("/admin/rewards", rewardsSvc.Create)
 				r.Put("/admin/rewards/{id}", rewardsSvc.Update)
 				r.Delete("/admin/rewards/{id}", rewardsSvc.Delete)

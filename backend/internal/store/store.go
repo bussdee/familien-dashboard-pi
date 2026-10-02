@@ -353,6 +353,20 @@ func (s *Store) Migrate() error {
 			uses INTEGER NOT NULL DEFAULT 1,
 			last_used DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 		)`,
+		// Das Familienziel: ein gemeinsames Ziel statt eines Wettrennens.
+		// Gezählt wird alles, was die Familie seit started_at zusammen
+		// verdient hat. Ein Ziel ist aktiv, bis ein Elternteil es abschliesst;
+		// reached_at merkt sich, wann es geschafft war.
+		`CREATE TABLE IF NOT EXISTS family_goals (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			title TEXT NOT NULL,
+			emoji TEXT NOT NULL DEFAULT '🎯',
+			target INTEGER NOT NULL,
+			started_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			reached_at DATETIME,
+			closed_at DATETIME,
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+		)`,
 		`CREATE TABLE IF NOT EXISTS login_attempts (
 			user_id INTEGER PRIMARY KEY,
 			failures INTEGER NOT NULL DEFAULT 0,
@@ -400,6 +414,18 @@ func (s *Store) Migrate() error {
 	// sie eine Lüge. Voreinstellung 0, damit alles Bestehende bleibt, wie es
 	// ist.
 	if err := s.addColumn("chores", "one_off", "BOOLEAN NOT NULL DEFAULT 0"); err != nil {
+		return err
+	}
+	// Eltern bestätigen: Eine so markierte Aufgabe bringt einem Kind erst
+	// Punkte, wenn ein Elternteil nachgesehen hat. Voreinstellung 0 — alles
+	// Bestehende verhält sich wie bisher.
+	if err := s.addColumn("chores", "needs_check", "BOOLEAN NOT NULL DEFAULT 0"); err != nil {
+		return err
+	}
+	// Eine Erledigung, die auf diese Bestätigung wartet. Eigene Spalte statt
+	// "verified": Die stand bei allen bisherigen Erledigungen auf 0 und
+	// unterscheidet deshalb nichts.
+	if err := s.addColumn("chore_completions", "pending", "BOOLEAN NOT NULL DEFAULT 0"); err != nil {
 		return err
 	}
 	// Termine für eine einzelne Person. Ohne die Spalte gehört jeder Termin

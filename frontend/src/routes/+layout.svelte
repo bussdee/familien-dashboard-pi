@@ -21,6 +21,7 @@
   import QuickAdd from '$lib/components/QuickAdd.svelte';
   import Toasts from '$lib/components/Toasts.svelte';
   import PunkteBuchen from '$lib/components/PunkteBuchen.svelte';
+  import ElternPin from '$lib/components/ElternPin.svelte';
 
   let { children } = $props();
 
@@ -167,9 +168,13 @@
 
   <Toasts />
 
-  <!-- Punkte vergeben ist Elternsache; das Fenster gibt es nur für sie. -->
-  {#if $session.user?.role === 'admin'}
+  <!-- Punkte vergeben ist Elternsache. Am Wandgerät geht es mit der PIN
+       eines Elternteils, die ElternPin dort abfragt. -->
+  {#if $session.user?.role === 'admin' || $session.device}
     <PunkteBuchen />
+  {/if}
+  {#if $session.device}
+    <ElternPin />
   {/if}
 
   <!-- Outside the isLogin guard: a confirmation can be asked from anywhere. -->

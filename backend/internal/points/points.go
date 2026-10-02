@@ -521,7 +521,7 @@ func (s *Service) Revoke(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if source == SourceChore && reference.Valid {
-		if err := revokeCompletion(tx, int(reference.Int64)); err != nil {
+		if err := RevokeCompletion(tx, int(reference.Int64)); err != nil {
 			log.Error().Err(err).Msg("Failed to revoke chore completion")
 			auth.HTTPError(w, http.StatusInternalServerError, "Server-Fehler")
 			return
@@ -535,10 +535,11 @@ func (s *Service) Revoke(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// revokeCompletion deletes the completion and restores the chore's dates from
+// RevokeCompletion deletes the completion and restores the chore's dates from
 // whatever completion came before it — or clears them, making the chore due
-// again, if that was the only one.
-func revokeCompletion(tx *sql.Tx, completionID int) error {
+// again, if that was the only one. Auch das Ablehnen einer Aufgabe, die auf
+// Bestätigung wartet, läuft hierüber.
+func RevokeCompletion(tx *sql.Tx, completionID int) error {
 	var choreID int
 	if err := tx.QueryRow(
 		"SELECT chore_id FROM chore_completions WHERE id = ?", completionID).Scan(&choreID); err != nil {

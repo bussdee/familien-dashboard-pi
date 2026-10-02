@@ -6,7 +6,7 @@ import type {
   DayTime, MonthBoard, MusicBrowse, MusicDirListing, MusicStatus, Note, Photo,
   PhotoUploadResult, Score, ShoppingEvent, ShoppingItem, TimeOverview, Track,
   User, WeatherData, WeatherLocation, WeeklyTime, Meal, RecentMeal, Reward,
-  RewardOverview, ShoppingSuggestion, RedemptionStatus,
+  RewardOverview, ShoppingSuggestion, RedemptionStatus, PendingCompletion, GoalOverview,
 } from '$lib/types';
 
 const BASE = '/api';
@@ -17,6 +17,19 @@ const BASE = '/api';
  */
 function imFamilienModus(): boolean {
   return browser && document.documentElement.dataset.familienmodus === 'ja';
+}
+
+/**
+ * Die Eltern-Freigabe am Wandgerät: Kennung und PIN eines Elternteils, für
+ * zwei Minuten im Arbeitsspeicher. Solange sie gilt, gehen beide bei jeder
+ * Anfrage als Kopfzeilen mit — der Server prüft sie bei den Eltern-Wegen
+ * (Punkte vergeben, Aufgaben bestätigen) jedes Mal neu. Gespeichert wird
+ * nichts: Ein Neuladen der Seite, und die Freigabe ist weg.
+ */
+let elternFreigabe: { id: number; pin: string; bis: number } | null = null;
+
+export function setzeElternFreigabe(freigabe: { id: number; pin: string; bis: number } | null) {
+  elternFreigabe = freigabe;
 }
 
 export class ApiError extends Error {
@@ -38,6 +51,10 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const headers = new Headers(init.headers);
   if (init.body !== undefined && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json');
+  }
+  if (elternFreigabe && Date.now() < elternFreigabe.bis && imFamilienModus() && !headers.has('X-Eltern-Id')) {
+    headers.set('X-Eltern-Id', String(elternFreigabe.id));
+    headers.set('X-Eltern-Pin', elternFreigabe.pin);
   }
 
   let res: Response;
@@ -84,6 +101,12 @@ export const authApi = {
   me: () => request<User | { device: true }>('/auth/me'),
   /** Macht diesen Browser zum Wandgerät (nur Administratoren). */
   enableDevice: () => request<{ device: true }>('/auth/device', { method: 'POST' }),
+  /** Prüft am Wandgerät die PIN eines Elternteils, ohne jemanden anzumelden. */
+  elternPruefen: (id: number, pin: string) =>
+    request<{ id: number; name: string }>('/auth/eltern', {
+      method: 'POST',
+      headers: { 'X-Eltern-Id': String(id), 'X-Eltern-Pin': pin },
+    }),
   /** Beendet den Familien-Modus auf diesem Gerät. */
   disableDevice: () => request<void>('/auth/device', { method: 'DELETE' }),
   changePin: (currentPin: string, newPin: string) =>
@@ -277,13 +300,13 @@ export const choresApi = {
   list: () => request<Chore[]>('/chores'),
   create: (data: {
     title: string; description?: string; interval_days?: number; points?: number; assignee_id?: number;
-    assignment?: string; one_off?: boolean;
+    assignment?: string; one_off?: boolean; needs_check?: boolean;
   }) => request<Chore>('/chores', { method: 'POST', ...json(data) }),
   update: (
     id: number,
     data: Partial<{
       title: string; description: string; interval_days: number; points: number;
-      assignee_id: number; assignment: string; one_off: boolean;
+      assignee_id: number; assignment: string; one_off: boolean; needs_check: boolean;
     }>,
   ) => request<Chore>(`/chores/${id}`, { method: 'PUT', ...json(data) }),
   remove: (id: number) => request<void>(`/chores/${id}`, { method: 'DELETE' }),
@@ -291,10 +314,35 @@ export const choresApi = {
   clearDone: () => request<{ deleted: number }>('/chores/done', { method: 'DELETE' }),
   /** userId nur im Familien-Modus nötig — sonst zählt die eigene Anmeldung. */
   complete: (id: number, userId?: number) =>
-    request<{ completed_at: string; next_due_at: string; points_awarded: number; title: string }>(
+    request<{
+      completed_at: string; next_due_at: string; points_awarded: number; title: string;
+      /** true: Die Punkte warten, bis ein Elternteil bestätigt. */
+      pending?: boolean; points_pending?: number;
+    }>(
       `/chores/${id}/complete`,
       { method: 'POST', ...json(userId ? { user_id: userId } : {}) },
     ),
+};
+
+/** Erledigte Aufgaben, die auf ein Elternteil warten. */
+export const pendingApi = {
+  list: () => request<PendingCompletion[]>('/chores/pending'),
+  approve: (completionId: number) =>
+    request<{ user_id: number; points_awarded: number; title: string }>(
+      `/chores/pending/${completionId}/approve`,
+      { method: 'POST' },
+    ),
+  reject: (completionId: number) =>
+    request<void>(`/chores/pending/${completionId}/reject`, { method: 'POST' }),
+};
+
+export const goalApi = {
+  get: () => request<GoalOverview>('/goal'),
+  create: (data: { title: string; emoji: string; target: number }) =>
+    request<{ id: number }>('/admin/goal', { method: 'POST', ...json(data) }),
+  update: (id: number, data: { title: string; emoji: string; target: number }) =>
+    request<void>(`/admin/goal/${id}`, { method: 'PUT', ...json(data) }),
+  close: (id: number) => request<void>(`/admin/goal/${id}/close`, { method: 'POST' }),
 };
 
 export const scoreApi = {

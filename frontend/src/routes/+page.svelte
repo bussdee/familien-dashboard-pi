@@ -9,6 +9,7 @@
   import { format } from 'date-fns';
   import HeuteLeiste from '$lib/components/HeuteLeiste.svelte';
   import MealsWidget from '$lib/components/widgets/MealsWidget.svelte';
+  import GoalWidget from '$lib/components/widgets/GoalWidget.svelte';
   import { connection, session } from '$lib/stores';
   import { board } from '$lib/stores/scores.svelte';
   import { layout } from '$lib/stores/layout.svelte';
@@ -278,6 +279,8 @@
                  offen, die Benutzerverwaltung nur Administratoren — und
                  eintragen darf hier jeder. -->
             <CalendarWidget {events} users={board.scores} onRefresh={reloadCalendar} />
+          {:else if widget.id === 'goal'}
+            <GoalWidget />
           {:else if widget.id === 'meals'}
             <MealsWidget bind:meals />
           {:else if widget.id === 'links'}
