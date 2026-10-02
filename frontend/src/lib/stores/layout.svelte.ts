@@ -1,3 +1,4 @@
+import { t } from '$lib/i18n';
 import { prefsApi } from '$lib/api';
 import type { DashboardLayout } from '$lib/types';
 
@@ -16,19 +17,19 @@ export interface WidgetMeta {
 // Weather is deliberately absent: it sits compactly in the dashboard header
 // and opens /wetter for the full forecast, rather than taking a whole tile.
 export const WIDGETS: WidgetMeta[] = [
-  { id: 'chores', label: 'Aufgaben', emoji: '⭐', hint: 'Was ansteht, mit Punkten' },
-  { id: 'shopping', label: 'Einkaufen', emoji: '🛒', hint: 'Gemeinsame Liste, live' },
-  { id: 'goal', label: 'Familienziel', emoji: '🎯', hint: 'Gemeinsam auf etwas hinarbeiten' },
-  { id: 'calendar', label: 'Kalender', emoji: '📅', hint: 'Termine der nächsten Tage' },
-  { id: 'meals', label: 'Essensplan', emoji: '🍝', hint: 'Was es heute und die nächsten Tage gibt' },
-  { id: 'links', label: 'Links', emoji: '🔗', hint: 'Angepinnte Lesezeichen' },
-  { id: 'countdown', label: 'Countdowns', emoji: '⏰', hint: 'Geburtstage und Ferien' },
-  { id: 'times', label: 'Arbeit & Schule', emoji: '🕗', hint: 'Wer wann weg ist' },
-  { id: 'notes', label: 'Notizen', emoji: '📝', hint: 'Markdown-Notizen' },
-  { id: 'photos', label: 'Foto-Rahmen', emoji: '🖼️', hint: 'Bilder der Familie' },
-  { id: 'music', label: 'Musik', emoji: '🎵', hint: 'MP3s und Hörspiele' },
-  { id: 'files', label: 'Dateien', emoji: '📎', hint: 'Anleitungen und Formulare' },
-  { id: 'devices', label: 'Geräte', emoji: '📱', hint: 'Plex, Kavita und Co.' },
+  { id: 'chores', label: t('Aufgaben'), emoji: '⭐', hint: t('Was ansteht, mit Punkten') },
+  { id: 'shopping', label: t('Einkaufen'), emoji: '🛒', hint: t('Gemeinsame Liste, live') },
+  { id: 'goal', label: t('Familienziel'), emoji: '🎯', hint: t('Gemeinsam auf etwas hinarbeiten') },
+  { id: 'calendar', label: t('Kalender'), emoji: '📅', hint: t('Termine der nächsten Tage') },
+  { id: 'meals', label: t('Essensplan'), emoji: '🍝', hint: t('Was es heute und die nächsten Tage gibt') },
+  { id: 'links', label: t('Links'), emoji: '🔗', hint: t('Angepinnte Lesezeichen') },
+  { id: 'countdown', label: t('Countdowns'), emoji: '⏰', hint: t('Geburtstage und Ferien') },
+  { id: 'times', label: t('Arbeit & Schule'), emoji: '🕗', hint: t('Wer wann weg ist') },
+  { id: 'notes', label: t('Notizen'), emoji: '📝', hint: t('Markdown-Notizen') },
+  { id: 'photos', label: t('Foto-Rahmen'), emoji: '🖼️', hint: t('Bilder der Familie') },
+  { id: 'music', label: t('Musik'), emoji: '🎵', hint: t('MP3s und Hörspiele') },
+  { id: 'files', label: t('Dateien'), emoji: '📎', hint: t('Anleitungen und Formulare') },
+  { id: 'devices', label: t('Geräte'), emoji: '📱', hint: t('Plex, Kavita und Co.') },
 ];
 
 const DEFAULT_ORDER = WIDGETS.map((w) => w.id);

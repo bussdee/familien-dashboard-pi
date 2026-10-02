@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t, intlLocale } from '$lib/i18n';
   import { onMount } from 'svelte';
   import {
     ChevronRight, CornerLeftUp, Folder, Music, Play, RefreshCw, Search, TriangleAlert, X,
@@ -46,7 +47,7 @@
     try {
       inhalt = await musicApi.browse(pfad);
     } catch (e) {
-      fehler = e instanceof ApiError ? e.message : 'Ordner konnte nicht geladen werden';
+      fehler = e instanceof ApiError ? e.message : t('Ordner konnte nicht geladen werden');
     }
   }
 
@@ -94,7 +95,7 @@
         }
       }, 3000);
     } catch (e) {
-      fehler = e instanceof ApiError ? e.message : 'Einlesen fehlgeschlagen';
+      fehler = e instanceof ApiError ? e.message : t('Einlesen fehlgeschlagen');
     }
   }
 
@@ -118,15 +119,15 @@
 
 {#snippet zeile()}
   {#if loading}
-    Lade…
+    {t('Lade…')}
   {:else if !status?.enabled}
-    Nicht eingerichtet
+    {t('Nicht eingerichtet')}
   {:else if laeuftEinlesen}
-    Lese ein… {status.progress.scanned.toLocaleString('de-DE')} Dateien
+    {t('Lese ein… {0} Dateien', [status.progress.scanned.toLocaleString(intlLocale)])}
   {:else if status.tracks === 0}
-    Noch keine Musik gefunden
+    {t('Noch keine Musik gefunden')}
   {:else}
-    {status.tracks.toLocaleString('de-DE')} Titel
+    {t('{0} Titel', [status.tracks.toLocaleString(intlLocale)])}
   {/if}
 {/snippet}
 
@@ -136,8 +137,8 @@
       class="btn-ghost rounded-full px-2 text-muted-foreground"
       onclick={neuEinlesen}
       disabled={laeuftEinlesen}
-      aria-label="Musikordner neu einlesen"
-      title="Musikordner neu einlesen"
+      aria-label={t('Musikordner neu einlesen')}
+      title={t('Musikordner neu einlesen')}
     >
       <RefreshCw class="h-4 w-4 {laeuftEinlesen ? 'animate-spin' : ''}" />
     </button>
@@ -145,7 +146,7 @@
 {/snippet}
 
 <Kachel ton="var(--ton-musik)"
-  titel="Musik"
+  titel={t('Musik')}
   icon={Music}
   {zeile}
   {aktionen}
@@ -164,12 +165,12 @@
     {:else if !status?.enabled}
       <KachelLeer
         icon={Music}
-        titel="Kein Musikordner eingerichtet"
-        hinweis={istAdmin ? '' : 'Ein Elternteil richtet das in der Verwaltung ein.'}
+        titel={t('Kein Musikordner eingerichtet')}
+        hinweis={istAdmin ? '' : t('Ein Elternteil richtet das in der Verwaltung ein.')}
       >
         {#snippet aktion()}
           {#if istAdmin}
-            <a href="/admin" class="btn-outline text-sm">In der Verwaltung einrichten</a>
+            <a href="/admin" class="btn-outline text-sm">{t('In der Verwaltung einrichten')}</a>
           {/if}
         {/snippet}
       </KachelLeer>
@@ -181,23 +182,22 @@
       >
         <TriangleAlert class="mt-0.5 h-4 w-4 shrink-0" />
         <span>
-          Der Musikordner ist gerade nicht erreichbar. Ist die Festplatte
-          angeschlossen? Der Index bleibt so lange stehen.
+          {t('Der Musikordner ist gerade nicht erreichbar. Ist die Festplatte angeschlossen? Der Index bleibt so lange stehen.')}
         </span>
       </p>
     {:else if status.tracks === 0 && !laeuftEinlesen}
       <KachelLeer
         icon={Music}
-        titel="Hier ist noch keine Musik"
+        titel={t('Hier ist noch keine Musik')}
         hinweis={istAdmin
           ? status.subdir
-            ? `Im Ordner „${status.subdir}" liegt nichts Hörbares.`
-            : 'Im eingehängten Ordner liegt nichts Hörbares.'
-          : 'Ein Elternteil wählt in der Verwaltung den richtigen Ordner.'}
+            ? t('Im Ordner „{0}" liegt nichts Hörbares.', [status.subdir])
+            : t('Im eingehängten Ordner liegt nichts Hörbares.')
+          : t('Ein Elternteil wählt in der Verwaltung den richtigen Ordner.')}
       >
         {#snippet aktion()}
           {#if istAdmin}
-            <a href="/admin" class="btn-outline text-sm">Anderen Ordner wählen</a>
+            <a href="/admin" class="btn-outline text-sm">{t('Anderen Ordner wählen')}</a>
           {/if}
         {/snippet}
       </KachelLeer>
@@ -210,7 +210,7 @@
         />
         <input
           class="input pl-9"
-          placeholder="Titel, Interpret oder Album suchen…"
+          placeholder={t('Titel, Interpret oder Album suchen…')}
           bind:value={suche}
           oninput={sucheGeaendert}
           autocapitalize="off"
@@ -223,7 +223,7 @@
               suche = '';
               sucheGeaendert();
             }}
-            aria-label="Suche leeren"
+            aria-label={t('Suche leeren')}
           >
             <X class="h-4 w-4" />
           </button>
@@ -232,14 +232,14 @@
 
       {#if treffer !== null}
         {#if sucheLaeuft}
-          <p class="py-6 text-center text-sm text-muted-foreground">Suche…</p>
+          <p class="py-6 text-center text-sm text-muted-foreground">{t('Suche…')}</p>
         {:else if treffer.length === 0}
           <p class="py-6 text-center text-sm text-muted-foreground">
-            Nichts gefunden für „{suche}".
+            {t('Nichts gefunden für „{0}".', [suche])}
           </p>
         {:else}
           <p class="mb-2 text-xs text-muted-foreground">
-            {treffer.length}{treffer.length === 200 ? '+' : ''} Treffer
+            {t('{0} Treffer', [treffer.length === 200 ? '200+' : treffer.length])}
           </p>
           <ul class="scrollbar-thin max-h-72 space-y-1 overflow-y-auto pr-1">
             {#each treffer as track, i (track.id)}
@@ -247,13 +247,13 @@
                 <button
                   class="flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-left transition-colors hover:bg-accent
                     {player.current?.id === track.id ? 'bg-primary/10 text-primary' : ''}"
-                  onclick={() => spiele(treffer ?? [], i, `Suche: ${suche}`)}
+                  onclick={() => spiele(treffer ?? [], i, t('Suche: {0}', [suche]))}
                 >
                   <Play class="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                   <span class="min-w-0 flex-1">
                     <span class="block truncate text-sm">{titelVon(track)}</span>
                     <span class="block truncate text-[11px] text-muted-foreground">
-                      {track.folder || 'Wurzel'}
+                      {track.folder || t('Wurzel')}
                     </span>
                   </span>
                 </button>
@@ -265,7 +265,7 @@
         <!-- Brotkrumen -->
         <div class="mb-2 flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
           <button class="rounded px-1.5 py-0.5 hover:bg-accent" onclick={() => oeffne('')}>
-            Alle
+            {t('Alle')}
           </button>
           {#each pfadTeile as teil (teil.path)}
             <ChevronRight class="h-3 w-3 shrink-0 opacity-50" />
@@ -285,7 +285,7 @@
                 class="flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-left text-sm text-muted-foreground transition-colors hover:bg-accent"
                 onclick={() => oeffne(inhalt?.parent ?? '')}
               >
-                <CornerLeftUp class="h-4 w-4 shrink-0" /> Eine Ebene höher
+                <CornerLeftUp class="h-4 w-4 shrink-0" /> {t('Eine Ebene höher')}
               </button>
             </li>
           {/if}
@@ -299,7 +299,7 @@
                 <Folder class="h-4 w-4 shrink-0 text-muted-foreground" />
                 <span class="min-w-0 flex-1 truncate text-sm font-medium">{ordner.name}</span>
                 <span class="shrink-0 text-xs tabular-nums text-muted-foreground">
-                  {ordner.tracks.toLocaleString('de-DE')}
+                  {ordner.tracks.toLocaleString(intlLocale)}
                 </span>
               </button>
             </li>
@@ -311,7 +311,7 @@
                 class="flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-left transition-colors hover:bg-accent
                   {player.current?.id === track.id ? 'bg-primary/10 text-primary' : ''}"
                 onclick={() =>
-                  spiele(inhalt?.tracks ?? [], i, inhalt?.path || 'Musik')}
+                  spiele(inhalt?.tracks ?? [], i, inhalt?.path || t('Musik'))}
               >
                 <Play class="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
                 <span class="min-w-0 flex-1">
@@ -334,9 +334,9 @@
           {#if inhalt.folders.length === 0 && inhalt.tracks.length === 0}
             <li class="py-6 text-center text-sm text-muted-foreground">
               {#if laeuftEinlesen}
-                Der Ordner wird gerade eingelesen…
+                {t('Der Ordner wird gerade eingelesen…')}
               {:else}
-                Dieser Ordner ist leer.
+                {t('Dieser Ordner ist leer.')}
               {/if}
             </li>
           {/if}

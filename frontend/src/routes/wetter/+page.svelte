@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t, dfLocale, tServer } from '$lib/i18n';
   import { onMount } from 'svelte';
   import {
     ArrowLeft, Check, Cloud, CloudDrizzle, CloudFog, CloudLightning, CloudRain,
@@ -6,7 +7,6 @@
     Sunset, Thermometer, Wind, X,
   } from 'lucide-svelte';
   import { format, parseISO } from 'date-fns';
-  import { de } from 'date-fns/locale';
   import { ApiError, weatherApi } from '$lib/api';
   import { session } from '$lib/stores';
   import type { WeatherData, WeatherLocation, WeatherWindow } from '$lib/types';
@@ -31,7 +31,7 @@
   const iconFor = (name: string) => icons[name] ?? Cloud;
 
   const dayLabel = (iso: string, index: number) =>
-    index === 0 ? 'Heute' : index === 1 ? 'Morgen' : format(parseISO(iso), 'EEEE', { locale: de });
+    index === 0 ? t('Heute') : index === 1 ? t('Morgen') : format(parseISO(iso), 'EEEE', { locale: dfLocale });
 
   const clock = (iso: string) => {
     try {
@@ -70,7 +70,7 @@
       weather = await weatherApi.get();
       loadError = '';
     } catch (e) {
-      loadError = e instanceof ApiError ? e.message : 'Wetter konnte nicht geladen werden';
+      loadError = e instanceof ApiError ? e.message : t('Wetter konnte nicht geladen werden');
     } finally {
       loading = false;
     }
@@ -100,9 +100,9 @@
     searching = true;
     try {
       results = await weatherApi.search(query.trim());
-      if (results.length === 0) searchError = `Kein Ort gefunden für „${query.trim()}"`;
+      if (results.length === 0) searchError = t('Kein Ort gefunden für „{0}"', [query.trim()]);
     } catch (e) {
-      searchError = e instanceof ApiError ? e.message : 'Ortssuche fehlgeschlagen';
+      searchError = e instanceof ApiError ? e.message : t('Ortssuche fehlgeschlagen');
       results = [];
     } finally {
       searching = false;
@@ -121,7 +121,7 @@
       await new Promise((r) => setTimeout(r, 900));
       await load();
     } catch (e) {
-      searchError = e instanceof ApiError ? e.message : 'Standort konnte nicht gespeichert werden';
+      searchError = e instanceof ApiError ? e.message : t('Standort konnte nicht gespeichert werden');
     } finally {
       saving = false;
     }
@@ -130,14 +130,14 @@
   onMount(load);
 </script>
 
-<svelte:head><title>Wetter · Familien Dashboard</title></svelte:head>
+<svelte:head><title>{t('Wetter · Familien Dashboard')}</title></svelte:head>
 
 <div class="mx-auto max-w-2xl px-4 py-5">
   <a
     href="/"
     class="mb-4 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
   >
-    <ArrowLeft class="h-4 w-4" /> Übersicht
+    <ArrowLeft class="h-4 w-4" /> {t('Übersicht')}
   </a>
 
   {#if loading}
@@ -145,9 +145,9 @@
   {:else if !weather}
     <section class="card p-8 text-center">
       <Cloud class="mx-auto mb-3 h-10 w-10 text-muted-foreground opacity-40" />
-      <p class="font-medium">Keine Wetterdaten</p>
+      <p class="font-medium">{t('Keine Wetterdaten')}</p>
       <p class="mt-1 text-sm text-muted-foreground">{loadError}</p>
-      <button class="btn-outline mt-4" onclick={load}>Erneut versuchen</button>
+      <button class="btn-outline mt-4" onclick={load}>{t('Erneut versuchen')}</button>
     </section>
   {:else}
     {@const Icon = iconFor(weather.current.icon)}
@@ -157,20 +157,20 @@
         class="mb-4 flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground disabled:cursor-default disabled:hover:text-muted-foreground"
         onclick={() => isAdmin && (picking = !picking)}
         disabled={!isAdmin}
-        title={isAdmin ? 'Ort ändern' : 'Ort ändert ein Administrator'}
+        title={isAdmin ? t('Ort ändern') : t('Ort ändert ein Administrator')}
       >
         <MapPin class="h-4 w-4 shrink-0" />
-        {locationLabel(weather.location) || 'Ort wählen'}
+        {locationLabel(weather.location) || t('Ort wählen')}
       </button>
 
       {#if picking}
         <div class="mb-5 rounded-xl border border-border p-3">
           <div class="mb-2 flex items-center justify-between">
-            <p class="text-sm font-medium">Ort suchen</p>
+            <p class="text-sm font-medium">{t('Ort suchen')}</p>
             <button
               class="touch-target text-muted-foreground"
               onclick={() => (picking = false)}
-              aria-label="Schließen"
+              aria-label={t('Schließen')}
             >
               <X class="h-4 w-4" />
             </button>
@@ -182,7 +182,7 @@
             />
             <input
               class="input pl-9"
-              placeholder="z. B. Wien, Salzburg…"
+              placeholder={t('z. B. Wien, Salzburg…')}
               bind:value={query}
               oninput={onQueryInput}
             />
@@ -232,9 +232,9 @@
           <p class="text-5xl font-bold tabular-nums">
             {Math.round(weather.current.temperature)}°
           </p>
-          <p class="text-lg">{weather.current.description}</p>
+          <p class="text-lg">{tServer(weather.current.description)}</p>
           <p class="text-sm text-muted-foreground">
-            gefühlt {Math.round(weather.current.feels_like)}°
+            {t('gefühlt {0}°', [Math.round(weather.current.feels_like)])}
           </p>
         </div>
       </div>
@@ -245,12 +245,12 @@
           <p class="text-sm font-medium tabular-nums">
             {weather.current.wind_speed.toFixed(0)} km/h
           </p>
-          <p class="text-[11px] text-muted-foreground">Wind</p>
+          <p class="text-[11px] text-muted-foreground">{t('Wind')}</p>
         </div>
         <div>
           <Droplets class="mx-auto mb-1 h-4 w-4 text-muted-foreground" />
           <p class="text-sm font-medium tabular-nums">{weather.current.humidity}%</p>
-          <p class="text-[11px] text-muted-foreground">Luftfeuchte</p>
+          <p class="text-[11px] text-muted-foreground">{t('Luftfeuchte')}</p>
         </div>
         <div>
           <Thermometer class="mx-auto mb-1 h-4 w-4 text-muted-foreground" />
@@ -259,18 +259,17 @@
               weather.forecast[0]?.temp_min ?? 0,
             )}°
           </p>
-          <p class="text-[11px] text-muted-foreground">Heute</p>
+          <p class="text-[11px] text-muted-foreground">{t('Heute')}</p>
         </div>
       </div>
 
       {#if weather.stale}
         <p class="mt-4 rounded-lg bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
-          Offline – zeigt die zuletzt gespeicherten Daten von
-          {format(parseISO(weather.updated), 'dd.MM. HH:mm')} Uhr.
+          {t('Offline – zeigt die zuletzt gespeicherten Daten von {0} Uhr.', [format(parseISO(weather.updated), t('dd.MM. HH:mm'))])}
         </p>
       {:else}
         <p class="mt-4 text-xs text-muted-foreground">
-          Aktualisiert um {format(parseISO(weather.updated), 'HH:mm')} Uhr
+          {t('Aktualisiert um {0} Uhr', [format(parseISO(weather.updated), 'HH:mm')])}
         </p>
       {/if}
     </section>
@@ -283,16 +282,16 @@
     <section class="card mb-4">
       <div class="p-4 pb-3">
         <h2 class="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-          Trockenfenster
+          {t('Trockenfenster')}
         </h2>
         <p class="mt-1 text-xs text-muted-foreground">
-          Zeiträume ohne Regen, zwischen Sonnenaufgang und Sonnenuntergang.
+          {t('Zeiträume ohne Regen, zwischen Sonnenaufgang und Sonnenuntergang.')}
         </p>
       </div>
 
       {#if fenster.length === 0}
         <p class="border-t border-border p-4 text-sm text-muted-foreground">
-          In der Vorhersage ist kein trockener Zeitraum von mindestens anderthalb Stunden dabei.
+          {t('In der Vorhersage ist kein trockener Zeitraum von mindestens anderthalb Stunden dabei.')}
         </p>
       {:else}
         <ul class="divide-y divide-border border-t border-border">
@@ -307,12 +306,12 @@
               <div class="min-w-0 flex-1">
                 <p class="flex flex-wrap items-center gap-x-2 text-sm font-medium">
                   <span class="capitalize">{dayLabel(f.tag.date, f.tagIndex)}</span>
-                  <span class="tabular-nums">{uhr(f.fenster.from)}–{uhr(f.fenster.to)} Uhr</span>
+                  <span class="tabular-nums">{t('{0}–{1} Uhr', [uhr(f.fenster.from), uhr(f.fenster.to)])}</span>
                   {#if f.fenster.now}
                     <span
                       class="rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-primary"
                     >
-                      läuft
+                      {t('läuft')}
                     </span>
                   {/if}
                 </p>
@@ -337,7 +336,7 @@
       -->
       <section class="card mb-4">
         <h2 class="p-4 pb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-          Stunde für Stunde
+          {t('Stunde für Stunde')}
         </h2>
         <div class="scrollbar-thin flex gap-1 overflow-x-auto px-4 pb-4">
           {#each stunden as h (h.time)}
@@ -359,14 +358,14 @@
           {/each}
         </div>
         <p class="px-4 pb-4 text-[11px] text-muted-foreground">
-          Hinterlegt: Stunden, in denen Regen zu erwarten ist.
+          {t('Hinterlegt: Stunden, in denen Regen zu erwarten ist.')}
         </p>
       </section>
     {/if}
 
     <section class="card divide-y divide-border">
       <h2 class="p-4 pb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-        Die nächsten Tage
+        {t('Die nächsten Tage')}
       </h2>
       {#each weather.forecast as day, i (day.date)}
         {@const DayIcon = iconFor(day.icon)}
@@ -375,12 +374,12 @@
           <DayIcon class="h-7 w-7 shrink-0 text-primary" />
 
           <div class="min-w-0 flex-1">
-            <p class="truncate text-sm">{day.description}</p>
+            <p class="truncate text-sm">{tServer(day.description)}</p>
             {#if (day.windows ?? []).length > 0}
               <p class="truncate text-[11px] text-primary">
-                Trocken {(day.windows ?? [])
+                {t('Trocken {0}', [(day.windows ?? [])
                   .map((w: WeatherWindow) => `${uhr(w.from)}–${uhr(w.to)}`)
-                  .join(' · ')}
+                  .join(' · ')])}
               </p>
             {/if}
             <p class="flex flex-wrap items-center gap-x-3 text-[11px] text-muted-foreground">
@@ -411,7 +410,7 @@
     </section>
 
     <p class="mt-4 text-center text-xs text-muted-foreground">
-      Daten von Open-Meteo · kein Konto, kein API-Schlüssel
+      {t('Daten von Open-Meteo · kein Konto, kein API-Schlüssel')}
     </p>
   {/if}
 </div>

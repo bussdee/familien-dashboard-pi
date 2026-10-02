@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t, tServer } from '$lib/i18n';
   import {
     Activity, ExternalLink, HardDrive, RefreshCw, Server, Wifi, WifiOff,
   } from 'lucide-svelte';
@@ -29,7 +30,7 @@
     down: '#ef4444',
     unknown: '#94a3b8',
   };
-  const labels: Record<string, string> = { up: 'Online', down: 'Offline', unknown: 'Unbekannt' };
+  const labels: Record<string, string> = { up: t('Online'), down: t('Offline'), unknown: t('Unbekannt') };
 
   async function refresh() {
     refreshing = true;
@@ -43,24 +44,24 @@
 
 {#snippet zeile()}
   {#if devices.length === 0}
-    Keine Geräte eingerichtet
+    {t('Keine Geräte eingerichtet')}
   {:else}
-    {online} von {devices.length} erreichbar
+    {t('{0} von {1} erreichbar', [online, devices.length])}
   {/if}
 {/snippet}
 
 {#snippet aktionen()}
-  <button class="btn-ghost px-2" onclick={refresh} aria-label="Status aktualisieren">
+  <button class="btn-ghost px-2" onclick={refresh} aria-label={t('Status aktualisieren')}>
     <RefreshCw class="h-5 w-5 {refreshing ? 'animate-spin' : ''}" />
   </button>
 {/snippet}
 
-<Kachel ton="var(--ton-geraete)" titel="Geräte" icon={Wifi} {zeile} {aktionen}>
+<Kachel ton="var(--ton-geraete)" titel={t('Geräte')} icon={Wifi} {zeile} {aktionen}>
   {#if devices.length === 0}
     <KachelLeer
       icon={WifiOff}
-      titel="Keine Geräte eingerichtet"
-      hinweis="Unter Verwaltung → Geräte anlegen. Die mitgelieferten Beispiele stehen dort abgeschaltet bereit."
+      titel={t('Keine Geräte eingerichtet')}
+      hinweis={t('Unter Verwaltung → Geräte anlegen. Die mitgelieferten Beispiele stehen dort abgeschaltet bereit.')}
     />
   {:else}
     <ul class="space-y-2">
@@ -113,8 +114,8 @@
                 </p>
               {/if}
               {#if device.error}
-                <p class="max-w-[150px] truncate text-[11px] text-destructive" title={device.error}>
-                  {device.error}
+                <p class="max-w-[150px] truncate text-[11px] text-destructive" title={tServer(device.error)}>
+                  {tServer(device.error)}
                 </p>
               {/if}
             </div>
@@ -123,7 +124,7 @@
       {/each}
     </ul>
     <p class="mt-3 text-xs text-muted-foreground">
-      Antippen öffnet die Oberfläche des Geräts in einem neuen Tab.
+      {t('Antippen öffnet die Oberfläche des Geräts in einem neuen Tab.')}
     </p>
   {/if}
 </Kachel>

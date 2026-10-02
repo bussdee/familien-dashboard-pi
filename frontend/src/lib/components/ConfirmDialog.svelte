@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n';
   import { TriangleAlert } from 'lucide-svelte';
   import { confirmStore } from '$lib/stores/confirm.svelte';
 

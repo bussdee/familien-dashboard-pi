@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n';
   import {
     ListMusic, Pause, Play, Repeat, Repeat1, RotateCcw, RotateCw, Shuffle,
     SkipBack, SkipForward, Volume2, X,
@@ -45,7 +46,7 @@
         class="flex items-center justify-between gap-2 bg-destructive/10 px-4 py-1.5 text-xs text-destructive"
       >
         <span class="min-w-0 flex-1 truncate">{player.fehler}</span>
-        <button onclick={() => (player.fehler = '')} aria-label="Schließen">
+        <button onclick={() => (player.fehler = '')} aria-label={t('Schließen')}>
           <X class="h-3.5 w-3.5 shrink-0" />
         </button>
       </p>
@@ -56,7 +57,7 @@
         nichts machen — aber man kann es sagen, statt stumm zu bleiben.
       -->
       <p class="bg-amber-500/10 px-4 py-1.5 text-xs text-amber-700 dark:text-amber-400">
-        Der Browser lässt Ton erst nach einer Berührung zu. Einmal auf ▶ tippen.
+        {t('Der Browser lässt Ton erst nach einer Berührung zu. Einmal auf ▶ tippen.')}
       </p>
     {/if}
 
@@ -97,7 +98,7 @@
         value={fortschritt}
         oninput={suchen}
         disabled={player.laenge === 0}
-        aria-label="Position im Titel"
+        aria-label={t('Position im Titel')}
       />
     </div>
 
@@ -108,7 +109,7 @@
           {#if track.artist}{track.artist} · {/if}
           {zeit(player.position)}{#if player.laenge > 0}&nbsp;/&nbsp;{zeit(player.laenge)}{/if}
           {#if player.queue.length > 1}
-            · {player.index + 1} von {player.queue.length}
+            {t('· {0} von {1}', [player.index + 1, player.queue.length])}
           {/if}
         </p>
       </div>
@@ -117,8 +118,8 @@
       <button
         class="btn-ghost hidden shrink-0 rounded-full px-2 text-muted-foreground sm:inline-flex"
         onclick={() => player.spule(-15)}
-        aria-label="15 Sekunden zurück"
-        title="15 Sekunden zurück"
+        aria-label={t('15 Sekunden zurück')}
+        title={t('15 Sekunden zurück')}
       >
         <RotateCcw class="h-4 w-4" />
       </button>
@@ -126,7 +127,7 @@
       <button
         class="btn-ghost shrink-0 rounded-full px-2"
         onclick={() => player.zurueck()}
-        aria-label="Voriger Titel"
+        aria-label={t('Voriger Titel')}
       >
         <SkipBack class="h-5 w-5" />
       </button>
@@ -134,7 +135,7 @@
       <button
         class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground transition-transform active:scale-95"
         onclick={() => player.toggle()}
-        aria-label={player.playing ? 'Pause' : 'Abspielen'}
+        aria-label={player.playing ? t('Pause') : t('Abspielen')}
       >
         {#if player.playing}
           <Pause class="h-5 w-5" />
@@ -146,7 +147,7 @@
       <button
         class="btn-ghost shrink-0 rounded-full px-2"
         onclick={() => player.weiter()}
-        aria-label="Nächster Titel"
+        aria-label={t('Nächster Titel')}
       >
         <SkipForward class="h-5 w-5" />
       </button>
@@ -154,8 +155,8 @@
       <button
         class="btn-ghost hidden shrink-0 rounded-full px-2 text-muted-foreground sm:inline-flex"
         onclick={() => player.spule(30)}
-        aria-label="30 Sekunden vor"
-        title="30 Sekunden vor"
+        aria-label={t('30 Sekunden vor')}
+        title={t('30 Sekunden vor')}
       >
         <RotateCw class="h-4 w-4" />
       </button>
@@ -164,9 +165,9 @@
         class="btn-ghost hidden shrink-0 rounded-full px-2 md:inline-flex
           {player.zufall ? 'text-primary' : 'text-muted-foreground'}"
         onclick={() => player.zufallUmschalten()}
-        aria-label="Zufallswiedergabe"
+        aria-label={t('Zufallswiedergabe')}
         aria-pressed={player.zufall}
-        title="Zufallswiedergabe"
+        title={t('Zufallswiedergabe')}
       >
         <Shuffle class="h-4 w-4" />
       </button>
@@ -175,12 +176,12 @@
         class="btn-ghost hidden shrink-0 rounded-full px-2 md:inline-flex
           {player.wiederholen === 'aus' ? 'text-muted-foreground' : 'text-primary'}"
         onclick={() => player.wiederholungUmschalten()}
-        aria-label="Wiederholen: {player.wiederholen}"
+        aria-label={t('Wiederholen: {0}', [player.wiederholen])}
         title={player.wiederholen === 'titel'
-          ? 'Diesen Titel wiederholen'
+          ? t('Diesen Titel wiederholen')
           : player.wiederholen === 'liste'
-            ? 'Liste wiederholen'
-            : 'Nicht wiederholen'}
+            ? t('Liste wiederholen')
+            : t('Nicht wiederholen')}
       >
         {#if player.wiederholen === 'titel'}
           <Repeat1 class="h-4 w-4" />
@@ -199,7 +200,7 @@
           step="0.05"
           value={player.volume}
           oninput={(e) => player.setVolume(Number((e.currentTarget as HTMLInputElement).value))}
-          aria-label="Lautstärke"
+          aria-label={t('Lautstärke')}
         />
       </label>
 
@@ -209,7 +210,7 @@
             ? 'text-primary'
             : 'text-muted-foreground'}"
           onclick={() => (listeOffen = !listeOffen)}
-          aria-label="Titelliste"
+          aria-label={t('Titelliste')}
           aria-expanded={listeOffen}
         >
           <ListMusic class="h-4 w-4" />
@@ -219,8 +220,8 @@
       <button
         class="btn-ghost shrink-0 rounded-full px-2 text-muted-foreground hover:text-destructive"
         onclick={() => player.stop()}
-        aria-label="Wiedergabe beenden"
-        title="Wiedergabe beenden"
+        aria-label={t('Wiedergabe beenden')}
+        title={t('Wiedergabe beenden')}
       >
         <X class="h-4 w-4" />
       </button>

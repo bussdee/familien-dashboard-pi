@@ -1,11 +1,12 @@
 <script lang="ts">
+  import { t, tServer } from '$lib/i18n';
   import { Flame, Gift, Trophy } from 'lucide-svelte';
   import type { Score } from '$lib/types';
 
   let { me, total = 0 }: { me: Score | null; total?: number } = $props();
 
   const platz = $derived(
-    me && total > 0 ? `Platz ${me.rank} von ${total}` : null,
+    me && total > 0 ? t('Platz {0} von {1}', [me.rank, total]) : null,
   );
 </script>
 
@@ -32,11 +33,11 @@
     <span class="min-w-0 flex-1">
       <span class="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
         <span class="text-sm">
-          Level {me.level} · {me.level_name}
+          {t('Level {0} · {1}', [me.level, tServer(me.level_name)])}
           {#if platz}<span class="font-light text-muted-foreground">· {platz}</span>{/if}
         </span>
         <span class="text-xs font-light text-muted-foreground">
-          noch {me.points_to_next} bis Level {me.level + 1}
+          {t('noch {0} bis Level {1}', [me.points_to_next, me.level + 1])}
         </span>
       </span>
       <span class="mt-2 block h-[5px] overflow-hidden rounded-full bg-muted">
@@ -50,13 +51,13 @@
     {#if me.streak_days >= 2}
       <span class="flex shrink-0 items-center gap-1.5 text-xs text-amber-500 dark:text-amber-400">
         <Flame class="h-3.5 w-3.5" />
-        <span class="hidden sm:inline">{me.streak_days} Tage in Folge</span>
+        <span class="hidden sm:inline">{t('{0} Tage in Folge', [me.streak_days])}</span>
         <span class="sm:hidden">{me.streak_days}</span>
       </span>
     {/if}
 
     {#if me.badges.length > 0}
-      <span class="hidden shrink-0 items-center gap-1 text-sm md:flex" title="Abzeichen">
+      <span class="hidden shrink-0 items-center gap-1 text-sm md:flex" title={t('Abzeichen')}>
         {#each me.badges.slice(0, 3) as badge (badge.id)}
           <span>{badge.emoji}</span>
         {/each}
@@ -70,12 +71,12 @@
   <a
     href="/belohnungen"
     class="flex shrink-0 items-center gap-2 border-l border-[color:var(--haarlinie)] pl-3 pr-1 transition-colors hover:bg-muted/20 sm:pl-5"
-    title="Guthaben für Belohnungen"
+    title={t('Guthaben für Belohnungen')}
   >
     <span class="kachel-symbol" style="--ton: var(--ton-belohnung)"><Gift class="h-[18px] w-[18px]" /></span>
     <span class="leading-tight">
       <span class="block font-semibold tabular-nums">{me.balance}</span>
-      <span class="block text-[11px] text-muted-foreground">Guthaben</span>
+      <span class="block text-[11px] text-muted-foreground">{t('Guthaben')}</span>
     </span>
   </a>
   </div>

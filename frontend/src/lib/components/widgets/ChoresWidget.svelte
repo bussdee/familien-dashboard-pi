@@ -1,11 +1,11 @@
 <script lang="ts">
+  import { t, dfLocale } from '$lib/i18n';
   import { untrack } from 'svelte';
   import { schnell } from '$lib/stores/schnell.svelte';
   import {
     CalendarClock, Check, CircleAlert, Eraser, Eye, Hourglass, ListChecks, Pencil, Plus, Trash2, X,
   } from 'lucide-svelte';
   import { format, parseISO } from 'date-fns';
-  import { de } from 'date-fns/locale';
   import { ApiError, choresApi, pendingApi } from '$lib/api';
   import { eltern } from '$lib/stores/eltern.svelte';
   import { toast } from '$lib/stores/toast.svelte';
@@ -87,7 +87,7 @@
 
   async function bestaetigen(p: PendingCompletion) {
     if (entscheidet !== null) return;
-    if (!(await eltern.brauche(`${p.user_name}: „${p.title}“ bestätigen`))) return;
+    if (!(await eltern.brauche(t('{0}: „{1}“ bestätigen', [p.user_name, p.title])))) return;
     entscheidet = p.completion_id;
     try {
       const r = await pendingApi.approve(p.completion_id);
@@ -95,7 +95,7 @@
       await onRefresh();
       await board.award(r.user_id, r.points_awarded, `${p.user_name}: ${r.title}`);
     } catch (e) {
-      error = e instanceof ApiError ? e.message : 'Konnte nicht bestätigen';
+      error = e instanceof ApiError ? e.message : t('Konnte nicht bestätigen');
       void ladeOffene();
     } finally {
       entscheidet = null;
@@ -104,15 +104,15 @@
 
   async function ablehnen(p: PendingCompletion) {
     if (entscheidet !== null) return;
-    if (!(await eltern.brauche(`${p.user_name}: „${p.title}“ ablehnen`))) return;
+    if (!(await eltern.brauche(t('{0}: „{1}“ ablehnen', [p.user_name, p.title])))) return;
     entscheidet = p.completion_id;
     try {
       await pendingApi.reject(p.completion_id);
       offene = offene.filter((x) => x.completion_id !== p.completion_id);
       await onRefresh();
-      toast(`„${p.title}“ ist wieder offen — noch einmal ran, ${p.user_name}.`);
+      toast(t('„{0}“ ist wieder offen — noch einmal ran, {1}.', [p.title, p.user_name]));
     } catch (e) {
-      error = e instanceof ApiError ? e.message : 'Konnte nicht ablehnen';
+      error = e instanceof ApiError ? e.message : t('Konnte nicht ablehnen');
       void ladeOffene();
     } finally {
       entscheidet = null;
@@ -142,7 +142,7 @@
       if (result.pending) {
         // Erledigt, aber die Punkte warten auf ein Elternteil. Kein Konfetti
         // für etwas, das noch nicht feststeht — aber ein klares Wort.
-        toast(`Erledigt! Die ${result.points_pending ?? chore.points} Punkte gibt es, sobald Mama oder Papa nachgesehen hat.`, {
+        toast(t('Erledigt! Die {0} Punkte gibt es, sobald Mama oder Papa nachgesehen hat.', [result.points_pending ?? chore.points]), {
           ton: 'erfolg',
           dauer: 5000,
         });
@@ -152,7 +152,7 @@
         await board.award(wer, result.points_awarded, result.title || chore.title);
       }
     } catch (e) {
-      error = e instanceof ApiError ? e.message : 'Konnte nicht abhaken';
+      error = e instanceof ApiError ? e.message : t('Konnte nicht abhaken');
       // Hat jemand anderes am anderen Gerät zuerst abgehakt, ist unsere
       // Liste veraltet — neu laden, damit die Zeile stimmt.
       if (e instanceof ApiError && e.status === 409) await onRefresh();
@@ -220,21 +220,21 @@
       editingId = null;
       await onRefresh();
     } catch (e) {
-      error = e instanceof ApiError ? e.message : 'Konnte nicht speichern';
+      error = e instanceof ApiError ? e.message : t('Konnte nicht speichern');
     }
   }
 
   async function remove(chore: Chore) {
     const ok = await confirmAction({
-      title: `„${chore.title}“ löschen?`,
-      message: 'Die Aufgabe verschwindet für alle. Bereits vergebene Punkte bleiben.',
+      title: t('„{0}“ löschen?', [chore.title]),
+      message: t('Die Aufgabe verschwindet für alle. Bereits vergebene Punkte bleiben.'),
     });
     if (!ok) return;
     try {
       await choresApi.remove(chore.id);
       await onRefresh();
     } catch (e) {
-      error = e instanceof ApiError ? e.message : 'Konnte nicht löschen';
+      error = e instanceof ApiError ? e.message : t('Konnte nicht löschen');
     }
   }
 
@@ -242,17 +242,16 @@
   // wären es am Monatsende zwanzig Klicks.
   async function aufraeumen() {
     const ok = await confirmAction({
-      title: `${abgehakt.length} erledigte Aufgaben löschen?`,
+      title: t('{0} erledigte Aufgaben löschen?', [abgehakt.length]),
       message:
-        'Nur einmalige Aufgaben, die abgehakt sind. Die vergebenen Punkte und die ' +
-        'Monatsranglisten bleiben davon unberührt.',
+        t('Nur einmalige Aufgaben, die abgehakt sind. Die vergebenen Punkte und die Monatsranglisten bleiben davon unberührt.'),
     });
     if (!ok) return;
     try {
       await choresApi.clearDone();
       await onRefresh();
     } catch (e) {
-      error = e instanceof ApiError ? e.message : 'Konnte nicht aufräumen';
+      error = e instanceof ApiError ? e.message : t('Konnte nicht aufräumen');
     }
   }
 
@@ -268,54 +267,56 @@
     // Donnerstag" wäre hier schlicht gelogen.
     if (chore.done) {
       return chore.last_done_at
-        ? `Am ${format(parseISO(chore.last_done_at), 'd. MMM', { locale: de })}`
-        : 'Erledigt';
+        ? t('Am {0}', [format(parseISO(chore.last_done_at), t('d. MMM'), { locale: dfLocale })])
+        : t('Erledigt');
     }
-    if (!chore.next_due_at) return 'Kein Termin';
+    if (!chore.next_due_at) return t('Kein Termin');
     if (chore.is_overdue) {
       const days = Math.abs(chore.days_until_due);
-      return days >= 1 ? `${days} Tage überfällig` : 'Überfällig';
+      return days >= 1 ? t('{0} Tage überfällig', [days]) : t('Überfällig');
     }
-    if (chore.is_due) return 'Heute fällig';
+    if (chore.is_due) return t('Heute fällig');
 
-    const wieder = isDone(chore) ? 'Wieder ' : '';
-    if (chore.days_until_due === 1) return `${wieder}morgen`;
-    const tag = format(parseISO(chore.next_due_at), 'EEEE, d. MMM', { locale: de });
-    return wieder ? `${wieder}${tag}` : tag;
+    // Ganze Sätze statt zusammengesetzter Stücke: Im Englischen steht das
+    // „wieder" woanders als im Deutschen.
+    const wieder = isDone(chore);
+    if (chore.days_until_due === 1) return wieder ? t('Wieder morgen') : t('Morgen');
+    const tag = format(parseISO(chore.next_due_at), t('EEEE, d. MMM'), { locale: dfLocale });
+    return wieder ? t('Wieder {0}', [tag]) : tag;
   }
 
   // Wer ist zuständig? "Alle" und "Wer mag" sind bewusste Antworten und
   // nicht dasselbe wie eine leere Zeile.
   function whoLabel(chore: Chore): string {
-    if (chore.assignment === 'everyone') return '👪 Alle';
-    if (chore.assignment === 'nobody') return '🙋 Wer mag';
+    if (chore.assignment === 'everyone') return t('👪 Alle');
+    if (chore.assignment === 'nobody') return t('🙋 Wer mag');
     if (chore.assignee_name) return `${chore.assignee_emoji} ${chore.assignee_name}`;
-    return '🔄 Reihum';
+    return t('🔄 Reihum');
   }
 
   // Wer zuletzt dran war. Steht nur an erledigten Zeilen, dort ist es die
   // Antwort auf die naheliegende Frage "warum kann ich das nicht abhaken?".
   function doneLabel(chore: Chore): string {
     if (chore.pending_check) {
-      return chore.last_done_by ? `${chore.last_done_by} · wartet auf Bestätigung` : 'Wartet auf Bestätigung';
+      return chore.last_done_by ? t('{0} · wartet auf Bestätigung', [chore.last_done_by]) : t('Wartet auf Bestätigung');
     }
-    return chore.last_done_by ? `Erledigt von ${chore.last_done_by}` : 'Erledigt';
+    return chore.last_done_by ? t('Erledigt von {0}', [chore.last_done_by]) : t('Erledigt');
   }
 </script>
 
 {#snippet zeile()}
   {#if chores.length === 0}
-    Noch nichts angelegt
+    {t('Noch nichts angelegt')}
   {:else}
     {#if overdue.length > 0}
-      <span class="text-destructive">{overdue.length} überfällig</span>
+      <span class="text-destructive">{t('{0} überfällig', [overdue.length])}</span>
     {:else if dueToday.length > 0}
-      {dueToday.length} heute fällig
+      {t('{0} heute fällig', [dueToday.length])}
     {:else}
-      Alles im Plan
+      {t('Alles im Plan')}
     {/if}
-    {#if mine.length > 0}· {mine.length} für dich{/if}
-    {#if abgehakt.length > 0}· {abgehakt.length} erledigt{/if}
+    {#if mine.length > 0}{t('· {0} für dich', [mine.length])}{/if}
+    {#if abgehakt.length > 0}{t('· {0} erledigt', [abgehakt.length])}{/if}
   {/if}
 {/snippet}
 
@@ -325,29 +326,29 @@
       <button
         class="btn-outline px-3"
         onclick={aufraeumen}
-        aria-label="Erledigte einmalige Aufgaben löschen"
-        title="{abgehakt.length} erledigte einmalige Aufgaben löschen"
+        aria-label={t('Erledigte einmalige Aufgaben löschen')}
+        title={t('{0} erledigte einmalige Aufgaben löschen', [abgehakt.length])}
       >
         <Eraser class="h-5 w-5" />
       </button>
     {/if}
-    <button class="btn-primary px-3" onclick={startNew} aria-label="Aufgabe hinzufügen">
+    <button class="btn-primary px-3" onclick={startNew} aria-label={t('Aufgabe hinzufügen')}>
       <Plus class="h-5 w-5" />
     </button>
   {/if}
 {/snippet}
 
-<Kachel ton="var(--ton-aufgaben)" titel="Aufgaben" icon={ListChecks} {zeile} {aktionen}>
+<Kachel ton="var(--ton-aufgaben)" titel={t('Aufgaben')} icon={ListChecks} {zeile} {aktionen}>
   {#if error}
     <p class="mb-3 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</p>
   {/if}
 
   <!-- Das Formular liegt als Fenster über der Seite. Inline würde es die
        Kachel bei jedem Anlegen um die halbe Höhe aufblähen. -->
-  <Modal bind:open={showForm} title={editingId !== null ? 'Aufgabe bearbeiten' : 'Neue Aufgabe'}>
+  <Modal bind:open={showForm} title={editingId !== null ? t('Aufgabe bearbeiten') : t('Neue Aufgabe')}>
     <form class="space-y-2" onsubmit={save}>
-      <input class="input" placeholder="Was ist zu tun?" bind:value={draft.title} maxlength="80" />
-      <input class="input" placeholder="Beschreibung (optional)" bind:value={draft.description} />
+      <input class="input" placeholder={t('Was ist zu tun?')} bind:value={draft.title} maxlength="80" />
+      <input class="input" placeholder={t('Beschreibung (optional)')} bind:value={draft.description} />
       <!--
         Einmalig oder wiederkehrend. Ein Intervall für „Keller aufräumen"
         wäre eine Erfindung: Die Aufgabe kommt nicht in sieben Tagen wieder,
@@ -357,10 +358,9 @@
       <label class="flex items-start gap-2 rounded-lg border border-border p-2.5 text-sm">
         <input type="checkbox" class="mt-0.5 h-4 w-4 rounded" bind:checked={draft.einmalig} />
         <span>
-          Nur einmal
+          {t('Nur einmal')}
           <span class="block text-xs text-muted-foreground">
-            Steht ab sofort an und ist nach dem Abhaken erledigt — zum Beispiel
-            ein Zahnarzttermin oder der Keller.
+            {t('Steht ab sofort an und ist nach dem Abhaken erledigt — zum Beispiel ein Zahnarzttermin oder der Keller.')}
           </span>
         </span>
       </label>
@@ -369,10 +369,9 @@
       <label class="flex items-start gap-2 rounded-lg border border-border p-2.5 text-sm">
         <input type="checkbox" class="mt-0.5 h-4 w-4 rounded" bind:checked={draft.pruefen} />
         <span>
-          Eltern bestätigen
+          {t('Eltern bestätigen')}
           <span class="block text-xs text-muted-foreground">
-            Kinder bekommen die Punkte erst, wenn Mama oder Papa nachgesehen
-            hat. Bis dahin steht die Aufgabe als „wartet" da.
+            {t('Kinder bekommen die Punkte erst, wenn Mama oder Papa nachgesehen hat. Bis dahin steht die Aufgabe als „wartet" da.')}
           </span>
         </span>
       </label>
@@ -382,21 +381,21 @@
       <div class="grid grid-cols-2 gap-2">
         {#if !draft.einmalig}
           <label class="text-xs text-muted-foreground">
-            Alle X Tage
+            {t('Alle X Tage')}
             <input class="input mt-1" type="number" min="1" max="365" bind:value={draft.interval_days} />
           </label>
         {/if}
         <label class="text-xs text-muted-foreground {draft.einmalig ? 'col-span-2' : ''}">
-          Punkte
+          {t('Punkte')}
           <input class="input mt-1" type="number" min="1" max="500" bind:value={draft.points} />
         </label>
       </div>
       <label class="block text-xs text-muted-foreground">
-          Zuständig
+          {t('Zuständig')}
           <select class="input mt-1" bind:value={draft.zustaendig}>
-            <option value="rotate">🔄 Reihum</option>
-            <option value="everyone">👪 Alle</option>
-            <option value="nobody">🙋 Wer mag</option>
+            <option value="rotate">{t('🔄 Reihum')}</option>
+            <option value="everyone">{t('👪 Alle')}</option>
+            <option value="nobody">{t('🙋 Wer mag')}</option>
             {#each users as u (u.id)}
               <option value={String(u.id)}>{u.avatar_emoji} {u.name}</option>
             {/each}
@@ -404,19 +403,19 @@
       </label>
       <div class="flex gap-2 pt-1">
         <button type="button" class="btn-outline flex-1" onclick={() => (showForm = false)}>
-          Abbrechen
+          {t('Abbrechen')}
         </button>
         <button class="btn-primary flex-1" disabled={!draft.title.trim()}>
-          {editingId !== null ? 'Änderungen speichern' : 'Anlegen'}
+          {editingId !== null ? t('Änderungen speichern') : t('Anlegen')}
         </button>
       </div>
     </form>
   </Modal>
 
   {#if offene.length > 0}
-    <section class="mb-3 rounded-xl border border-amber-500/30 bg-amber-500/5 p-2.5" aria-label="Zu bestätigen">
+    <section class="mb-3 rounded-xl border border-amber-500/30 bg-amber-500/5 p-2.5" aria-label={t('Zu bestätigen')}>
       <p class="mb-1.5 flex items-center gap-1.5 px-1 text-xs font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-400">
-        <Eye class="h-3.5 w-3.5" /> Zu bestätigen · {offene.length}
+        <Eye class="h-3.5 w-3.5" /> {t('Zu bestätigen · {0}', [offene.length])}
       </p>
       <ul class="space-y-1">
         {#each offene as p (p.completion_id)}
@@ -432,7 +431,7 @@
                 onclick={() => ablehnen(p)}
                 disabled={entscheidet !== null}
                 aria-label="{p.title} von {p.user_name} ablehnen"
-                title="Noch nicht — wieder offen"
+                title={t('Noch nicht — wieder offen')}
               >
                 <X class="h-5 w-5" />
               </button>
@@ -440,7 +439,7 @@
                 class="flex h-11 shrink-0 items-center gap-1 rounded-full bg-success px-3 text-sm font-semibold text-success-foreground hover:bg-success/90 disabled:opacity-50"
                 onclick={() => bestaetigen(p)}
                 disabled={entscheidet !== null}
-                aria-label="{p.title} von {p.user_name} bestätigen"
+                aria-label={t('{0} von {1} bestätigen', [p.title, p.user_name])}
               >
                 <Check class="h-4 w-4" /> +{p.points}
               </button>
@@ -454,10 +453,10 @@
   {#if chores.length === 0}
     <KachelLeer
       icon={ListChecks}
-      titel="Noch keine Aufgaben angelegt"
+      titel={t('Noch keine Aufgaben angelegt')}
       hinweis={isAdmin
-        ? 'Mit + die erste anlegen. Jede Aufgabe hat ein Intervall und einen Punktwert.'
-        : 'Ein Elternteil legt die Aufgaben an.'}
+        ? t('Mit + die erste anlegen. Jede Aufgabe hat ein Intervall und einen Punktwert.')
+        : t('Ein Elternteil legt die Aufgaben an.')}
     />
   {:else}
     <ul class="scrollbar-thin max-h-[320px] overflow-y-auto pr-1">
@@ -472,7 +471,7 @@
               onclick={() => complete(chore)}
               disabled={completing !== null}
               aria-label="{chore.title} erledigt"
-              title="Erledigt – gibt {chore.points} Punkte"
+              title={t('Erledigt – gibt {0} Punkte', [chore.points])}
             >
               {#if completing === chore.id}
                 <span class="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></span>
@@ -501,7 +500,7 @@
             <!-- Steht erst später an, gemacht hat sie noch niemand. -->
             <span
               class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-dashed border-muted-foreground/25 text-muted-foreground"
-              title="Noch nicht an der Reihe"
+              title={t('Noch nicht an der Reihe')}
             >
               <CalendarClock class="h-4 w-4" />
             </span>
@@ -526,7 +525,7 @@
               {:else if chore.is_due}
                 <span class={chore.is_overdue ? 'text-destructive' : ''}>{dueLabel(chore)}</span>
                 <span>· {whoLabel(chore)}</span>
-                {#if chore.one_off}<span>· einmalig</span>{/if}
+                {#if chore.one_off}<span>{t('· einmalig')}</span>{/if}
               {:else if isDone(chore)}
                 <span class="text-primary">{doneLabel(chore)}</span>
                 <span>· {dueLabel(chore)}</span>
@@ -557,7 +556,7 @@
               <button
                 class="touch-target text-muted-foreground hover:text-destructive"
                 onclick={() => remove(chore)}
-                aria-label="{chore.title} löschen"
+                aria-label={t('{0} löschen', [chore.title])}
               >
                 <Trash2 class="h-4 w-4" />
               </button>

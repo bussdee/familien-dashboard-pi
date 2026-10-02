@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n';
   import { onMount } from 'svelte';
   import {
     ChevronDown, ChevronUp, Eye, EyeOff, GripVertical, LayoutGrid, RotateCcw,
@@ -47,25 +48,23 @@
 
   async function reset() {
     const ok = await confirmAction({
-      title: 'Ansicht zurücksetzen?',
-      message: 'Reihenfolge und Sichtbarkeit gehen auf den Standard zurück.',
-      confirmLabel: 'Zurücksetzen',
+      title: t('Ansicht zurücksetzen?'),
+      message: t('Reihenfolge und Sichtbarkeit gehen auf den Standard zurück.'),
+      confirmLabel: t('Zurücksetzen'),
     });
     if (ok) layout.reset();
   }
 </script>
 
-<svelte:head><title>Ansicht anpassen · Familien Dashboard</title></svelte:head>
+<svelte:head><title>{t('Ansicht anpassen · Familien Dashboard')}</title></svelte:head>
 
 <div class="mx-auto max-w-2xl px-4 py-5">
   <header class="mb-5">
     <h1 class="seiten-titel flex items-center gap-2">
-      <LayoutGrid class="h-7 w-7" /> Ansicht anpassen
+      <LayoutGrid class="h-7 w-7" /> {t('Ansicht anpassen')}
     </h1>
     <p class="text-sm text-muted-foreground">
-      Reihenfolge und Sichtbarkeit der Fenster auf deiner Übersicht. Am Griff
-      links ziehen oder mit den Pfeilen verschieben. Die Einstellung gilt nur
-      für dich.
+      {t('Reihenfolge und Sichtbarkeit der Fenster auf deiner Übersicht. Am Griff links ziehen oder mit den Pfeilen verschieben. Die Einstellung gilt nur für dich.')}
     </p>
   </header>
 
@@ -84,7 +83,7 @@
           onpointerup={ziehenEnde}
           onpointercancel={ziehenEnde}
           aria-label="{widget.label} verschieben (ziehen)"
-          title="Zum Verschieben ziehen"
+          title={t('Zum Verschieben ziehen')}
         >
           <GripVertical class="h-5 w-5" />
         </button>
@@ -95,7 +94,7 @@
         <div class="min-w-0 flex-1">
           <p class="text-sm font-medium">{widget.label}</p>
           <p class="truncate text-xs text-muted-foreground">
-            {hidden ? 'Ausgeblendet' : widget.hint}
+            {hidden ? t('Ausgeblendet') : widget.hint}
           </p>
         </div>
 
@@ -120,7 +119,7 @@
             class="touch-target {hidden ? 'text-muted-foreground' : 'text-primary'}"
             onclick={() => layout.toggle(widget.id)}
             aria-label={hidden ? `${widget.label} einblenden` : `${widget.label} ausblenden`}
-            title={hidden ? 'Einblenden' : 'Ausblenden'}
+            title={hidden ? t('Einblenden') : t('Ausblenden')}
           >
             {#if hidden}<EyeOff class="h-5 w-5" />{:else}<Eye class="h-5 w-5" />{/if}
           </button>
@@ -132,15 +131,15 @@
   <div class="flex items-center justify-between gap-3">
     <p class="text-xs text-muted-foreground">
       {#if layout.saving}
-        Wird gespeichert…
+        {t('Wird gespeichert…')}
       {:else}
-        Änderungen werden automatisch gespeichert.
+        {t('Änderungen werden automatisch gespeichert.')}
       {/if}
     </p>
     <button class="btn-outline text-sm" onclick={reset}>
-      <RotateCcw class="h-4 w-4" /> Zurücksetzen
+      <RotateCcw class="h-4 w-4" /> {t('Zurücksetzen')}
     </button>
   </div>
 
-  <a href="/" class="btn-primary mt-5 w-full">Zur Übersicht</a>
+  <a href="/" class="btn-primary mt-5 w-full">{t('Zur Übersicht')}</a>
 </div>

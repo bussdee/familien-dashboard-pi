@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n';
   import { board } from '$lib/stores/scores.svelte';
   import { Sparkles, Trophy } from 'lucide-svelte';
 
@@ -43,13 +44,13 @@
     <div class="animate-pop rounded-2xl border border-border bg-card px-8 py-7 text-center shadow-xl">
       {#if celebration.levelUp}
         <Trophy class="mx-auto mb-3 h-14 w-14 text-amber-500" />
-        <p class="text-sm font-medium uppercase tracking-wider text-amber-500">Level geschafft!</p>
+        <p class="text-sm font-medium uppercase tracking-wider text-amber-500">{t('Level geschafft!')}</p>
       {:else}
         <Sparkles class="mx-auto mb-3 h-12 w-12 text-primary" />
       {/if}
 
       <p class="text-4xl font-bold tabular-nums text-primary">+{celebration.points}</p>
-      <p class="text-sm text-muted-foreground">Punkte</p>
+      <p class="text-sm text-muted-foreground">{t('Punkte')}</p>
       <p class="mt-2 max-w-[220px] text-sm font-medium">{celebration.label}</p>
     </div>
   </div>

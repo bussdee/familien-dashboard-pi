@@ -1,3 +1,4 @@
+import { t } from '$lib/i18n';
 import { browser } from '$app/environment';
 import { setzeElternFreigabe } from '$lib/api';
 

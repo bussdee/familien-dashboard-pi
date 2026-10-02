@@ -1,7 +1,7 @@
 <script lang="ts">
+  import { t, dfLocale, tServer, monatsName } from '$lib/i18n';
   import { onMount, untrack } from 'svelte';
   import { formatDistanceToNow, parseISO } from 'date-fns';
-  import { de } from 'date-fns/locale';
   import { CalendarRange, Flame, Minus, Plus, ShoppingCart, Sparkles, Star, Trophy } from 'lucide-svelte';
   import { board, mitVorzeichen, quelle } from '$lib/stores/scores.svelte';
   import { punkte } from '$lib/stores/punkte.svelte';
@@ -31,10 +31,10 @@
    */
   function siegerzeile(monat: MonthBoard): string {
     const vorn = monat.ranks.filter((r) => r.rank === 1 && r.points > 0);
-    if (vorn.length === 0) return 'Noch keine Punkte';
+    if (vorn.length === 0) return t('Noch keine Punkte');
     const namen = vorn.map((r) => `${r.avatar_emoji} ${r.name}`).join(' und ');
-    const wort = monat.running ? 'Vorn' : vorn.length > 1 ? 'Geteilt gewonnen' : 'Gewonnen';
-    return `${wort}: ${namen} · ${vorn[0].points} Punkte`;
+    const wort = monat.running ? t('Vorn') : vorn.length > 1 ? t('Geteilt gewonnen') : t('Gewonnen');
+    return t('{0}: {1} · {2} Punkte', [wort, namen, vorn[0].points]);
   }
 
   const podium = $derived(board.podium);
@@ -51,7 +51,7 @@
   const heights = { 1: 'h-24', 2: 'h-16', 3: 'h-12' } as const;
 
   const relative = (iso: string) =>
-    formatDistanceToNow(parseISO(iso), { addSuffix: true, locale: de });
+    formatDistanceToNow(parseISO(iso), { addSuffix: true, locale: dfLocale });
 
   onMount(async () => {
     try {
@@ -77,25 +77,25 @@
   });
 </script>
 
-<svelte:head><title>Rangliste · Familien Dashboard</title></svelte:head>
+<svelte:head><title>{t('Rangliste · Familien Dashboard')}</title></svelte:head>
 
 <div class="mx-auto max-w-3xl px-4 py-5">
   <header class="mb-6 flex flex-wrap items-end justify-between gap-3">
     <div>
       <h1 class="seiten-titel flex items-center gap-2">
-        <Trophy class="h-7 w-7 text-amber-500" /> Rangliste
+        <Trophy class="h-7 w-7 text-amber-500" /> {t('Rangliste')}
       </h1>
       <p class="mt-1 text-sm text-muted-foreground">
-        Punkte gibt es für erledigte Aufgaben und fürs Einkaufen.
+        {t('Punkte gibt es für erledigte Aufgaben und fürs Einkaufen.')}
       </p>
     </div>
     <div class="flex flex-wrap gap-2">
       {#if admin}
         <button class="btn-primary text-sm" onclick={() => punkte.oeffnen()}>
-          <Sparkles class="h-4 w-4" /> Punkte vergeben
+          <Sparkles class="h-4 w-4" /> {t('Punkte vergeben')}
         </button>
       {/if}
-      <a href="/belohnungen" class="chip">🎁 Punkte eintauschen →</a>
+      <a href="/belohnungen" class="chip">{t('🎁 Punkte eintauschen →')}</a>
     </div>
   </header>
 
@@ -104,11 +104,11 @@
   {:else if podium.every((s) => s.total_points === 0)}
     <section class="card p-8 text-center">
       <Sparkles class="mx-auto mb-3 h-10 w-10 text-muted-foreground opacity-40" />
-      <p class="font-medium">Noch keine Punkte</p>
+      <p class="font-medium">{t('Noch keine Punkte')}</p>
       <p class="mt-1 text-sm text-muted-foreground">
-        Hake eine Aufgabe ab oder erledige den Einkauf – dann geht es los.
+        {t('Hake eine Aufgabe ab oder erledige den Einkauf – dann geht es los.')}
       </p>
-      <a href="/" class="btn-primary mt-4 inline-flex">Zur Übersicht</a>
+      <a href="/" class="btn-primary mt-4 inline-flex">{t('Zur Übersicht')}</a>
     </section>
   {:else}
     <!-- Podium -->
@@ -139,9 +139,9 @@
       <section class="card mb-4 flex items-center gap-3 p-5">
         <span class="text-3xl">{podium[0]?.avatar_emoji ?? '🏆'}</span>
         <div>
-          <p class="font-semibold">{podium[0]?.name} führt mit {podium[0]?.total_points} Punkten</p>
+          <p class="font-semibold">{t('{0} führt mit {1} Punkten', [podium[0]?.name, podium[0]?.total_points])}</p>
           <p class="text-sm text-muted-foreground">
-            Sobald jemand mitzieht, gibt es hier ein Siegertreppchen.
+            {t('Sobald jemand mitzieht, gibt es hier ein Siegertreppchen.')}
           </p>
         </div>
       </section>
@@ -164,11 +164,11 @@
             <p class="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-medium">
               {score.name}
               {#if score.id === $session.user?.id}
-                <span class="rounded-full bg-primary/15 px-2 py-0.5 text-[10px] text-primary">du</span>
+                <span class="rounded-full bg-primary/15 px-2 py-0.5 text-[10px] text-primary">{t('du')}</span>
               {/if}
               {#if score.streak_days >= 3}
                 <span class="flex items-center gap-0.5 text-[11px] text-orange-500">
-                  <Flame class="h-3 w-3" />{score.streak_days} Tage
+                  <Flame class="h-3 w-3" />{t('{0} Tage', [score.streak_days])}
                 </span>
               {/if}
             </p>
@@ -176,13 +176,13 @@
               <LevelBar {score} showLabel={false} size="sm" />
             </div>
             <p class="mt-1 text-[11px] text-muted-foreground">
-              Level {score.level} · {score.level_name} · diese Woche {score.this_week} P
+              {t('Level {0} · {1} · diese Woche {2} P', [score.level, tServer(score.level_name), score.this_week])}
             </p>
           </div>
 
           <div class="shrink-0 text-right">
             <p class="text-lg font-bold tabular-nums">{score.total_points}</p>
-            <p class="text-[11px] text-muted-foreground">Punkte</p>
+            <p class="text-[11px] text-muted-foreground">{t('Punkte')}</p>
           </div>
 
           <!-- Eltern buchen direkt in der Zeile: plus oder minus, die Person
@@ -192,16 +192,16 @@
               <button
                 class="flex h-9 w-9 items-center justify-center rounded-full bg-success/15 text-success transition-colors hover:bg-success/25"
                 onclick={() => punkte.oeffnen({ fuer: [score.id], modus: 'plus' })}
-                aria-label="{score.name} Punkte gutschreiben"
-                title="Gutschreiben"
+                aria-label={t('{0} Punkte gutschreiben', [score.name])}
+                title={t('Gutschreiben')}
               >
                 <Plus class="h-4 w-4" />
               </button>
               <button
                 class="flex h-9 w-9 items-center justify-center rounded-full bg-destructive/10 text-destructive transition-colors hover:bg-destructive/20"
                 onclick={() => punkte.oeffnen({ fuer: [score.id], modus: 'minus' })}
-                aria-label="{score.name} Punkte abziehen"
-                title="Abziehen"
+                aria-label={t('{0} Punkte abziehen', [score.name])}
+                title={t('Abziehen')}
               >
                 <Minus class="h-4 w-4" />
               </button>
@@ -215,16 +215,16 @@
     {#if me && me.badges.length > 0}
       <section class="card mb-4 p-5">
         <h2 class="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-          Deine Abzeichen
+          {t('Deine Abzeichen')}
         </h2>
         <div class="flex flex-wrap gap-2">
           {#each me.badges as badge (badge.id)}
             <span
               class="flex items-center gap-2 rounded-full bg-muted px-3 py-1.5 text-xs"
-              title={badge.description}
+              title={tServer(badge.description)}
             >
               <span class="text-base leading-none">{badge.emoji}</span>
-              {badge.label}
+              {tServer(badge.label)}
             </span>
           {/each}
         </div>
@@ -235,7 +235,7 @@
     {#if rest.length > 0 || podium.some((s) => s.badges.length > 0)}
       <section class="card mb-4 p-5">
         <h2 class="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-          Abzeichen der Familie
+          {t('Abzeichen der Familie')}
         </h2>
         <div class="space-y-2">
           {#each podium.filter((s) => s.badges.length > 0) as score (score.id)}
@@ -245,7 +245,7 @@
                 {score.name}
               </span>
               {#each score.badges as badge (badge.id)}
-                <span class="text-lg" title="{badge.label} – {badge.description}">
+                <span class="text-lg" title="{tServer(badge.label)} – {tServer(badge.description)}">
                   {badge.emoji}
                 </span>
               {/each}
@@ -265,10 +265,10 @@
       <section class="card mb-4">
         <div class="p-5 pb-3">
           <h2 class="flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-            <CalendarRange class="h-4 w-4" /> Monatswertung
+            <CalendarRange class="h-4 w-4" /> {t('Monatswertung')}
           </h2>
           <p class="mt-1 text-xs text-muted-foreground">
-            Jeder Monat fängt bei null an. Abgeschlossene Monate bleiben stehen.
+            {t('Jeder Monat fängt bei null an. Abgeschlossene Monate bleiben stehen.')}
           </p>
         </div>
 
@@ -284,9 +284,9 @@
               >
                 <span class="min-w-0 flex-1">
                   <span class="block text-sm font-medium">
-                    {monat.label}
+                    {monatsName(monat.month)}
                     {#if monat.running}
-                      <span class="ml-1 text-xs font-normal text-muted-foreground">läuft noch</span>
+                      <span class="ml-1 text-xs font-normal text-muted-foreground">{t('läuft noch')}</span>
                     {/if}
                   </span>
                   <span class="mt-0.5 block truncate text-xs text-muted-foreground">
@@ -294,7 +294,7 @@
                   </span>
                 </span>
                 <span class="shrink-0 text-xs text-muted-foreground">
-                  {auf ? 'Zuklappen' : 'Ansehen'}
+                  {auf ? t('Zuklappen') : t('Ansehen')}
                 </span>
               </button>
 
@@ -327,7 +327,7 @@
     {#if board.history.length > 0}
       <section class="card p-5">
         <h2 class="mb-3 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
-          Zuletzt passiert
+          {t('Zuletzt passiert')}
         </h2>
         <ul class="space-y-2">
           {#each board.history as item (item.id)}
@@ -343,7 +343,7 @@
                   {:else}
                     <Star class="mx-1 inline h-3 w-3 text-muted-foreground" />
                   {/if}
-                  {item.note || quelle(item).label}
+                  {tServer(item.note) || quelle(item).label}
                 </p>
                 <p class="text-[11px] text-muted-foreground">{relative(item.created_at)}</p>
               </div>

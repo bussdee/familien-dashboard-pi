@@ -84,8 +84,10 @@ check:
 	@docker run --rm -v "$(PWD)/backend":/src -w /src golang:1.25-alpine \
 		sh -c "go build ./... && go vet ./..."
 	@echo "✅ Backend OK"
-	@echo "▶ Frontend typprüfen..."
-	@docker run --rm -v "$(PWD)/frontend":/app -w /app node:20-alpine \
+	@echo "▶ Frontend typprüfen + Übersetzungen..."
+	@# Das ganze Repository, nicht nur frontend/: Die Übersetzungsprüfung
+	@# liest auch die Meldungen aus backend/internal.
+	@docker run --rm -v "$(PWD)":/repo -w /repo/frontend node:20-alpine \
 		sh -c "npm ci --silent && npm run check"
 	@echo "✅ Frontend OK"
 

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n';
   import { X } from 'lucide-svelte';
   import type { Snippet } from 'svelte';
 
@@ -57,7 +58,7 @@
         <button
           class="touch-target text-muted-foreground transition-colors hover:text-foreground"
           onclick={close}
-          aria-label="Schließen"
+          aria-label={t('Schließen')}
         >
           <X class="h-5 w-5" />
         </button>

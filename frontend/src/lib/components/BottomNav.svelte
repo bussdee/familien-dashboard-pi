@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n';
   import { page } from '$app/stores';
   import { Menu, Plus, ShoppingCart, House, UtensilsCrossed } from 'lucide-svelte';
   import { aktiv, menu } from '$lib/stores/navigation.svelte';
@@ -15,10 +16,10 @@
   const pfad = $derived($page.url.pathname);
 
   const links = [
-    { href: '/', label: 'Start', icon: House },
-    { href: '/einkaufen', label: 'Einkauf', icon: ShoppingCart },
+    { href: '/', label: t('Start'), icon: House },
+    { href: '/einkaufen', label: t('Einkauf'), icon: ShoppingCart },
   ];
-  const rechts = [{ href: '/essen', label: 'Essen', icon: UtensilsCrossed }];
+  const rechts = [{ href: '/essen', label: t('Essen'), icon: UtensilsCrossed }];
 </script>
 
 {#snippet ziel(item: { href: string; label: string; icon: typeof House })}
@@ -38,7 +39,7 @@
 
 <nav
   class="safe-bottom fixed inset-x-0 bottom-0 z-40 border-t border-[color:var(--haarlinie-stark)] bg-background/85 backdrop-blur-xl lg:hidden"
-  aria-label="Schnellnavigation"
+  aria-label={t('Schnellnavigation')}
 >
   <div class="mx-auto flex h-[4.25rem] max-w-lg items-stretch px-1">
     {#each links as item (item.href)}
@@ -50,7 +51,7 @@
       <button
         class="flex h-14 w-14 -translate-y-3 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-[rgb(var(--akzent-rgb)/0.35)] transition-transform active:scale-95"
         onclick={() => (schnell.offen = true)}
-        aria-label="Schnell hinzufügen"
+        aria-label={t('Schnell hinzufügen')}
         aria-haspopup="dialog"
       >
         <Plus class="h-7 w-7" />
@@ -64,13 +65,13 @@
     <button
       class="flex flex-1 flex-col items-center justify-center gap-0.5 py-1.5 text-[11px] font-medium text-muted-foreground"
       onclick={() => (menu.offen = true)}
-      aria-label="Menü öffnen"
+      aria-label={t('Menü öffnen')}
       aria-expanded={menu.offen}
     >
       <span class="flex h-8 w-14 items-center justify-center rounded-full">
         <Menu class="h-5 w-5" />
       </span>
-      Mehr
+      {t('Mehr')}
     </button>
   </div>
 </nav>

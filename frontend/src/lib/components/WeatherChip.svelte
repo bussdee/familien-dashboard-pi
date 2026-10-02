@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t, tServer } from '$lib/i18n';
   import {
     Cloud, CloudDrizzle, CloudFog, CloudLightning, CloudRain, CloudSnow, CloudSun, Sun,
   } from 'lucide-svelte';
@@ -35,7 +36,7 @@
   <a
     href="/wetter"
     class="flex items-center gap-2 rounded-xl px-2 py-1 transition-colors hover:bg-accent"
-    title="{weather.current.description} in {weather.location.name} – Details ansehen"
+    title={t('{0} in {1} – Details ansehen', [tServer(weather.current.description), weather.location.name])}
   >
     <Icon class="h-7 w-7 shrink-0 {tone}" />
     <span class="leading-tight">
@@ -44,9 +45,9 @@
       </span>
       <span class="block text-[11px] text-muted-foreground">
         {#if rainToday > 30}
-          {rainToday}% Regen
+          {t('{0}% Regen', [rainToday])}
         {:else}
-          {weather.current.description}
+          {tServer(weather.current.description)}
         {/if}
       </span>
     </span>

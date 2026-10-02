@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n';
   import { Flag, Pencil, PartyPopper, Plus, Target } from 'lucide-svelte';
   import { ApiError, goalApi } from '$lib/api';
   import { session } from '$lib/stores';
@@ -33,7 +34,7 @@
       daten = await goalApi.get();
       fehler = '';
     } catch (e) {
-      fehler = e instanceof ApiError ? e.message : 'Konnte das Ziel nicht laden';
+      fehler = e instanceof ApiError ? e.message : t('Konnte das Ziel nicht laden');
     }
   }
 
@@ -73,18 +74,18 @@
       offen = false;
       await laden();
     } catch (e) {
-      toast(e instanceof ApiError ? e.message : 'Konnte nicht speichern', { ton: 'fehler' });
+      toast(e instanceof ApiError ? e.message : t('Konnte nicht speichern'), { ton: 'fehler' });
     }
   }
 
   async function abschliessen() {
     if (!ziel) return;
     const ok = await confirmAction({
-      title: geschafft ? `${ziel.emoji} ${ziel.title} eingelöst?` : `„${ziel.title}" aufgeben?`,
+      title: geschafft ? t('{0} {1} eingelöst?', [ziel.emoji, ziel.title]) : t('„{0}" aufgeben?', [ziel.title]),
       message: geschafft
-        ? 'Das Ziel wandert zu den geschafften. Danach könnt ihr ein neues setzen.'
-        : 'Das Ziel wird beendet, ohne geschafft zu sein. Die Punkte aller bleiben, wie sie sind.',
-      confirmLabel: geschafft ? 'Eingelöst' : 'Aufgeben',
+        ? t('Das Ziel wandert zu den geschafften. Danach könnt ihr ein neues setzen.')
+        : t('Das Ziel wird beendet, ohne geschafft zu sein. Die Punkte aller bleiben, wie sie sind.'),
+      confirmLabel: geschafft ? t('Eingelöst') : t('Aufgeben'),
       danger: !geschafft,
     });
     if (!ok) return;
@@ -92,47 +93,47 @@
       await goalApi.close(ziel.id);
       await laden();
     } catch (e) {
-      toast(e instanceof ApiError ? e.message : 'Konnte nicht abschliessen', { ton: 'fehler' });
+      toast(e instanceof ApiError ? e.message : t('Konnte nicht abschliessen'), { ton: 'fehler' });
     }
   }
 </script>
 
 {#snippet zeile()}
   {#if !ziel}
-    Gemeinsam auf etwas hinarbeiten
+    {t('Gemeinsam auf etwas hinarbeiten')}
   {:else if geschafft}
-    Geschafft! 🎉
+    {t('Geschafft! 🎉')}
   {:else}
-    Noch {fehlt} Punkte
+    {t('Noch {0} Punkte', [fehlt])}
   {/if}
 {/snippet}
 
 {#snippet aktionen()}
   {#if admin}
     {#if ziel}
-      <button class="btn-ghost px-3 text-muted-foreground" onclick={aendern} aria-label="Ziel ändern">
+      <button class="btn-ghost px-3 text-muted-foreground" onclick={aendern} aria-label={t('Ziel ändern')}>
         <Pencil class="h-4 w-4" />
       </button>
     {:else}
-      <button class="btn-primary px-3" onclick={setzen} aria-label="Familienziel setzen">
+      <button class="btn-primary px-3" onclick={setzen} aria-label={t('Familienziel setzen')}>
         <Plus class="h-5 w-5" />
       </button>
     {/if}
   {/if}
 {/snippet}
 
-<Kachel ton="var(--ton-ziel)" titel="Familienziel" icon={Target} {zeile} {aktionen} {fehler}>
+<Kachel ton="var(--ton-ziel)" titel={t('Familienziel')} icon={Target} {zeile} {aktionen} {fehler}>
   {#if !ziel}
     <KachelLeer
       icon={Flag}
-      titel="Noch kein gemeinsames Ziel"
+      titel={t('Noch kein gemeinsames Ziel')}
       hinweis={admin
-        ? 'Zum Beispiel: 300 Punkte zusammen, dann gibt es den Pizza-Abend. Jeder Punkt zählt für alle.'
-        : 'Ein Elternteil setzt ein Ziel, auf das alle zusammen hinarbeiten.'}
+        ? t('Zum Beispiel: 300 Punkte zusammen, dann gibt es den Pizza-Abend. Jeder Punkt zählt für alle.')
+        : t('Ein Elternteil setzt ein Ziel, auf das alle zusammen hinarbeiten.')}
     >
       {#snippet aktion()}
         {#if admin}
-          <button class="btn-primary text-sm" onclick={setzen}>Ziel setzen</button>
+          <button class="btn-primary text-sm" onclick={setzen}>{t('Ziel setzen')}</button>
         {/if}
       {/snippet}
     </KachelLeer>
@@ -163,7 +164,7 @@
         aria-valuenow={Math.round(anteil)}
         aria-valuemin={0}
         aria-valuemax={100}
-        aria-label="Fortschritt zum Familienziel"
+        aria-label={t('Fortschritt zum Familienziel')}
       >
         {#each daten?.contributions ?? [] as b (b.user_id)}
           <div
@@ -184,22 +185,22 @@
           {/each}
         </ul>
       {:else}
-        <p class="text-sm text-muted-foreground">Der erste Punkt fehlt noch — wer fängt an?</p>
+        <p class="text-sm text-muted-foreground">{t('Der erste Punkt fehlt noch — wer fängt an?')}</p>
       {/if}
 
       {#if geschafft}
         <div class="mt-auto flex items-center gap-3 rounded-xl bg-success/10 p-3 text-sm text-success">
           <PartyPopper class="h-5 w-5 shrink-0" />
-          <span class="min-w-0 flex-1">Geschafft — zusammen! Jetzt ist {ziel.title} dran.</span>
+          <span class="min-w-0 flex-1">{t('Geschafft — zusammen! Jetzt ist {0} dran.', [ziel.title])}</span>
           {#if admin}
-            <button class="btn-primary shrink-0 px-3 text-sm" onclick={abschliessen}>Eingelöst</button>
+            <button class="btn-primary shrink-0 px-3 text-sm" onclick={abschliessen}>{t('Eingelöst')}</button>
           {/if}
         </div>
       {/if}
 
       {#if (daten?.reached ?? []).length > 0}
         <p class="mt-auto text-xs text-muted-foreground">
-          Schon geschafft:
+          {t('Schon geschafft:')}
           {#each daten?.reached ?? [] as g, i (g.id)}{i > 0 ? ' · ' : ' '}{g.emoji} {g.title}{/each}
         </p>
       {/if}
@@ -207,9 +208,9 @@
   {/if}
 </Kachel>
 
-<Modal bind:open={offen} title={neu ? 'Familienziel setzen' : 'Familienziel ändern'}>
+<Modal bind:open={offen} title={neu ? t('Familienziel setzen') : t('Familienziel ändern')}>
   <form class="space-y-4" onsubmit={speichern}>
-    <input class="input" placeholder="Worauf spart ihr? z. B. Pizza-Abend" bind:value={entwurf.title} maxlength="80" />
+    <input class="input" placeholder={t('Worauf spart ihr? z. B. Pizza-Abend')} bind:value={entwurf.title} maxlength="80" />
     <div class="grid grid-cols-6 gap-1">
       {#each SYMBOLE as s (s)}
         <button
@@ -217,7 +218,7 @@
           class="flex h-11 items-center justify-center rounded-lg text-2xl transition-colors
             {entwurf.emoji === s ? 'bg-primary/15 ring-2 ring-primary' : 'hover:bg-accent'}"
           onclick={() => (entwurf.emoji = s)}
-          aria-label="Symbol {s}"
+          aria-label={t('Symbol {0}', [s])}
           aria-pressed={entwurf.emoji === s}
         >
           {s}
@@ -225,32 +226,31 @@
       {/each}
     </div>
     <div>
-      <p class="mb-1.5 text-xs text-muted-foreground">Wie viele Punkte zusammen?</p>
+      <p class="mb-1.5 text-xs text-muted-foreground">{t('Wie viele Punkte zusammen?')}</p>
       <div class="flex flex-wrap items-center gap-1.5">
         {#each ZIELE as z (z)}
           <button type="button" class="chip font-semibold tabular-nums" aria-pressed={entwurf.target === z} onclick={() => (entwurf.target = z)}>
             {z}
           </button>
         {/each}
-        <input class="input !w-28 !py-2 text-center" type="number" min="1" max="100000" bind:value={entwurf.target} aria-label="Andere Zahl" />
+        <input class="input !w-28 !py-2 text-center" type="number" min="1" max="100000" bind:value={entwurf.target} aria-label={t('Andere Zahl')} />
       </div>
       <p class="mt-1.5 text-xs text-muted-foreground">
-        Zum Vergleich: Eine Woche Aufgaben bringt einer Familie oft 150 bis 300 Punkte.
-        Abzüge zählen nicht dagegen.
+        {t('Zum Vergleich: Eine Woche Aufgaben bringt einer Familie oft 150 bis 300 Punkte. Abzüge zählen nicht dagegen.')}
       </p>
     </div>
     <div class="flex gap-2 pt-1">
       {#if !neu}
         <button type="button" class="btn-outline px-3 text-sm" onclick={() => { offen = false; void abschliessen(); }}>
-          {geschafft ? 'Eingelöst' : 'Aufgeben'}
+          {geschafft ? t('Eingelöst') : t('Aufgeben')}
         </button>
       {/if}
       <button class="btn-primary flex-1" disabled={!entwurf.title.trim() || entwurf.target < 1}>
-        {neu ? 'Ziel setzen' : 'Speichern'}
+        {neu ? t('Ziel setzen') : t('Speichern')}
       </button>
     </div>
     {#if neu && ziel}
-      <p class="text-xs text-muted-foreground">Das laufende Ziel „{ziel.title}" wird dabei beendet.</p>
+      <p class="text-xs text-muted-foreground">{t('Das laufende Ziel „{0}" wird dabei beendet.', [ziel.title])}</p>
     {/if}
   </form>
 </Modal>

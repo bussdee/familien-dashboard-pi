@@ -1,3 +1,4 @@
+import { t } from '$lib/i18n';
 import {
   Clock, CloudSun, Gift, House, LayoutGrid, Link as LinkIcon, Settings, Shield,
   ShoppingCart, Trophy, UtensilsCrossed,
@@ -23,17 +24,17 @@ export interface NavZiel {
 }
 
 export const ZIELE: NavZiel[] = [
-  { href: '/', label: 'Übersicht', kurz: 'Start', icon: House, leiste: true },
-  { href: '/einkaufen', label: 'Einkaufen', kurz: 'Einkauf', icon: ShoppingCart, leiste: true },
-  { href: '/essen', label: 'Essensplan', kurz: 'Essen', icon: UtensilsCrossed, leiste: true },
-  { href: '/wetter', label: 'Wetter', kurz: 'Wetter', icon: CloudSun, leiste: true },
-  { href: '/zeiten', label: 'Arbeit & Schule', kurz: 'Zeiten', icon: Clock, leiste: true },
-  { href: '/rangliste', label: 'Rangliste', kurz: 'Rangliste', icon: Trophy, leiste: true, persoenlich: true },
-  { href: '/belohnungen', label: 'Belohnungen', kurz: 'Belohnung', icon: Gift, leiste: true },
-  { href: '/links', label: 'Links', kurz: 'Links', icon: LinkIcon, leiste: false, persoenlich: true },
-  { href: '/ansicht', label: 'Ansicht anpassen', kurz: 'Ansicht', icon: LayoutGrid, leiste: false, persoenlich: true },
-  { href: '/settings', label: 'Einstellungen', kurz: 'Einstellungen', icon: Settings, leiste: false, persoenlich: true },
-  { href: '/admin', label: 'Verwaltung', kurz: 'Verwaltung', icon: Shield, leiste: false, nurAdmin: true },
+  { href: '/', label: t('Übersicht'), kurz: t('Start'), icon: House, leiste: true },
+  { href: '/einkaufen', label: t('Einkaufen'), kurz: t('Einkauf'), icon: ShoppingCart, leiste: true },
+  { href: '/essen', label: t('Essensplan'), kurz: t('Essen'), icon: UtensilsCrossed, leiste: true },
+  { href: '/wetter', label: t('Wetter'), kurz: t('Wetter'), icon: CloudSun, leiste: true },
+  { href: '/zeiten', label: t('Arbeit & Schule'), kurz: t('Zeiten'), icon: Clock, leiste: true },
+  { href: '/rangliste', label: t('Rangliste'), kurz: t('Rangliste'), icon: Trophy, leiste: true, persoenlich: true },
+  { href: '/belohnungen', label: t('Belohnungen'), kurz: t('Belohnung'), icon: Gift, leiste: true },
+  { href: '/links', label: t('Links'), kurz: t('Links'), icon: LinkIcon, leiste: false, persoenlich: true },
+  { href: '/ansicht', label: t('Ansicht anpassen'), kurz: t('Ansicht'), icon: LayoutGrid, leiste: false, persoenlich: true },
+  { href: '/settings', label: t('Einstellungen'), kurz: t('Einstellungen'), icon: Settings, leiste: false, persoenlich: true },
+  { href: '/admin', label: t('Verwaltung'), kurz: t('Verwaltung'), icon: Shield, leiste: false, nurAdmin: true },
 ];
 
 /** Die Ziele, die für diese Sitzung gelten. */

@@ -1,3 +1,4 @@
+import { t } from '$lib/i18n';
 /**
  * In-app confirmation dialogs.
  *
@@ -27,8 +28,8 @@ class ConfirmStore {
     this.resolver?.(false);
 
     this.request = {
-      confirmLabel: 'Löschen',
-      cancelLabel: 'Abbrechen',
+      confirmLabel: t('Löschen'),
+      cancelLabel: t('Abbrechen'),
       danger: true,
       ...options,
     };

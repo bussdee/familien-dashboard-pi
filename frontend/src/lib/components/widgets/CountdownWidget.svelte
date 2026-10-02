@@ -1,10 +1,10 @@
 <script lang="ts">
+  import { t, dfLocale } from '$lib/i18n';
   import { untrack } from 'svelte';
   import {
     Cake, CalendarHeart, FileText, Pencil, PartyPopper, Plane, Timer, Trash2,
   } from 'lucide-svelte';
   import { differenceInCalendarDays, format, parseISO, startOfDay } from 'date-fns';
-  import { de } from 'date-fns/locale';
   import { ApiError, calendarApi } from '$lib/api';
   import { confirmAction } from '$lib/stores/confirm.svelte';
   import { schnell } from '$lib/stores/schnell.svelte';
@@ -60,10 +60,10 @@
   async function loeschen(event: CalendarEvent) {
     if (!event.event_id) return;
     const ok = await confirmAction({
-      title: `„${event.title}“ löschen?`,
+      title: t('„{0}“ löschen?', [event.title]),
       message: event.recurring
-        ? 'Der Termin verschwindet auch aus dem Kalender — samt allen Wiederholungen.'
-        : 'Der Termin verschwindet auch aus dem Kalender.',
+        ? t('Der Termin verschwindet auch aus dem Kalender — samt allen Wiederholungen.')
+        : t('Der Termin verschwindet auch aus dem Kalender.'),
     });
     if (!ok) return;
     try {
@@ -72,16 +72,18 @@
       fehler = '';
       await Promise.all([ladeWeit(), onRefresh?.()]);
     } catch (e) {
-      fehler = e instanceof ApiError ? e.message : 'Termin konnte nicht gelöscht werden';
+      fehler = e instanceof ApiError ? e.message : t('Termin konnte nicht gelöscht werden');
     }
   }
 
   // Keywords that turn an ordinary calendar entry into a countdown.
   const kinds = [
+    // Suchwörter in den Termintiteln — deutsch und englisch, unabhängig von
+    // der Sprache der Oberfläche: Ein Termin heisst, wie man ihn eingetragen hat.
     { match: ['geburtstag', 'birthday', 'geburi'], icon: Cake, color: '#ec4899' },
-    { match: ['ferien', 'urlaub', 'reise', 'flug'], icon: Plane, color: '#f59e0b' },
-    { match: ['jubiläum', 'hochzeit', 'jahrestag'], icon: CalendarHeart, color: '#ef4444' },
-    { match: ['feier', 'party', 'fest', 'weihnachten', 'ostern', 'silvester'], icon: PartyPopper, color: '#8b5cf6' },
+    { match: ['ferien', 'urlaub', 'reise', 'flug', 'holiday', 'vacation', 'trip', 'flight'], icon: Plane, color: '#f59e0b' },
+    { match: ['jubiläum', 'hochzeit', 'jahrestag', 'anniversary', 'wedding'], icon: CalendarHeart, color: '#ef4444' },
+    { match: ['feier', 'party', 'fest', 'weihnachten', 'ostern', 'silvester', 'christmas', 'easter', 'celebration'], icon: PartyPopper, color: '#8b5cf6' },
   ];
 
   const countdowns = $derived.by(() => {
@@ -104,26 +106,26 @@
   });
 
   const label = (days: number) =>
-    days === 0 ? 'Heute!' : days === 1 ? 'Morgen' : `in ${days} Tagen`;
+    days === 0 ? t('Heute!') : days === 1 ? t('Morgen') : t('in {0} Tagen', [days]);
 
   // Bei einem Geburtstag in acht Monaten ist die Tageszahl allein unhandlich.
   const dazu = (days: number) => {
     if (days < 31) return '';
     const monate = Math.round(days / 30.44);
-    return monate === 1 ? 'gut ein Monat' : `gut ${monate} Monate`;
+    return monate === 1 ? t('gut ein Monat') : t('gut {0} Monate', [monate]);
   };
 </script>
 
 {#snippet zeile()}
-  {countdowns.length === 0 ? 'Worauf wir uns freuen' : `${countdowns.length} in Sicht`}
+  {countdowns.length === 0 ? t('Worauf wir uns freuen') : t('{0} in Sicht', [countdowns.length])}
 {/snippet}
 
-<Kachel ton="var(--ton-countdown)" titel="Countdowns" icon={Timer} {zeile}>
+<Kachel ton="var(--ton-countdown)" titel={t('Countdowns')} icon={Timer} {zeile}>
   {#if countdowns.length === 0}
     <KachelLeer
       icon={PartyPopper}
-      titel="Keine Countdowns"
-      hinweis="Termine mit „Geburtstag“, „Ferien“ oder „Feier“ erscheinen hier von selbst."
+      titel={t('Keine Countdowns')}
+      hinweis={t('Termine mit „Geburtstag“, „Ferien“ oder „Feier“ erscheinen hier von selbst.')}
     />
   {:else}
     {#if fehler}
@@ -138,7 +140,7 @@
           class="flex w-full items-center gap-3 rounded-lg px-1 py-2.5 text-left"
           onclick={() => (offenId = auf ? null : item.event.id)}
           aria-expanded={auf}
-          aria-label="{item.event.title} – Optionen"
+          aria-label={t('{0} – Optionen', [item.event.title])}
         >
           <div
             class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl"
@@ -149,7 +151,7 @@
           <div class="min-w-0 flex-1">
             <p class="truncate text-sm font-medium">{item.event.title}</p>
             <p class="text-xs text-muted-foreground">
-              {format(parseISO(item.event.start), 'EEEE, d. MMMM', { locale: de })}
+              {format(parseISO(item.event.start), t('EEEE, d. MMMM'), { locale: dfLocale })}
             </p>
           </div>
           <div class="shrink-0 text-right">
@@ -168,13 +170,13 @@
             {#if item.event.editable && item.event.event_id}
               <div class="flex gap-2">
                 <button class="btn-outline flex-1 text-sm" onclick={() => bearbeiten(item.event)}>
-                  <Pencil class="h-4 w-4" /> Bearbeiten
+                  <Pencil class="h-4 w-4" /> {t('Bearbeiten')}
                 </button>
                 <button
                   class="btn-outline flex-1 text-sm text-destructive"
                   onclick={() => loeschen(item.event)}
                 >
-                  <Trash2 class="h-4 w-4" /> Löschen
+                  <Trash2 class="h-4 w-4" /> {t('Löschen')}
                 </button>
               </div>
             {:else}
@@ -184,8 +186,7 @@
               <p class="flex items-start gap-2 text-xs text-muted-foreground">
                 <FileText class="mt-0.5 h-3.5 w-3.5 shrink-0" />
                 <span>
-                  Kommt aus der Kalenderdatei <strong>{item.event.calendar}.ics</strong> und
-                  lässt sich hier nicht ändern.
+                  {t('Kommt aus der Kalenderdatei')} <strong>{item.event.calendar}.ics</strong> {t('und lässt sich hier nicht ändern.')}
                 </span>
               </p>
             {/if}

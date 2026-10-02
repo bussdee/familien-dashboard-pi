@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n';
   import { onMount } from 'svelte';
   import {
     ChevronLeft, ChevronRight, Expand, Image, Pause, Play, Trash2, Upload, X,
@@ -60,8 +61,8 @@
       const skipped = Object.entries(result.skipped ?? {});
       message =
         result.count === 1
-          ? '1 Foto hinzugefügt'
-          : `${result.count} Fotos hinzugefügt`;
+          ? t('1 Foto hinzugefügt')
+          : t('{0} Fotos hinzugefügt', [result.count]);
       if (skipped.length > 0) {
         error = skipped.map(([name, reason]) => `${name}: ${reason}`).join(' · ');
       }
@@ -74,7 +75,7 @@
       }
       setTimeout(() => (message = ''), 4000);
     } catch (e) {
-      error = e instanceof ApiError ? e.message : 'Upload fehlgeschlagen';
+      error = e instanceof ApiError ? e.message : t('Upload fehlgeschlagen');
     } finally {
       uploading = false;
       progress = 0;
@@ -85,15 +86,15 @@
   async function removeCurrent() {
     if (!current) return;
     const ok = await confirmAction({
-      title: 'Foto löschen?',
-      message: `„${current.name}“ wird endgültig entfernt.`,
+      title: t('Foto löschen?'),
+      message: t('„{0}“ wird endgültig entfernt.', [current.name]),
     });
     if (!ok) return;
     try {
       await photosApi.remove(current.name);
       await load(true);
     } catch (e) {
-      error = e instanceof ApiError ? e.message : 'Löschen fehlgeschlagen';
+      error = e instanceof ApiError ? e.message : t('Löschen fehlgeschlagen');
     }
   }
 
@@ -111,7 +112,7 @@
 </script>
 
 {#snippet zeile()}
-  {photos.length === 0 ? 'Noch keine Fotos' : `${index + 1} von ${photos.length}`}
+  {photos.length === 0 ? t('Noch keine Fotos') : `${index + 1} von ${photos.length}`}
 {/snippet}
 
 {#snippet aktionen()}
@@ -120,8 +121,8 @@
         <a
           href="/diashow"
           class="btn-ghost px-2"
-          aria-label="Diashow im Vollbild starten"
-          title="Diashow im Vollbild"
+          aria-label={t('Diashow im Vollbild starten')}
+          title={t('Diashow im Vollbild')}
         >
           <Expand class="h-5 w-5" />
         </a>
@@ -130,7 +131,7 @@
         <button
           class="btn-ghost px-2"
           onclick={() => (playing = !playing)}
-          aria-label={playing ? 'Pausieren' : 'Abspielen'}
+          aria-label={playing ? t('Pausieren') : t('Abspielen')}
         >
           {#if playing}<Pause class="h-5 w-5" />{:else}<Play class="h-5 w-5" />{/if}
         </button>
@@ -139,13 +140,13 @@
         class="btn-primary px-3"
         onclick={() => fileInput?.click()}
         disabled={uploading}
-        aria-label="Fotos hochladen"
+        aria-label={t('Fotos hochladen')}
       >
         <Upload class="h-5 w-5" />
       </button>
 {/snippet}
 
-<Kachel ton="var(--ton-fotos)" titel="Foto-Rahmen" icon={Image} {zeile} {aktionen} randlos>
+<Kachel ton="var(--ton-fotos)" titel={t('Foto-Rahmen')} icon={Image} {zeile} {aktionen} randlos>
   <input
     bind:this={fileInput}
     type="file"
@@ -165,7 +166,7 @@
           class="mt-1 flex items-start justify-between gap-2 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive"
         >
           <span class="min-w-0 flex-1">{error}</span>
-          <button onclick={() => (error = '')} aria-label="Schließen">
+          <button onclick={() => (error = '')} aria-label={t('Schließen')}>
             <X class="h-4 w-4 shrink-0" />
           </button>
         </p>
@@ -197,7 +198,7 @@
         <div class="h-2 w-40 overflow-hidden rounded-full bg-muted">
           <div class="h-full bg-primary transition-all" style="width: {progress}%"></div>
         </div>
-        <p class="text-sm text-muted-foreground">{progress}% übertragen</p>
+        <p class="text-sm text-muted-foreground">{t('{0}% übertragen', [progress])}</p>
       </div>
     {/if}
 
@@ -206,7 +207,7 @@
         class="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-primary/10 text-primary"
       >
         <Upload class="h-8 w-8" />
-        <p class="text-sm font-medium">Fotos hier ablegen</p>
+        <p class="text-sm font-medium">{t('Fotos hier ablegen')}</p>
       </div>
     {/if}
 
@@ -240,14 +241,14 @@
         <button
           class="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-black/40 p-2 text-white backdrop-blur transition-colors hover:bg-black/60"
           onclick={() => step(-1)}
-          aria-label="Vorheriges Foto"
+          aria-label={t('Vorheriges Foto')}
         >
           <ChevronLeft class="h-5 w-5" />
         </button>
         <button
           class="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-black/40 p-2 text-white backdrop-blur transition-colors hover:bg-black/60"
           onclick={() => step(1)}
-          aria-label="Nächstes Foto"
+          aria-label={t('Nächstes Foto')}
         >
           <ChevronRight class="h-5 w-5" />
         </button>
@@ -257,8 +258,8 @@
         <button
           class="absolute right-2 top-2 rounded-full bg-black/40 p-2 text-white backdrop-blur transition-colors hover:bg-destructive"
           onclick={removeCurrent}
-          aria-label="Dieses Foto löschen"
-          title="Dieses Foto löschen"
+          aria-label={t('Dieses Foto löschen')}
+          title={t('Dieses Foto löschen')}
         >
           <Trash2 class="h-4 w-4" />
         </button>
@@ -269,9 +270,9 @@
         onclick={() => fileInput?.click()}
       >
         <Upload class="h-10 w-10 opacity-40" />
-        <p class="text-sm font-medium">Fotos hinzufügen</p>
-        <p class="text-xs">Antippen, oder Bilder einfach hierher ziehen</p>
-        <p class="text-xs">JPG · PNG · WEBP · GIF · AVIF, bis 25 MB je Bild</p>
+        <p class="text-sm font-medium">{t('Fotos hinzufügen')}</p>
+        <p class="text-xs">{t('Antippen, oder Bilder einfach hierher ziehen')}</p>
+        <p class="text-xs">{t('JPG · PNG · WEBP · GIF · AVIF, bis 25 MB je Bild')}</p>
       </button>
     {/if}
   </div>

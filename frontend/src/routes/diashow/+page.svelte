@@ -1,8 +1,8 @@
 <script lang="ts">
+  import { t, dfLocale, tServer } from '$lib/i18n';
   import { onMount, onDestroy } from 'svelte';
   import { goto } from '$app/navigation';
   import { format, parseISO } from 'date-fns';
-  import { de } from 'date-fns/locale';
   import {
     ChevronLeft, ChevronRight, Images, Maximize, Minimize, Pause, Play, X,
   } from 'lucide-svelte';
@@ -59,12 +59,12 @@
 
   const regenSatz = $derived.by(() => {
     const r = weather?.rain;
-    if (r?.now) return r.ends_at ? `Regen bis ${zeitpunkt(r.ends_at)}` : 'Es regnet';
-    if (r?.starts_at) return `Regen ab ${zeitpunkt(r.starts_at)}`;
+    if (r?.now) return r.ends_at ? t('Regen bis {0}', [zeitpunkt(r.ends_at)]) : t('Es regnet');
+    if (r?.starts_at) return t('Regen ab {0}', [zeitpunkt(r.starts_at)]);
     return null;
   });
 
-  const uhr = (iso: string) => format(parseISO(iso), 'HH:mm', { locale: de });
+  const uhr = (iso: string) => format(parseISO(iso), 'HH:mm', { locale: dfLocale });
 
   async function ladeDaten() {
     // Jede Anfrage für sich: fehlt das Wetter, läuft die Show trotzdem weiter.
@@ -196,7 +196,7 @@
 </script>
 
 <svelte:head>
-  <title>Diashow · Familien Dashboard</title>
+  <title>{t('Diashow · Familien Dashboard')}</title>
 </svelte:head>
 
 <svelte:window
@@ -252,8 +252,8 @@
   {:else}
     <div class="absolute inset-0 flex flex-col items-center justify-center gap-3 text-white/50">
       <Images class="h-12 w-12" />
-      <p class="text-sm">Noch keine Fotos im Rahmen</p>
-      <a href="/" class="mt-2 text-sm text-primary hover:underline">Zurück zur Übersicht</a>
+      <p class="text-sm">{t('Noch keine Fotos im Rahmen')}</p>
+      <a href="/" class="mt-2 text-sm text-primary hover:underline">{t('Zurück zur Übersicht')}</a>
     </div>
   {/if}
 
@@ -263,7 +263,7 @@
       {format(jetzt, 'HH:mm')}
     </div>
     <div class="mt-2 text-sm font-light text-white/70">
-      {format(jetzt, 'EEEE, d. MMMM', { locale: de })}
+      {format(jetzt, t('EEEE, d. MMMM'), { locale: dfLocale })}
     </div>
   </div>
 
@@ -278,7 +278,7 @@
       {#if regenSatz}
         <div class="mt-0.5 text-sm font-light text-sky-200">{regenSatz}</div>
       {:else if !trockenSatz}
-        <div class="mt-1.5 text-sm font-light text-white/65">{weather.current.description}</div>
+        <div class="mt-1.5 text-sm font-light text-white/65">{tServer(weather.current.description)}</div>
       {/if}
     </div>
   {/if}
@@ -287,19 +287,19 @@
   <div class="absolute bottom-8 left-8 right-8 sm:bottom-10 sm:left-11 sm:right-11">
     <div class="flex flex-wrap items-end justify-between gap-6">
       <div class="min-w-0">
-        <p class="text-[11px] font-medium uppercase tracking-[0.2em] text-white/50">Heute noch</p>
+        <p class="text-[11px] font-medium uppercase tracking-[0.2em] text-white/50">{t('Heute noch')}</p>
         <div class="mt-3 flex flex-wrap items-center gap-x-7 gap-y-2 text-base font-light sm:text-lg">
           {#if offeneAufgaben > 0}
             <span class="flex items-center gap-2.5">
               <span class="h-1.5 w-1.5 rounded-full bg-orange-300"></span>
               {offeneAufgaben}
-              {offeneAufgaben === 1 ? 'Aufgabe' : 'Aufgaben'}
+              {offeneAufgaben === 1 ? t('Aufgabe') : t('Aufgaben')}
             </span>
           {/if}
           {#if offeneEinkaeufe > 0}
             <span class="flex items-center gap-2.5">
               <span class="h-1.5 w-1.5 rounded-full bg-white/60"></span>
-              {offeneEinkaeufe} einzukaufen
+              {t('{0} einzukaufen', [offeneEinkaeufe])}
             </span>
           {/if}
           {#each heute as e (e.id)}
@@ -309,7 +309,7 @@
             </span>
           {/each}
           {#if offeneAufgaben === 0 && offeneEinkaeufe === 0 && heute.length === 0}
-            <span class="text-white/60">Nichts mehr offen</span>
+            <span class="text-white/60">{t('Nichts mehr offen')}</span>
           {/if}
         </div>
       </div>
@@ -323,21 +323,21 @@
         <button
           class="flex h-12 w-12 items-center justify-center rounded-full border border-white/20 bg-white/15 backdrop-blur transition-colors hover:bg-white/25"
           onclick={() => weiter(-1)}
-          aria-label="Vorheriges Bild"
+          aria-label={t('Vorheriges Bild')}
         >
           <ChevronLeft class="h-5 w-5" />
         </button>
         <button
           class="flex h-12 w-12 items-center justify-center rounded-full border border-white/20 bg-white/15 backdrop-blur transition-colors hover:bg-white/25"
           onclick={() => (paused = !paused)}
-          aria-label={paused ? 'Weiter abspielen' : 'Anhalten'}
+          aria-label={paused ? t('Weiter abspielen') : t('Anhalten')}
         >
           {#if paused}<Play class="h-5 w-5" />{:else}<Pause class="h-5 w-5" />{/if}
         </button>
         <button
           class="flex h-12 w-12 items-center justify-center rounded-full border border-white/20 bg-white/15 backdrop-blur transition-colors hover:bg-white/25"
           onclick={() => weiter(1)}
-          aria-label="Nächstes Bild"
+          aria-label={t('Nächstes Bild')}
         >
           <ChevronRight class="h-5 w-5" />
         </button>
@@ -345,8 +345,8 @@
           <button
             class="flex h-12 w-12 items-center justify-center rounded-full border border-white/20 bg-white/15 backdrop-blur transition-colors hover:bg-white/25"
             onclick={() => vollbild.umschalten()}
-            aria-label={vollbild.aktiv ? 'Vollbild verlassen' : 'Vollbild starten'}
-            title={vollbild.aktiv ? 'Vollbild verlassen' : 'Vollbild starten'}
+            aria-label={vollbild.aktiv ? t('Vollbild verlassen') : t('Vollbild starten')}
+            title={vollbild.aktiv ? t('Vollbild verlassen') : t('Vollbild starten')}
           >
             {#if vollbild.aktiv}<Minimize class="h-5 w-5" />{:else}<Maximize class="h-5 w-5" />{/if}
           </button>
@@ -354,7 +354,7 @@
         <button
           class="ml-3 flex h-12 w-12 items-center justify-center rounded-full border border-white/20 bg-white/15 backdrop-blur transition-colors hover:bg-white/25"
           onclick={beenden}
-          aria-label="Diashow beenden"
+          aria-label={t('Diashow beenden')}
         >
           <X class="h-5 w-5" />
         </button>
@@ -369,7 +369,7 @@
   {#if vollbildHinweis}
     <div class="pointer-events-none absolute inset-x-0 bottom-24 flex justify-center">
       <p class="rounded-full bg-black/50 px-4 py-1.5 text-xs text-white/70 backdrop-blur">
-        Antippen für Vollbild
+        {t('Antippen für Vollbild')}
       </p>
     </div>
   {/if}
@@ -382,7 +382,7 @@
   {#if !vollbild.verfuegbar && bedienung}
     <div class="pointer-events-none absolute inset-x-0 bottom-24 flex justify-center">
       <p class="rounded-full bg-black/50 px-4 py-1.5 text-xs text-white/70 backdrop-blur">
-        Ohne Adressleiste: „Zum Home-Bildschirm“ hinzufügen
+        {t('Ohne Adressleiste: „Zum Home-Bildschirm“ hinzufügen')}
       </p>
     </div>
   {/if}

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n';
   import { Heart } from 'lucide-svelte';
 </script>
 
@@ -8,7 +9,7 @@
 -->
 <footer class="mt-8 border-t border-border/60 px-4 py-5 text-center">
   <p class="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-    <span>Familien Dashboard</span>
+    <span>{t('Familien Dashboard')}</span>
     <span aria-hidden="true">·</span>
     <a
       href="https://familienfabrik.at"
@@ -26,7 +27,7 @@
       class="inline-flex items-center gap-1 transition-colors hover:text-foreground hover:underline"
     >
       <Heart class="h-3 w-3" />
-      Spenden
+      {t('Spenden')}
     </a>
   </p>
 </footer>

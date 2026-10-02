@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t, tServer, SPRACHEN, sprache, setzeSprache } from '$lib/i18n';
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
   import { authApi } from '$lib/api';
@@ -13,9 +14,9 @@
   import { aktiv, menu, zieleFuer } from '$lib/stores/navigation.svelte';
 
   const themes: { value: Theme; label: string; icon: typeof Sun }[] = [
-    { value: 'light', label: 'Hell', icon: Sun },
-    { value: 'dark', label: 'Dunkel', icon: Moon },
-    { value: 'system', label: 'System', icon: Monitor },
+    { value: 'light', label: t('Hell'), icon: Sun },
+    { value: 'dark', label: t('Dunkel'), icon: Moon },
+    { value: 'system', label: t('System'), icon: Monitor },
   ];
 
   const user = $derived($session.user);
@@ -80,15 +81,15 @@
     <button
       class="btn-ghost hidden shrink-0 rounded-xl px-2 lg:inline-flex"
       onclick={() => (menu.offen = true)}
-      aria-label="Menü öffnen"
+      aria-label={t('Menü öffnen')}
       aria-expanded={menu.offen}
     >
       <Menu class="h-6 w-6" />
     </button>
 
-    <a href="/" class="flex shrink-0 items-center gap-2 lg:pr-2" aria-label="Startseite">
+    <a href="/" class="flex shrink-0 items-center gap-2 lg:pr-2" aria-label={t('Startseite')}>
       <span class="flex h-8 w-8 items-center justify-center rounded-xl bg-primary/15 text-lg">🏠</span>
-      <span class="text-sm font-semibold tracking-tight">Familie</span>
+      <span class="text-sm font-semibold tracking-tight">{t('Familie')}</span>
     </a>
 
     <!--
@@ -97,7 +98,7 @@
       rutscht), ab xl mit Text. Unterhalb von lg übernimmt die Leiste am
       unteren Rand.
     -->
-    <nav class="hidden items-center gap-0.5 lg:flex" aria-label="Hauptnavigation">
+    <nav class="hidden items-center gap-0.5 lg:flex" aria-label={t('Hauptnavigation')}>
       {#each leiste as item (item.href)}
         {@const an = aktiv(path, item.href)}
         <a
@@ -119,7 +120,7 @@
 
     <div class="flex shrink-0 items-center gap-1">
       {#if !$connection.online}
-        <span class="rounded-full bg-destructive/10 p-1.5 text-destructive" title="Offline">
+        <span class="rounded-full bg-destructive/10 p-1.5 text-destructive" title={t('Offline')}>
           <WifiOff class="h-4 w-4" />
         </span>
       {/if}
@@ -129,11 +130,11 @@
         <a
           href="/rangliste"
           class="flex items-center gap-1.5 rounded-full bg-muted px-3 py-1.5 text-sm transition-colors hover:bg-accent"
-          title="Platz {me.rank} · {me.total_points} Punkte · Level {me.level} {me.level_name}"
+          title={t('Platz {0} · {1} Punkte · Level {2} {3}', [me.rank, me.total_points, me.level, tServer(me.level_name)])}
         >
           {#if myMedal}<span class="leading-none">{myMedal}</span>{/if}
           <span class="font-semibold tabular-nums">{me.total_points}</span>
-          <span class="hidden text-xs text-muted-foreground sm:inline">Punkte</span>
+          <span class="hidden text-xs text-muted-foreground sm:inline">{t('Punkte')}</span>
         </a>
       {/if}
 
@@ -148,7 +149,7 @@
         <button
           class="flex items-center gap-1.5 rounded-full bg-amber-500/15 px-3 py-1.5 text-xs font-medium text-amber-700 dark:text-amber-400"
           onclick={() => eltern.sperren()}
-          title="Eltern-Freigabe jetzt beenden"
+          title={t('Eltern-Freigabe jetzt beenden')}
         >
           <LockKeyholeOpen class="h-4 w-4" />
           {eltern.aktiv.name} · {Math.floor(eltern.rest / 60)}:{String(eltern.rest % 60).padStart(2, '0')}
@@ -158,18 +159,18 @@
         <button
           class="btn-ghost gap-1.5 rounded-xl px-2 text-sm text-muted-foreground hover:text-foreground"
           onclick={() => punkte.oeffnen()}
-          aria-label="Punkte vergeben oder abziehen"
-          title="Punkte vergeben oder abziehen"
+          aria-label={t('Punkte vergeben oder abziehen')}
+          title={t('Punkte vergeben oder abziehen')}
         >
           <Sparkles class="h-5 w-5" />
-          <span class="hidden xl:inline">Punkte</span>
+          <span class="hidden xl:inline">{t('Punkte')}</span>
         </button>
         {#if user?.role === 'admin'}
         <a
           href="/admin"
           class="btn-ghost rounded-xl px-2 {path === '/admin' ? 'text-primary' : 'text-muted-foreground hover:text-foreground'}"
-          aria-label="Verwaltung"
-          title="Verwaltung"
+          aria-label={t('Verwaltung')}
+          title={t('Verwaltung')}
           aria-current={path === '/admin' ? 'page' : undefined}
         >
           <Shield class="h-5 w-5" />
@@ -181,7 +182,7 @@
         <a
           href="/settings"
           class="btn-ghost rounded-xl px-2"
-          aria-label="Profil von {user.name}"
+          aria-label={t('Profil von {0}', [user.name])}
           title={user.name}
         >
           <span class="text-xl leading-none">{user.avatar_emoji}</span>
@@ -192,10 +193,10 @@
         <a
           href="/login"
           class="flex items-center gap-1.5 rounded-full border border-[color:var(--haarlinie)] px-3 py-1.5 text-sm transition-colors hover:bg-accent"
-          title="Als Familienmitglied anmelden"
+          title={t('Als Familienmitglied anmelden')}
         >
           <UserRound class="h-4 w-4" />
-          <span class="hidden sm:inline">Anmelden</span>
+          <span class="hidden sm:inline">{t('Anmelden')}</span>
         </a>
       {/if}
     </div>
@@ -216,9 +217,9 @@
   >
     <div class="flex items-center justify-between border-b border-border p-4">
       <span class="flex items-center gap-2 font-semibold">
-        <span class="text-xl">🏠</span> Familien Dashboard
+        <span class="text-xl">🏠</span> {t('Familien Dashboard')}
       </span>
-      <button class="touch-target text-muted-foreground" onclick={() => (menu.offen = false)} aria-label="Menü schließen">
+      <button class="touch-target text-muted-foreground" onclick={() => (menu.offen = false)} aria-label={t('Menü schließen')}>
         <X class="h-5 w-5" />
       </button>
     </div>
@@ -233,14 +234,14 @@
           <p class="truncate font-medium">{user.name}</p>
           {#if me}
             <p class="text-xs text-muted-foreground">
-              Platz {me.rank} · {me.total_points} Punkte · Level {me.level}
+              {t('Platz {0} · {1} Punkte · Level {2}', [me.rank, me.total_points, me.level])}
             </p>
             <div class="mt-1.5 h-1.5 overflow-hidden rounded-full bg-muted">
               <div class="h-full bg-primary" style="width: {me.level_progress}%"></div>
             </div>
           {:else}
             <p class="text-xs text-muted-foreground">
-              {user.role === 'admin' ? 'Administrator' : 'Familienmitglied'}
+              {user.role === 'admin' ? t('Administrator') : t('Familienmitglied')}
             </p>
           {/if}
         </div>
@@ -261,32 +262,48 @@
       {/each}
 
       <p class="px-3 pb-1 pt-4 text-[11px] uppercase tracking-wider text-muted-foreground">
-        Design
+        {t('Design')}
       </p>
       <div class="flex gap-1 px-1">
-        {#each themes as t (t.value)}
+        {#each themes as thema (thema.value)}
           <button
             class="flex flex-1 flex-col items-center gap-1 rounded-xl py-2.5 text-xs transition-colors
-              {$theme === t.value ? 'bg-accent font-medium' : 'hover:bg-accent'}"
-            onclick={() => theme.set(t.value)}
+              {$theme === thema.value ? 'bg-accent font-medium' : 'hover:bg-accent'}"
+            onclick={() => theme.set(thema.value)}
           >
-            <t.icon class="h-5 w-5" />
-            {t.label}
+            <thema.icon class="h-5 w-5" />
+            {thema.label}
           </button>
         {/each}
       </div>
       <!-- Die Akzentfarbe gleich daneben: ausprobieren, ohne die Seite zu wechseln. -->
-      <div class="mt-2 flex justify-between gap-1 px-2" role="group" aria-label="Akzentfarbe">
+      <div class="mt-2 flex justify-between gap-1 px-2" role="group" aria-label={t('Akzentfarbe')}>
         {#each AKZENTE as a (a.value)}
           <button
             class="h-8 w-8 rounded-full transition-transform
               {$akzent === a.value ? 'scale-110 ring-2 ring-offset-2 ring-offset-card' : 'hover:scale-105'}"
             style="background-color: {a.farbe}; --tw-ring-color: {a.farbe}"
             onclick={() => akzent.set(a.value)}
-            aria-label="Akzentfarbe {a.label}"
+            aria-label={t('Akzentfarbe {0}', [a.label])}
             aria-pressed={$akzent === a.value}
             title={a.label}
           ></button>
+        {/each}
+      </div>
+
+      <!-- Die Sprache steht hier und nicht nur in den Einstellungen: Das
+           Wandgerät hat keine Einstellungsseite. -->
+      <div class="mt-3 flex gap-1 px-1" role="group" aria-label={t('Sprache')}>
+        {#each SPRACHEN as s (s.value)}
+          <button
+            class="flex-1 rounded-xl py-2 text-xs transition-colors
+              {sprache === s.value ? 'bg-accent font-medium' : 'hover:bg-accent'}"
+            onclick={() => setzeSprache(s.value)}
+            aria-pressed={sprache === s.value}
+            lang={s.value}
+          >
+            {s.label}
+          </button>
         {/each}
       </div>
     </nav>
@@ -301,7 +318,7 @@
           onclick={() => (menu.offen = false)}
         >
           <UserRound class="h-5 w-5" />
-          Als Familienmitglied anmelden
+          {t('Als Familienmitglied anmelden')}
         </a>
       {:else}
         <button
@@ -309,7 +326,7 @@
           onclick={signOut}
         >
           <LogOut class="h-5 w-5" />
-          Abmelden
+          {t('Abmelden')}
         </button>
       {/if}
     </div>

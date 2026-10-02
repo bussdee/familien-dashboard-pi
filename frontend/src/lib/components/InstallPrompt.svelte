@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n';
   import { onMount } from 'svelte';
   import { Download, Share, X } from 'lucide-svelte';
 
@@ -73,28 +74,27 @@
     <div class="flex items-start gap-3">
       <span class="text-2xl">🏠</span>
       <div class="min-w-0 flex-1">
-        <p class="text-sm font-semibold">Als App installieren</p>
+        <p class="text-sm font-semibold">{t('Als App installieren')}</p>
         {#if deferred}
           <p class="mt-0.5 text-xs text-muted-foreground">
-            Öffnet ohne Browserleiste und startet schneller.
+            {t('Öffnet ohne Browserleiste und startet schneller.')}
           </p>
         {:else}
           <p class="mt-0.5 text-xs text-muted-foreground">
-            In Safari auf <Share class="inline h-3 w-3" /> tippen, dann
-            „Zum Home-Bildschirm".
+            {t('In Safari auf')} <Share class="inline h-3 w-3" /> {t('tippen, dann „Zum Home-Bildschirm".')}
           </p>
         {/if}
       </div>
-      <button class="touch-target shrink-0 text-muted-foreground" onclick={dismiss} aria-label="Schließen">
+      <button class="touch-target shrink-0 text-muted-foreground" onclick={dismiss} aria-label={t('Schließen')}>
         <X class="h-4 w-4" />
       </button>
     </div>
 
     {#if deferred}
       <div class="mt-3 flex gap-2">
-        <button class="btn-outline flex-1 text-sm" onclick={dismiss}>Später</button>
+        <button class="btn-outline flex-1 text-sm" onclick={dismiss}>{t('Später')}</button>
         <button class="btn-primary flex-1 text-sm" onclick={install}>
-          <Download class="h-4 w-4" /> Installieren
+          <Download class="h-4 w-4" /> {t('Installieren')}
         </button>
       </div>
     {/if}

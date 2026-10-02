@@ -1,3 +1,4 @@
+import { t } from '$lib/i18n';
 import { browser } from '$app/environment';
 import { writable } from 'svelte/store';
 import type { User } from '$lib/types';
@@ -172,12 +173,12 @@ export const connection = createConnection();
 export type Akzent = 'petrol' | 'blau' | 'violett' | 'rose' | 'orange' | 'gruen';
 
 export const AKZENTE: { value: Akzent; label: string; farbe: string }[] = [
-  { value: 'petrol', label: 'Petrol', farbe: '#0d9488' },
-  { value: 'blau', label: 'Blau', farbe: '#2563eb' },
-  { value: 'violett', label: 'Violett', farbe: '#7c3aed' },
-  { value: 'rose', label: 'Rose', farbe: '#e11d48' },
-  { value: 'orange', label: 'Orange', farbe: '#ea580c' },
-  { value: 'gruen', label: 'Grün', farbe: '#16a34a' },
+  { value: 'petrol', label: t('Petrol'), farbe: '#0d9488' },
+  { value: 'blau', label: t('Blau'), farbe: '#2563eb' },
+  { value: 'violett', label: t('Violett'), farbe: '#7c3aed' },
+  { value: 'rose', label: t('Rose'), farbe: '#e11d48' },
+  { value: 'orange', label: t('Orange'), farbe: '#ea580c' },
+  { value: 'gruen', label: t('Grün'), farbe: '#16a34a' },
 ];
 
 function createAkzent() {

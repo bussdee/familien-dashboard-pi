@@ -1,3 +1,4 @@
+import { t } from '$lib/i18n';
 import { scoreApi } from '$lib/api';
 import type { Activity, Score } from '$lib/types';
 
@@ -63,9 +64,9 @@ export const board = new ScoreBoard();
 
 /** Shared labels so the same wording appears in every place points show up. */
 export const sourceLabels: Record<string, { label: string; emoji: string }> = {
-  chore: { label: 'Aufgabe', emoji: '⭐' },
-  shopping: { label: 'Einkauf', emoji: '🛒' },
-  bonus: { label: 'Bonus', emoji: '🎁' },
+  chore: { label: t('Aufgabe'), emoji: '⭐' },
+  shopping: { label: t('Einkauf'), emoji: '🛒' },
+  bonus: { label: t('Bonus'), emoji: '🎁' },
 };
 
 /**
@@ -73,7 +74,7 @@ export const sourceLabels: Record<string, { label: string; emoji: string }> = {
  * das stand bis 2.0 so im Verlauf, neben einer roten Zahl.
  */
 export function quelle(item: { source: string; points: number }): { label: string; emoji: string } {
-  if (item.source === 'bonus' && item.points < 0) return { label: 'Abzug', emoji: '➖' };
+  if (item.source === 'bonus' && item.points < 0) return { label: t('Abzug'), emoji: '➖' };
   return sourceLabels[item.source] ?? { label: item.source, emoji: '•' };
 }
 

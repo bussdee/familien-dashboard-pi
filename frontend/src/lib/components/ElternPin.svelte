@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n';
   import { LockKeyhole, X } from 'lucide-svelte';
   import { ApiError, authApi } from '$lib/api';
   import { eltern } from '$lib/stores/eltern.svelte';
@@ -26,7 +27,7 @@
         // Gibt es nur ein Elternteil, ist die Wahl schon getroffen.
         gewaehlt = eltern_.length === 1 ? eltern_[0] : null;
       })
-      .catch(() => (fehler = 'Die Familie konnte nicht geladen werden'));
+      .catch(() => (fehler = t('Die Familie konnte nicht geladen werden')));
   });
 
   $effect(() => {
@@ -41,7 +42,7 @@
       const r = await authApi.elternPruefen(gewaehlt.id, pin);
       eltern.freigeben(r.id, r.name || gewaehlt.name, pin);
     } catch (e) {
-      fehler = e instanceof ApiError ? e.message : 'Prüfen fehlgeschlagen';
+      fehler = e instanceof ApiError ? e.message : t('Prüfen fehlgeschlagen');
       pin = '';
     } finally {
       prueft = false;
@@ -67,16 +68,16 @@
       class="safe-bottom w-full max-w-sm animate-slide-up rounded-t-2xl border border-border bg-card p-5 shadow-xl sm:rounded-2xl"
       role="dialog"
       aria-modal="true"
-      aria-label="Eltern-PIN"
+      aria-label={t('Eltern-PIN')}
     >
       <div class="mb-4 flex items-start justify-between gap-3">
         <div>
           <h2 class="flex items-center gap-2 text-lg font-semibold">
-            <LockKeyhole class="h-5 w-5" /> Eltern-PIN
+            <LockKeyhole class="h-5 w-5" /> {t('Eltern-PIN')}
           </h2>
           <p class="text-sm text-muted-foreground">{eltern.frage}</p>
         </div>
-        <button class="touch-target text-muted-foreground" onclick={() => eltern.abbrechen()} aria-label="Abbrechen">
+        <button class="touch-target text-muted-foreground" onclick={() => eltern.abbrechen()} aria-label={t('Abbrechen')}>
           <X class="h-5 w-5" />
         </button>
       </div>
@@ -111,7 +112,7 @@
           maxlength="4"
           autocomplete="off"
           placeholder="••••"
-          aria-label="PIN von {gewaehlt.name}"
+          aria-label={t('PIN von {0}', [gewaehlt.name])}
           bind:value={pin}
           oninput={eingabe}
           disabled={prueft}
@@ -123,7 +124,7 @@
       {/if}
 
       <p class="mt-4 text-center text-xs text-muted-foreground">
-        Gilt zwei Minuten an diesem Tablet. Niemand wird dabei angemeldet.
+        {t('Gilt zwei Minuten an diesem Tablet. Niemand wird dabei angemeldet.')}
       </p>
     </div>
   </div>

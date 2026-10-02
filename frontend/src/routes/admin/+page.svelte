@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t, dfLocale, intlLocale, tServer } from '$lib/i18n';
   import { onMount, untrack } from 'svelte';
   import { goto } from '$app/navigation';
   import {
@@ -7,7 +8,6 @@
     Minus, RotateCcw, Shield, Sparkles, Trash2, TriangleAlert, Undo2, Users, X, Zap,
   } from 'lucide-svelte';
   import { formatDistanceToNow, parseISO } from 'date-fns';
-  import { de } from 'date-fns/locale';
   import { ApiError, adminApi, authApi } from '$lib/api';
   import { session } from '$lib/stores';
   import { board, mitVorzeichen, quelle } from '$lib/stores/scores.svelte';
@@ -34,7 +34,7 @@
       session.setDevice();
       await goto('/');
     } catch (e) {
-      geraetFehler = e instanceof ApiError ? e.message : 'Konnte nicht einrichten';
+      geraetFehler = e instanceof ApiError ? e.message : t('Konnte nicht einrichten');
       busy = false;
     }
   }
@@ -46,7 +46,7 @@
       await authApi.disableDevice();
       istWandgeraet = false;
     } catch (e) {
-      geraetFehler = e instanceof ApiError ? e.message : 'Konnte nicht aufheben';
+      geraetFehler = e instanceof ApiError ? e.message : t('Konnte nicht aufheben');
     } finally {
       busy = false;
     }
@@ -80,13 +80,13 @@
   let pointsError = $state('');
 
   const relative = (iso: string) =>
-    formatDistanceToNow(parseISO(iso), { addSuffix: true, locale: de });
+    formatDistanceToNow(parseISO(iso), { addSuffix: true, locale: dfLocale });
 
   async function loadHistory() {
     try {
       history = await adminApi.pointHistory(historyUser || undefined);
     } catch (e) {
-      pointsError = e instanceof ApiError ? e.message : 'Verlauf konnte nicht geladen werden';
+      pointsError = e instanceof ApiError ? e.message : t('Verlauf konnte nicht geladen werden');
     }
   }
 
@@ -98,38 +98,38 @@
 
   async function revoke(entry: Activity) {
     const ok = await confirmAction({
-      title: `${entry.points} Punkte zurücknehmen?`,
+      title: t('{0} Punkte zurücknehmen?', [entry.points]),
       message:
         entry.source === 'chore'
-          ? `„${entry.note}“ wird dadurch wieder fällig.`
-          : `Eintrag: „${entry.note}“`,
-      confirmLabel: 'Zurücknehmen',
+          ? t('„{0}“ wird dadurch wieder fällig.', [entry.note])
+          : t('Eintrag: „{0}“', [entry.note]),
+      confirmLabel: t('Zurücknehmen'),
     });
     if (!ok) return;
     pointsError = '';
     try {
       await adminApi.revokePoints(entry.id);
       await Promise.all([loadHistory(), board.refresh()]);
-      notice = 'Eintrag zurückgenommen';
+      notice = t('Eintrag zurückgenommen');
     } catch (e) {
-      pointsError = e instanceof ApiError ? e.message : 'Zurücknehmen fehlgeschlagen';
+      pointsError = e instanceof ApiError ? e.message : t('Zurücknehmen fehlgeschlagen');
     }
   }
 
   async function resetPoints(userId: number, label: string) {
     const ok = await confirmAction({
-      title: `Punkte von ${label} zurücksetzen?`,
-      message: 'Der gesamte Verlauf wird gelöscht. Das lässt sich nicht rückgängig machen.',
-      confirmLabel: 'Zurücksetzen',
+      title: t('Punkte von {0} zurücksetzen?', [label]),
+      message: t('Der gesamte Verlauf wird gelöscht. Das lässt sich nicht rückgängig machen.'),
+      confirmLabel: t('Zurücksetzen'),
     });
     if (!ok) return;
     pointsError = '';
     try {
       const { removed } = await adminApi.resetPoints(userId);
       await Promise.all([loadHistory(), board.refresh()]);
-      notice = `${removed} Einträge entfernt`;
+      notice = t('{0} Einträge entfernt', [removed]);
     } catch (e) {
-      pointsError = e instanceof ApiError ? e.message : 'Zurücksetzen fehlgeschlagen';
+      pointsError = e instanceof ApiError ? e.message : t('Zurücksetzen fehlgeschlagen');
     }
   }
 
@@ -217,7 +217,7 @@
     try {
       testResult = await adminApi.testDevice(deviceDraft);
     } catch (e) {
-      deviceError = e instanceof ApiError ? e.message : 'Test fehlgeschlagen';
+      deviceError = e instanceof ApiError ? e.message : t('Test fehlgeschlagen');
     } finally {
       testing = false;
     }
@@ -233,9 +233,9 @@
       showDeviceForm = false;
       editingDevice = null;
       devices = await adminApi.listDevices();
-      notice = 'Gerät gespeichert';
+      notice = t('Gerät gespeichert');
     } catch (e) {
-      deviceError = e instanceof ApiError ? e.message : 'Speichern fehlgeschlagen';
+      deviceError = e instanceof ApiError ? e.message : t('Speichern fehlgeschlagen');
     } finally {
       busy = false;
     }
@@ -246,7 +246,7 @@
       await adminApi.updateDevice(device.id, { ...device, enabled: !device.enabled });
       devices = await adminApi.listDevices();
     } catch (e) {
-      deviceError = e instanceof ApiError ? e.message : 'Konnte nicht umschalten';
+      deviceError = e instanceof ApiError ? e.message : t('Konnte nicht umschalten');
     }
   }
 
@@ -264,14 +264,14 @@
   }
 
   async function removeDevice(device: DeviceTarget) {
-    const ok = await confirmAction({ title: `Gerät „${device.name}“ entfernen?` });
+    const ok = await confirmAction({ title: t('Gerät „{0}“ entfernen?', [device.name]) });
     if (!ok) return;
     try {
       await adminApi.deleteDevice(device.id);
       devices = await adminApi.listDevices();
       notice = `${device.name} entfernt`;
     } catch (e) {
-      deviceError = e instanceof ApiError ? e.message : 'Löschen fehlgeschlagen';
+      deviceError = e instanceof ApiError ? e.message : t('Löschen fehlgeschlagen');
     }
   }
 
@@ -291,13 +291,13 @@
       }
     };
     await Promise.all([
-      teil('Familienmitglieder', () => adminApi.listUsers(), (v) => (users = v)),
-      teil('Sicherungen', () => adminApi.listBackups(), (v) => (backups = v)),
-      teil('Geräte', () => adminApi.listDevices(), (v) => (devices = v)),
-      teil('Punkteverlauf', () => adminApi.pointHistory(), (v) => (history = v)),
-      board.loaded ? Promise.resolve() : board.refresh().catch(() => fehlgeschlagen.push('Rangliste')),
+      teil(t('Familienmitglieder'), () => adminApi.listUsers(), (v) => (users = v)),
+      teil(t('Sicherungen'), () => adminApi.listBackups(), (v) => (backups = v)),
+      teil(t('Geräte'), () => adminApi.listDevices(), (v) => (devices = v)),
+      teil(t('Punkteverlauf'), () => adminApi.pointHistory(), (v) => (history = v)),
+      board.loaded ? Promise.resolve() : board.refresh().catch(() => fehlgeschlagen.push(t('Rangliste'))),
     ]);
-    if (fehlgeschlagen.length > 0) error = `Nicht geladen: ${fehlgeschlagen.join(', ')}`;
+    if (fehlgeschlagen.length > 0) error = t('Nicht geladen: {0}', [fehlgeschlagen.join(', ')]);
     loading = false;
     // Die Musik darf nachkommen: Ist die Platte abgemeldet, soll das nicht
     // die ganze Verwaltungsseite aufhalten.
@@ -352,7 +352,7 @@
       editing = null;
       users = await adminApi.listUsers();
     } catch (e) {
-      error = e instanceof ApiError ? e.message : 'Speichern fehlgeschlagen';
+      error = e instanceof ApiError ? e.message : t('Speichern fehlgeschlagen');
     } finally {
       busy = false;
     }
@@ -360,17 +360,17 @@
 
   async function remove(user: User) {
     const ok = await confirmAction({
-      title: `${user.name} löschen?`,
-      message: 'Punkte, Notizen und Links dieser Person gehen verloren.',
+      title: t('{0} löschen?', [user.name]),
+      message: t('Punkte, Notizen und Links dieser Person gehen verloren.'),
     });
     if (!ok) return;
     error = '';
     try {
       await adminApi.deleteUser(user.id);
       users = await adminApi.listUsers();
-      notice = `${user.name} gelöscht`;
+      notice = t('{0} gelöscht', [user.name]);
     } catch (e) {
-      error = e instanceof ApiError ? e.message : 'Löschen fehlgeschlagen';
+      error = e instanceof ApiError ? e.message : t('Löschen fehlgeschlagen');
     }
   }
 
@@ -401,19 +401,17 @@
     try {
       musikOrdner = await adminApi.musicFolders(pfad);
     } catch (e) {
-      musikFehler = e instanceof ApiError ? e.message : 'Ordner nicht lesbar';
+      musikFehler = e instanceof ApiError ? e.message : t('Ordner nicht lesbar');
       musikOrdner = null;
     }
   }
 
   async function musikOrdnerWaehlen(pfad: string) {
     const ok = await confirmAction({
-      title: pfad ? `„${pfad}" als Musikordner setzen?` : 'Den ganzen Ordner verwenden?',
+      title: pfad ? t('„{0}" als Musikordner setzen?', [pfad]) : t('Den ganzen Ordner verwenden?'),
       message:
-        'Der bisherige Index wird verworfen und neu aufgebaut. Bei einer grossen ' +
-        'Sammlung dauert das einige Minuten — das Dashboard bleibt währenddessen ' +
-        'bedienbar.',
-      confirmLabel: 'Setzen und einlesen',
+        t('Der bisherige Index wird verworfen und neu aufgebaut. Bei einer grossen Sammlung dauert das einige Minuten — das Dashboard bleibt währenddessen bedienbar.'),
+      confirmLabel: t('Setzen und einlesen'),
     });
     if (!ok) return;
 
@@ -421,10 +419,10 @@
     busy = true;
     try {
       await adminApi.setMusicDir(pfad);
-      notice = 'Musikordner gesetzt, wird eingelesen';
+      notice = t('Musikordner gesetzt, wird eingelesen');
       await Promise.all([ladeMusik(), musikBlaettern(musikOrdner?.path ?? '')]);
     } catch (e) {
-      musikFehler = e instanceof ApiError ? e.message : 'Konnte nicht gesetzt werden';
+      musikFehler = e instanceof ApiError ? e.message : t('Konnte nicht gesetzt werden');
     } finally {
       busy = false;
     }
@@ -436,7 +434,7 @@
       await adminApi.rescanMusic();
       await ladeMusik();
     } catch (e) {
-      musikFehler = e instanceof ApiError ? e.message : 'Einlesen fehlgeschlagen';
+      musikFehler = e instanceof ApiError ? e.message : t('Einlesen fehlgeschlagen');
     }
   }
 
@@ -445,10 +443,10 @@
     error = '';
     try {
       const result = await adminApi.runBackup();
-      notice = `Backup erstellt: ${result.database}`;
+      notice = t('Backup erstellt: {0}', [result.database]);
       backups = await adminApi.listBackups();
     } catch (e) {
-      error = e instanceof ApiError ? e.message : 'Backup fehlgeschlagen';
+      error = e instanceof ApiError ? e.message : t('Backup fehlgeschlagen');
     } finally {
       busy = false;
     }
@@ -474,11 +472,11 @@
   });
 </script>
 
-<svelte:head><title>Verwaltung · Familien Dashboard</title></svelte:head>
+<svelte:head><title>{t('Verwaltung · Familien Dashboard')}</title></svelte:head>
 
 <div class="mx-auto max-w-3xl px-4 py-6">
   <h1 class="mb-6 flex items-center gap-2 text-2xl font-semibold">
-    <Shield class="h-6 w-6" /> Verwaltung
+    <Shield class="h-6 w-6" /> {t('Verwaltung')}
   </h1>
 
   {#if error}
@@ -494,7 +492,7 @@
   <section class="card mb-4 p-5">
     <header class="mb-4 flex items-center justify-between">
       <h2 class="flex items-center gap-2 font-semibold">
-        <Users class="h-5 w-5" /> Familienmitglieder
+        <Users class="h-5 w-5" /> {t('Familienmitglieder')}
       </h2>
       <button class="btn-primary px-3" onclick={() => (showForm ? (showForm = false) : startNew())}>
         {#if showForm}<X class="h-5 w-5" />{:else}<Plus class="h-5 w-5" />{/if}
@@ -504,12 +502,12 @@
     {#if showForm}
       <form class="mb-4 space-y-3 rounded-lg border border-border p-4" onsubmit={save}>
         <label class="block text-sm">
-          Name
+          {t('Name')}
           <input class="input mt-1" bind:value={draft.name} maxlength="40" required />
         </label>
 
         <div class="text-sm">
-          Avatar
+          {t('Avatar')}
           <div class="mt-1 flex flex-wrap gap-1">
             {#each emojis as emoji}
               <button
@@ -525,7 +523,7 @@
         </div>
 
         <div class="text-sm">
-          Farbe
+          {t('Farbe')}
           <div class="mt-1 flex flex-wrap gap-2">
             {#each colors as color}
               <button
@@ -534,7 +532,7 @@
                   ? 'scale-110 ring-2 ring-offset-2 ring-offset-card'
                   : ''}"
                 style="background-color: {color}; --tw-ring-color: {color}"
-                aria-label="Farbe {color}"
+                aria-label={t('Farbe {0}', [color])}
                 onclick={() => (draft.color = color)}
               ></button>
             {/each}
@@ -542,7 +540,7 @@
         </div>
 
         <label class="block text-sm">
-          PIN (4 Ziffern){editing ? ' — leer lassen zum Beibehalten' : ''}
+          {t('PIN (4 Ziffern){0}', [editing ? t(' — leer lassen zum Beibehalten') : ''])}
           <input
             class="input mt-1 tracking-[0.4em]"
             type="password"
@@ -554,10 +552,10 @@
         </label>
 
         <label class="block text-sm">
-          Rolle
+          {t('Rolle')}
           <select class="input mt-1" bind:value={draft.role}>
-            <option value="member">Familienmitglied</option>
-            <option value="admin">Administrator</option>
+            <option value="member">{t('Familienmitglied')}</option>
+            <option value="admin">{t('Administrator')}</option>
           </select>
         </label>
 
@@ -568,23 +566,21 @@
             bind:checked={draft.in_rotation}
           />
           <span>
-            Nimmt an der Reihum-Verteilung teil
+            {t('Nimmt an der Reihum-Verteilung teil')}
             <span class="mt-0.5 block text-xs text-muted-foreground">
-              Aus dem Häkchen genommen, steht diese Person bei „reihum" nicht
-              mehr im Plan. Feste Zuständigkeiten und „alle" bleiben davon
-              unberührt.
+              {t('Aus dem Häkchen genommen, steht diese Person bei „reihum" nicht mehr im Plan. Feste Zuständigkeiten und „alle" bleiben davon unberührt.')}
             </span>
           </span>
         </label>
 
         <button class="btn-primary w-full" disabled={busy || !draft.name.trim()}>
-          {editing ? 'Änderungen speichern' : 'Anlegen'}
+          {editing ? t('Änderungen speichern') : t('Anlegen')}
         </button>
       </form>
     {/if}
 
     {#if loading}
-      <p class="py-6 text-center text-sm text-muted-foreground">Lade…</p>
+      <p class="py-6 text-center text-sm text-muted-foreground">{t('Lade…')}</p>
     {:else}
       <ul class="space-y-2">
         {#each users as user (user.id)}
@@ -598,16 +594,16 @@
             <div class="min-w-0 flex-1">
               <p class="truncate text-sm font-medium">{user.name}</p>
               <p class="text-xs text-muted-foreground">
-                {user.role === 'admin' ? 'Administrator' : 'Familienmitglied'}
-                {#if !user.in_rotation}· nicht reihum{/if}
-                {#if user.pin_is_default}· <span class="text-amber-600 dark:text-amber-400">Standard-PIN</span>{/if}
+                {user.role === 'admin' ? t('Administrator') : t('Familienmitglied')}
+                {#if !user.in_rotation}{t('· nicht reihum')}{/if}
+                {#if user.pin_is_default}· <span class="text-amber-600 dark:text-amber-400">{t('Standard-PIN')}</span>{/if}
               </p>
             </div>
-            <button class="btn-ghost px-3 text-sm" onclick={() => startEdit(user)}>Bearbeiten</button>
+            <button class="btn-ghost px-3 text-sm" onclick={() => startEdit(user)}>{t('Bearbeiten')}</button>
             <button
               class="touch-target shrink-0 text-muted-foreground hover:text-destructive"
               onclick={() => remove(user)}
-              aria-label="{user.name} löschen"
+              aria-label={t('{0} löschen', [user.name])}
             >
               <Trash2 class="h-4 w-4" />
             </button>
@@ -620,10 +616,10 @@
   <section class="card mb-4 p-5">
     <header class="mb-4">
       <h2 class="flex items-center gap-2 font-semibold">
-        <Sparkles class="h-5 w-5" /> Punkte
+        <Sparkles class="h-5 w-5" /> {t('Punkte')}
       </h2>
       <p class="text-sm text-muted-foreground">
-        Punktestände korrigieren und einzelne Einträge zurücknehmen.
+        {t('Punktestände korrigieren und einzelne Einträge zurücknehmen.')}
       </p>
     </header>
 
@@ -646,7 +642,7 @@
             class="btn-ghost shrink-0 px-2 text-xs text-muted-foreground hover:text-destructive"
             onclick={() => resetPoints(score.id, score.name)}
             disabled={score.total_points === 0 && score.activities === 0}
-            title="Punktestand von {score.name} zurücksetzen"
+            title={t('Punktestand von {0} zurücksetzen', [score.name])}
           >
             <RotateCcw class="h-4 w-4" />
           </button>
@@ -656,31 +652,31 @@
 
     <button
       class="btn-outline mb-4 w-full text-sm text-destructive"
-      onclick={() => resetPoints(0, 'der ganzen Familie')}
+      onclick={() => resetPoints(0, t('der ganzen Familie'))}
     >
-      <RotateCcw class="h-4 w-4" /> Alle Punkte zurücksetzen
+      <RotateCcw class="h-4 w-4" /> {t('Alle Punkte zurücksetzen')}
     </button>
 
     <!-- Manuelle Buchung: dasselbe Fenster wie in Rangliste und Kopfleiste. -->
     <div class="mb-4 grid grid-cols-2 gap-2">
       <button class="btn min-h-[48px] bg-success text-success-foreground hover:bg-success/90" onclick={() => punkte.oeffnen({ modus: 'plus' })}>
-        <Plus class="h-5 w-5" /> Gutschreiben
+        <Plus class="h-5 w-5" /> {t('Gutschreiben')}
       </button>
       <button class="btn min-h-[48px] bg-destructive text-destructive-foreground hover:bg-destructive/90" onclick={() => punkte.oeffnen({ modus: 'minus' })}>
-        <Minus class="h-5 w-5" /> Abziehen
+        <Minus class="h-5 w-5" /> {t('Abziehen')}
       </button>
     </div>
 
     <!-- Verlauf mit Rücknahme -->
     <div class="mb-2 flex items-center justify-between gap-2">
-      <p class="text-sm font-medium">Verlauf</p>
+      <p class="text-sm font-medium">{t('Verlauf')}</p>
       <select
         class="input w-auto py-1.5 text-sm"
         bind:value={historyUser}
         onchange={loadHistory}
-        aria-label="Nach Benutzer filtern"
+        aria-label={t('Nach Benutzer filtern')}
       >
-        <option value={0}>Alle</option>
+        <option value={0}>{t('Alle')}</option>
         {#each users as user (user.id)}
           <option value={user.id}>{user.name}</option>
         {/each}
@@ -689,7 +685,7 @@
 
     {#if history.length === 0}
       <p class="py-6 text-center text-sm text-muted-foreground">
-        Noch keine Punkte vergeben.
+        {t('Noch keine Punkte vergeben.')}
       </p>
     {:else}
       <ul class="scrollbar-thin max-h-80 space-y-1.5 overflow-y-auto pr-1">
@@ -704,7 +700,7 @@
                 </span>
               </p>
               <p class="truncate text-[11px] text-muted-foreground">
-                {entry.note} · {relative(entry.created_at)}
+                {tServer(entry.note)} · {relative(entry.created_at)}
               </p>
             </div>
             <span
@@ -717,8 +713,8 @@
             <button
               class="touch-target shrink-0 text-muted-foreground hover:text-destructive"
               onclick={() => revoke(entry)}
-              aria-label="Eintrag zurücknehmen"
-              title="Zurücknehmen"
+              aria-label={t('Eintrag zurücknehmen')}
+              title={t('Zurücknehmen')}
             >
               <Undo2 class="h-4 w-4" />
             </button>
@@ -731,12 +727,12 @@
   <section class="card mb-4 p-5">
     <header class="mb-4 flex items-center justify-between">
       <h2 class="flex items-center gap-2 font-semibold">
-        <MonitorSmartphone class="h-5 w-5" /> Geräte
+        <MonitorSmartphone class="h-5 w-5" /> {t('Geräte')}
       </h2>
       <button
         class="btn-primary px-3"
         onclick={() => (showDeviceForm ? (showDeviceForm = false) : startNewDevice())}
-        aria-label="Gerät hinzufügen"
+        aria-label={t('Gerät hinzufügen')}
       >
         {#if showDeviceForm}<X class="h-5 w-5" />{:else}<Plus class="h-5 w-5" />{/if}
       </button>
@@ -752,21 +748,21 @@
       <form class="mb-4 space-y-3 rounded-xl border border-border p-4" onsubmit={saveDevice}>
         <div class="grid gap-2 sm:grid-cols-2">
           <label class="text-sm">
-            Name
+            {t('Name')}
             <input class="input mt-1" bind:value={deviceDraft.name} maxlength="40" required />
           </label>
           <label class="text-sm">
-            Prüfung über
+            {t('Prüfung über')}
             <select class="input mt-1" bind:value={deviceDraft.type}>
-              <option value="http">Webadresse (HTTP)</option>
-              <option value="tcp">Port (TCP)</option>
+              <option value="http">{t('Webadresse (HTTP)')}</option>
+              <option value="tcp">{t('Port (TCP)')}</option>
             </select>
           </label>
         </div>
 
         {#if deviceDraft.type === 'http'}
           <label class="block text-sm">
-            Adresse für die Prüfung
+            {t('Adresse für die Prüfung')}
             <input
               class="input mt-1"
               bind:value={deviceDraft.url}
@@ -777,24 +773,24 @@
             />
           </label>
           <label class="block text-sm">
-            Erwarteter Status (0 = egal, solange geantwortet wird)
+            {t('Erwarteter Status (0 = egal, solange geantwortet wird)')}
             <input class="input mt-1" type="number" min="0" max="599" bind:value={deviceDraft.expect_status} />
           </label>
         {:else}
           <div class="grid gap-2 sm:grid-cols-2">
             <label class="text-sm">
-              Host
+              {t('Host')}
               <input class="input mt-1" bind:value={deviceDraft.host} placeholder="192.168.1.20" />
             </label>
             <label class="text-sm">
-              Port
+              {t('Port')}
               <input class="input mt-1" type="number" min="1" max="65535" bind:value={deviceDraft.port} />
             </label>
           </div>
         {/if}
 
         <label class="block text-sm">
-          Oberfläche zum Antippen (optional)
+          {t('Oberfläche zum Antippen (optional)')}
           <input
             class="input mt-1"
             bind:value={deviceDraft.link}
@@ -809,17 +805,15 @@
           <p class="flex items-start gap-2 rounded-lg bg-amber-500/10 px-3 py-2 text-sm text-amber-700 dark:text-amber-400">
             <TriangleAlert class="mt-0.5 h-4 w-4 shrink-0" />
             <span>
-              Geprüft wird <strong>{hostWarnung.pruefung}</strong>, geöffnet wird
-              <strong>{hostWarnung.ziel}</strong>. Dann leuchtet die Kachel grün
-              und führt trotzdem woanders hin. Falls das Absicht ist, einfach
-              speichern.
+              {t('Geprüft wird')} <strong>{hostWarnung.pruefung}</strong>{t(', geöffnet wird')}
+              <strong>{hostWarnung.ziel}</strong>{t('. Dann leuchtet die Kachel grün und führt trotzdem woanders hin. Falls das Absicht ist, einfach speichern.')}
             </span>
           </p>
         {/if}
 
         <label class="flex items-center gap-2 text-sm">
           <input type="checkbox" class="h-4 w-4 rounded" bind:checked={deviceDraft.enabled} />
-          Aktiv (wird geprüft und angezeigt)
+          {t('Aktiv (wird geprüft und angezeigt)')}
         </label>
 
         {#if testResult}
@@ -829,9 +823,9 @@
               : 'bg-destructive/10 text-destructive'}"
           >
             {#if testResult.status === 'up'}
-              ✓ Erreichbar in {testResult.latency_ms} ms
+              {t('✓ Erreichbar in {0} ms', [testResult.latency_ms])}
             {:else}
-              ✗ Nicht erreichbar: {testResult.error}
+              {t('✗ Nicht erreichbar: {0}', [tServer(testResult.error)])}
             {/if}
           </p>
         {/if}
@@ -839,10 +833,10 @@
         <div class="flex gap-2">
           <button type="button" class="btn-outline flex-1 text-sm" onclick={testDevice} disabled={testing}>
             <Zap class="h-4 w-4" />
-            {testing ? 'Teste…' : 'Verbindung testen'}
+            {testing ? t('Teste…') : t('Verbindung testen')}
           </button>
           <button class="btn-primary flex-1 text-sm" disabled={busy || !deviceDraft.name.trim()}>
-            {editingDevice ? 'Speichern' : 'Anlegen'}
+            {editingDevice ? t('Speichern') : t('Anlegen')}
           </button>
         </div>
       </form>
@@ -850,7 +844,7 @@
 
     {#if devices.length === 0}
       <p class="py-6 text-center text-sm text-muted-foreground">
-        Noch keine Geräte. Mit <strong>+</strong> das erste anlegen.
+        {t('Noch keine Geräte. Mit')} <strong>+</strong> {t('das erste anlegen.')}
       </p>
     {:else}
       <ul class="space-y-2">
@@ -883,19 +877,19 @@
               <p class="truncate text-sm font-medium">{device.name}</p>
               <p class="truncate text-xs text-muted-foreground">
                 {device.type === 'http' ? device.url : `${device.host}:${device.port}`}
-                {#if !device.enabled}· inaktiv{/if}
+                {#if !device.enabled}{t('· inaktiv')}{/if}
               </p>
             </div>
 
             <button
               class="btn-ghost shrink-0 px-2 text-xs"
               onclick={() => toggleDevice(device)}
-              title={device.enabled ? 'Deaktivieren' : 'Aktivieren'}
+              title={device.enabled ? t('Deaktivieren') : t('Aktivieren')}
             >
-              {device.enabled ? 'Aktiv' : 'Inaktiv'}
+              {device.enabled ? t('Aktiv') : t('Inaktiv')}
             </button>
             <button class="btn-ghost shrink-0 px-3 text-sm" onclick={() => startEditDevice(device)}>
-              Bearbeiten
+              {t('Bearbeiten')}
             </button>
             <button
               class="touch-target shrink-0 text-muted-foreground hover:text-destructive"
@@ -913,15 +907,15 @@
   <section class="card mb-4 p-5">
     <header class="mb-4 flex items-center justify-between">
       <h2 class="flex items-center gap-2 font-semibold">
-        <Music class="h-5 w-5" /> Musik
+        <Music class="h-5 w-5" /> {t('Musik')}
       </h2>
       {#if musik?.enabled && musik.available}
         <button
           class="btn-ghost shrink-0 rounded-full px-2 text-muted-foreground"
           onclick={musikNeuEinlesen}
           disabled={musik.progress.running}
-          title="Neu einlesen"
-          aria-label="Musikordner neu einlesen"
+          title={t('Neu einlesen')}
+          aria-label={t('Musikordner neu einlesen')}
         >
           <RefreshCw class="h-4 w-4 {musik.progress.running ? 'animate-spin' : ''}" />
         </button>
@@ -935,11 +929,11 @@
     {/if}
 
     {#if !musik}
-      <p class="py-4 text-center text-sm text-muted-foreground">Lade…</p>
+      <p class="py-4 text-center text-sm text-muted-foreground">{t('Lade…')}</p>
     {:else if !musik.enabled}
       <p class="text-sm text-muted-foreground">
-        Es ist kein Ordner eingehängt. Dafür braucht es eine Zeile in der
-        <code>.env</code> und einen Neustart mit <code>make up</code>:
+        {t('Es ist kein Ordner eingehängt. Dafür braucht es eine Zeile in der')}
+        <code>.env</code> {t('und einen Neustart mit')} <code>make up</code>:
       </p>
       <pre class="mt-2 overflow-x-auto rounded-lg bg-muted/40 px-3 py-2 text-xs"><code
           >MUSIC_HOST_DIR=/media/festplatte/AUDIO</code
@@ -952,24 +946,22 @@
         Weboberfläche etwas. WELCHER Teil davon gehört wird, steht hier.
       -->
       <p class="mb-3 text-sm text-muted-foreground">
-        Eingehängt ist <code class="text-foreground">{musik.mount}</code>. Welcher
-        Ordner des Rechners das ist, steht in der <code>.env</code> unter
-        <code>MUSIC_HOST_DIR</code> — das lässt sich von hier aus nicht ändern.
-        Welchen Teil davon ihr hört, schon.
+        {t('Eingehängt ist')} <code class="text-foreground">{musik.mount}</code>{t('. Welcher Ordner des Rechners das ist, steht in der')} <code>.env</code> {t('unter')}
+        <code>MUSIC_HOST_DIR</code> {t('— das lässt sich von hier aus nicht ändern. Welchen Teil davon ihr hört, schon.')}
       </p>
 
       <div class="mb-3 rounded-xl bg-muted/30 p-3 text-sm">
         <p>
-          <span class="text-muted-foreground">Es gilt:</span>
-          <strong>{musik.subdir || 'der ganze eingehängte Ordner'}</strong>
+          <span class="text-muted-foreground">{t('Es gilt:')}</span>
+          <strong>{musik.subdir || t('der ganze eingehängte Ordner')}</strong>
         </p>
         <p class="mt-0.5 text-xs text-muted-foreground">
           {#if musik.progress.running}
-            Wird eingelesen… {musik.progress.scanned.toLocaleString('de-DE')} Dateien
+            {t('Wird eingelesen… {0} Dateien', [musik.progress.scanned.toLocaleString(intlLocale)])}
           {:else if !musik.available}
-            Gerade nicht erreichbar — ist die Festplatte angeschlossen?
+            {t('Gerade nicht erreichbar — ist die Festplatte angeschlossen?')}
           {:else}
-            {musik.tracks.toLocaleString('de-DE')} Titel im Index
+            {t('{0} Titel im Index', [musik.tracks.toLocaleString(intlLocale)])}
           {/if}
         </p>
       </div>
@@ -982,13 +974,13 @@
             void musikBlaettern(musik?.subdir ?? '');
           }}
         >
-          <Folder class="h-4 w-4" /> Anderen Ordner wählen
+          <Folder class="h-4 w-4" /> {t('Anderen Ordner wählen')}
         </button>
       {:else}
         <div class="rounded-xl border border-border p-3">
           <div class="mb-2 flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
             <button class="rounded px-1.5 py-0.5 hover:bg-accent" onclick={() => musikBlaettern('')}>
-              Eingehängter Ordner
+              {t('Eingehängter Ordner')}
             </button>
             {#each musikPfadTeile as teil (teil.path)}
               <ChevronRight class="h-3 w-3 shrink-0 opacity-50" />
@@ -1007,12 +999,12 @@
               onclick={() => musikOrdnerWaehlen(musikOrdner?.path ?? '')}
               disabled={busy}
             >
-              Diesen Ordner verwenden
+              {t('Diesen Ordner verwenden')}
               {#if musikOrdner.has_audio}
-                <span class="block text-xs opacity-80">Hier liegen Audiodateien</span>
+                <span class="block text-xs opacity-80">{t('Hier liegen Audiodateien')}</span>
               {:else}
                 <span class="block text-xs opacity-80">
-                  Hier liegen keine Audiodateien — die Unterordner zählen mit
+                  {t('Hier liegen keine Audiodateien — die Unterordner zählen mit')}
                 </span>
               {/if}
             </button>
@@ -1024,7 +1016,7 @@
                     class="flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-left text-sm text-muted-foreground transition-colors hover:bg-accent"
                     onclick={() => musikBlaettern(musikOrdner?.parent ?? '')}
                   >
-                    <CornerLeftUp class="h-4 w-4 shrink-0" /> Eine Ebene höher
+                    <CornerLeftUp class="h-4 w-4 shrink-0" /> {t('Eine Ebene höher')}
                   </button>
                 </li>
               {/if}
@@ -1045,16 +1037,16 @@
               {/each}
               {#if musikOrdner.folders.length === 0}
                 <li class="py-4 text-center text-xs text-muted-foreground">
-                  Keine Unterordner.
+                  {t('Keine Unterordner.')}
                 </li>
               {/if}
             </ul>
           {:else}
-            <p class="py-4 text-center text-sm text-muted-foreground">Lade…</p>
+            <p class="py-4 text-center text-sm text-muted-foreground">{t('Lade…')}</p>
           {/if}
 
           <button class="btn-ghost mt-2 w-full text-sm" onclick={() => (musikOffen = false)}>
-            Schließen
+            {t('Schließen')}
           </button>
         </div>
       {/if}
@@ -1064,27 +1056,27 @@
   <section class="card p-5">
     <header class="mb-4 flex items-center justify-between">
       <h2 class="flex items-center gap-2 font-semibold">
-        <Database class="h-5 w-5" /> Backups
+        <Database class="h-5 w-5" /> {t('Backups')}
       </h2>
       <div class="flex gap-2">
         <a class="btn-outline px-3 text-sm" href={adminApi.downloadUrl()} download>
           <Download class="h-4 w-4" />
-          <span class="hidden sm:inline">Herunterladen</span>
+          <span class="hidden sm:inline">{t('Herunterladen')}</span>
         </a>
         <button class="btn-primary px-3 text-sm" onclick={runBackup} disabled={busy}>
           <HardDriveDownload class="h-4 w-4" />
-          <span class="hidden sm:inline">Jetzt sichern</span>
+          <span class="hidden sm:inline">{t('Jetzt sichern')}</span>
         </button>
       </div>
     </header>
 
     <p class="mb-3 text-xs text-muted-foreground">
-      Automatisch jede Nacht um 3 Uhr, 7 Tage Aufbewahrung. Gespeichert unter
+      {t('Automatisch jede Nacht um 3 Uhr, 7 Tage Aufbewahrung. Gespeichert unter')}
       <code>backend/data/backup/</code>.
     </p>
 
     {#if backups.length === 0}
-      <p class="py-4 text-center text-sm text-muted-foreground">Noch keine Backups</p>
+      <p class="py-4 text-center text-sm text-muted-foreground">{t('Noch keine Backups')}</p>
     {:else}
       <ul class="scrollbar-thin max-h-64 space-y-1 overflow-y-auto pr-1">
         {#each backups as file (file.name)}
@@ -1099,18 +1091,12 @@
 
   <section class="card mt-4 p-5">
     <h2 class="mb-2 flex items-center gap-2 font-semibold">
-      <MonitorSmartphone class="h-5 w-5" /> Wandgerät
+      <MonitorSmartphone class="h-5 w-5" /> {t('Wandgerät')}
     </h2>
     <p class="mb-4 text-sm text-muted-foreground">
-      Ein Tablet, das fest an der Wand hängt, wird hier zum Familien-Gerät.
-      Es bleibt dauerhaft angemeldet, zeigt aber keine persönlichen Daten:
-      keine Rangliste, keine Einstellungen, keine eigenen Links. Wer eine
-      Aufgabe abhakt, wird kurz gefragt, wer er ist — ohne PIN.
+      {t('Ein Tablet, das fest an der Wand hängt, wird hier zum Familien-Gerät. Es bleibt dauerhaft angemeldet, zeigt aber keine persönlichen Daten: keine Rangliste, keine Einstellungen, keine eigenen Links. Wer eine Aufgabe abhakt, wird kurz gefragt, wer er ist — ohne PIN.')}
       <br /><br />
-      Beim Einrichten wirst du auf diesem Gerät <strong>abgemeldet</strong>,
-      damit nicht versehentlich alles auf dein Konto läuft. Diese Einstellung
-      gilt nur für <strong>dieses</strong> Gerät — dein Handy bleibt
-      unberührt.
+      {t('Beim Einrichten wirst du auf diesem Gerät')} <strong>{t('abgemeldet')}</strong>{t(', damit nicht versehentlich alles auf dein Konto läuft. Diese Einstellung gilt nur für')} <strong>{t('dieses')}</strong> {t('Gerät — dein Handy bleibt unberührt.')}
     </p>
 
     {#if geraetFehler}
@@ -1122,16 +1108,16 @@
     {#if istWandgeraet}
       <div class="flex flex-wrap items-center gap-3">
         <span class="flex items-center gap-2 text-sm text-primary">
-          <Check class="h-4 w-4" /> Dieses Gerät ist ein Wandgerät.
+          <Check class="h-4 w-4" /> {t('Dieses Gerät ist ein Wandgerät.')}
         </span>
         <button class="btn-outline px-3 text-sm" onclick={wandgeraetAus} disabled={busy}>
-          Wieder aufheben
+          {t('Wieder aufheben')}
         </button>
       </div>
     {:else}
       <button class="btn-primary px-4 text-sm" onclick={wandgeraetAn} disabled={busy}>
         <MonitorSmartphone class="h-4 w-4" />
-        Dieses Gerät als Wandgerät einrichten
+        {t('Dieses Gerät als Wandgerät einrichten')}
       </button>
     {/if}
   </section>

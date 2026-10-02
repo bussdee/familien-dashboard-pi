@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n';
   import { onMount } from 'svelte';
   import { authApi } from '$lib/api';
   import { werWarDasStore } from '$lib/stores/werwardas.svelte';
@@ -41,7 +42,7 @@
       aria-modal="true"
       aria-labelledby="wer-titel"
     >
-      <h2 id="wer-titel" class="font-display text-2xl font-medium">Wer war das?</h2>
+      <h2 id="wer-titel" class="font-display text-2xl font-medium">{t('Wer war das?')}</h2>
       {#if frage.was}
         <p class="mt-1 text-sm text-muted-foreground">{frage.was}</p>
       {/if}
@@ -67,7 +68,7 @@
         class="btn-outline mt-5 w-full"
         onclick={() => werWarDasStore.answer(null)}
       >
-        Abbrechen
+        {t('Abbrechen')}
       </button>
     </div>
   </div>

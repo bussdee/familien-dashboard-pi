@@ -1,3 +1,4 @@
+import { t, dfLocale, intlLocale } from '$lib/i18n';
 /**
  * Trockenfenster — die Wetterfrage, die am Küchentisch gestellt wird.
  *
@@ -10,7 +11,6 @@
  * Wetterseite irgendwann zwei verschiedene Meinungen.
  */
 import { format, isToday, isTomorrow, parseISO } from 'date-fns';
-import { de } from 'date-fns/locale';
 import type { WeatherData, WeatherDay, WeatherWindow } from '$lib/types';
 
 export const uhr = (iso: string): string => {
@@ -29,10 +29,10 @@ export const uhr = (iso: string): string => {
  */
 export function zeitpunkt(iso: string): string {
   try {
-    const t = parseISO(iso);
-    if (isToday(t)) return format(t, 'HH:mm');
-    if (isTomorrow(t)) return `morgen ${format(t, 'HH:mm')}`;
-    return format(t, 'EEEE HH:mm', { locale: de });
+    const zeit = parseISO(iso);
+    if (isToday(zeit)) return format(zeit, 'HH:mm');
+    if (isTomorrow(zeit)) return t('morgen {0}', [format(zeit, 'HH:mm')]);
+    return format(zeit, 'EEEE HH:mm', { locale: dfLocale });
   } catch {
     return '—';
   }
@@ -63,16 +63,16 @@ export function naechstesFenster(weather: WeatherData | null): FensterAmTag | nu
 
 /** „2 Std.", „1,5 Std." — die halbe Stunde nur, wenn es sie gibt. */
 export function dauer(stunden: number): string {
-  const text = Number.isInteger(stunden) ? String(stunden) : stunden.toFixed(1).replace('.', ',');
-  return `${text} Std.`;
+  const text = stunden.toLocaleString(intlLocale, { maximumFractionDigits: 1 });
+  return t('{0} Std.', [text]);
 }
 
 /** „heute", „morgen", „am Donnerstag" — als Einschub in einem Satz. */
 export function tagWort(eintrag: FensterAmTag): string {
-  if (eintrag.tagIndex === 0) return 'heute';
-  if (eintrag.tagIndex === 1) return 'morgen';
+  if (eintrag.tagIndex === 0) return t('heute');
+  if (eintrag.tagIndex === 1) return t('morgen');
   try {
-    return `am ${format(parseISO(eintrag.tag.date), 'EEEE', { locale: de })}`;
+    return t('am {0}', [format(parseISO(eintrag.tag.date), 'EEEE', { locale: dfLocale })]);
   } catch {
     return '';
   }
@@ -85,12 +85,12 @@ export function tagWort(eintrag: FensterAmTag): string {
  * man aus dem Fenster — wissen will man, wie lange das noch gilt.
  */
 export function fensterSatz(eintrag: FensterAmTag | null): string {
-  if (!eintrag) return 'Kein trockenes Fenster in Sicht';
+  if (!eintrag) return t('Kein trockenes Fenster in Sicht');
   const { fenster } = eintrag;
-  if (fenster.now) return `Trocken bis ${uhr(fenster.to)}`;
+  if (fenster.now) return t('Trocken bis {0}', [uhr(fenster.to)]);
   const wann = tagWort(eintrag);
-  const zeitraum = `${uhr(fenster.from)} bis ${uhr(fenster.to)}`;
-  return eintrag.tagIndex === 0 ? `Trocken ${zeitraum}` : `Trocken ${wann} ${zeitraum}`;
+  const zeitraum = t('{0} bis {1}', [uhr(fenster.from), uhr(fenster.to)]);
+  return eintrag.tagIndex === 0 ? t('Trocken {0}', [zeitraum]) : t('Trocken {0} {1}', [wann, zeitraum]);
 }
 
 /**
@@ -101,9 +101,9 @@ export function fensterSatz(eintrag: FensterAmTag | null): string {
 export function fensterBeschreibung(fenster: WeatherWindow): string {
   // Ohne die Dauer: Die steht in der Zeile daneben, und zweimal dieselbe
   // Zahl liest sich wie ein Fehler.
-  const teile = [fenster.sunny ? 'sonnig' : fenster.cloud_cover >= 80 ? 'bedeckt' : 'bewölkt'];
+  const teile = [fenster.sunny ? t('sonnig') : fenster.cloud_cover >= 80 ? t('bedeckt') : t('bewölkt')];
   const ab = Math.round(fenster.feels_like_min);
   const bis = Math.round(fenster.feels_like_max);
-  teile.push(ab === bis ? `gefühlt ${ab}°` : `gefühlt ${ab}–${bis}°`);
+  teile.push(ab === bis ? t('gefühlt {0}°', [ab]) : t('gefühlt {0}–{1}°', [ab, bis]));
   return teile.join(' · ');
 }

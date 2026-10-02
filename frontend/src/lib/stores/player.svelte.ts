@@ -1,3 +1,4 @@
+import { t } from '$lib/i18n';
 import { browser } from '$app/environment';
 import { musicApi } from '$lib/api';
 import type { Track } from '$lib/types';
@@ -73,8 +74,8 @@ class PlayerStore {
     el.addEventListener('ended', () => this.weiter(true));
     el.addEventListener('error', () => {
       this.fehler = this.current
-        ? `„${titelVon(this.current)}" lässt sich nicht abspielen.`
-        : 'Die Datei lässt sich nicht abspielen.';
+        ? t('„{0}" lässt sich nicht abspielen.', [titelVon(this.current)])
+        : t('Die Datei lässt sich nicht abspielen.');
       this.playing = false;
     });
 
@@ -286,7 +287,7 @@ class PlayerStore {
     if (!track) return;
     navigator.mediaSession.metadata = new MediaMetadata({
       title: titelVon(track),
-      artist: track.artist || 'Familien Dashboard',
+      artist: track.artist || t('Familien Dashboard'),
       album: track.album || letzterOrdner(track.folder),
     });
   }

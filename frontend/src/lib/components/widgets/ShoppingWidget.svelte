@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n';
   import { Check, Plus, ShoppingCart, Sparkles, Trash2, X } from 'lucide-svelte';
   import { ApiError, shoppingApi } from '$lib/api';
   import { session } from '$lib/stores';
@@ -22,6 +23,9 @@
     voll?: boolean;
   } = $props();
 
+  // Die Kategorien werden auf Deutsch gespeichert und nur in der Anzeige
+  // übersetzt. Sonst stünde in derselben Liste „Obst & Gemüse" neben „Fruit &
+  // Veg", je nachdem, an welchem Gerät eingetragen wurde.
   const categories = [
     '🥦 Obst & Gemüse', '🥛 Milch & Käse', '🍞 Brot & Aufstrich', '🥩 Fleisch & Fisch',
     '🍪 Snacks & Süßes', '🧴 Drogerie', '🏠 Haushalt', '📦 Sonstiges',
@@ -71,7 +75,7 @@
       await shoppingApi.create({ name: v.name, category: v.category });
       vorschlaege = vorschlaege.filter((x) => x.name !== v.name);
     } catch (e) {
-      error = e instanceof ApiError ? e.message : 'Konnte nicht hinzufügen';
+      error = e instanceof ApiError ? e.message : t('Konnte nicht hinzufügen');
     }
   }
 
@@ -112,14 +116,14 @@
     try {
       // The WebSocket echoes the new item back, so the list updates itself.
       const item = await shoppingApi.create({ name: name.trim(), quantity, category });
-      if (item.existing) toast(`„${item.name}" steht schon auf der Liste`);
+      if (item.existing) toast(t('„{0}" steht schon auf der Liste', [item.name]));
       name = '';
       quantity = '';
       // Das Formular bleibt bewusst offen — anders als bei Notizen und
       // Kalender. Eine Einkaufsliste füllt man in einem Rutsch: Milch, Brot,
       // Butter. Nach jedem Eintrag erneut auf Plus zu tippen wäre lästig.
     } catch (e) {
-      error = e instanceof ApiError ? e.message : 'Konnte nicht hinzufügen';
+      error = e instanceof ApiError ? e.message : t('Konnte nicht hinzufügen');
     } finally {
       busy = false;
     }
@@ -130,7 +134,7 @@
     try {
       await shoppingApi.update(item.id, { checked: !item.checked });
     } catch (e) {
-      error = e instanceof ApiError ? e.message : 'Konnte nicht speichern';
+      error = e instanceof ApiError ? e.message : t('Konnte nicht speichern');
     }
   }
 
@@ -139,9 +143,9 @@
   async function remove(item: ShoppingItem) {
     try {
       await shoppingApi.remove(item.id);
-      toast(`„${item.name}" gelöscht`, {
+      toast(t('„{0}" gelöscht', [item.name]), {
         aktion: {
-          label: 'Rückgängig',
+          label: t('Rückgängig'),
           run: async () => {
             await shoppingApi
               .create({ name: item.name, quantity: item.quantity, category: item.category })
@@ -150,7 +154,7 @@
         },
       });
     } catch (e) {
-      error = e instanceof ApiError ? e.message : 'Konnte nicht löschen';
+      error = e instanceof ApiError ? e.message : t('Konnte nicht löschen');
     }
   }
 
@@ -169,7 +173,7 @@
     // unterwegs war — am Wandtablet weiß das Gerät es nicht von allein.
     let wer: number | null = $session.user?.id ?? null;
     if ($session.device) {
-      wer = await werWarDas({ was: `${done.length} Artikel eingekauft` });
+      wer = await werWarDas({ was: t('{0} Artikel eingekauft', [done.length]) });
       if (wer === null) return;
     }
 
@@ -182,11 +186,11 @@
         await board.award(
           wer,
           result.points_awarded,
-          `Einkauf erledigt · ${count} ${count === 1 ? 'Artikel' : 'Artikel'}`,
+          t('Einkauf erledigt · {0} {1}', [count, count === 1 ? t('Artikel') : t('Artikel')]),
         );
       }
     } catch (e) {
-      error = e instanceof ApiError ? e.message : 'Konnte nicht aufräumen';
+      error = e instanceof ApiError ? e.message : t('Konnte nicht aufräumen');
     } finally {
       busy = false;
     }
@@ -210,7 +214,7 @@
               {/if}
               {#if item.category && !voll}
                 <span class="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] text-primary">
-                  {item.category}
+                  {t(item.category)}
                 </span>
               {/if}
             </div>
@@ -219,7 +223,7 @@
             <button
               class="touch-target text-muted-foreground hover:text-destructive"
               onclick={() => remove(item)}
-              aria-label="{item.name} löschen"
+              aria-label={t('{0} löschen', [item.name])}
             >
               <Trash2 class="h-4 w-4" />
             </button>
@@ -229,9 +233,9 @@
 
 {#snippet zeile()}
   {#if items.length === 0}
-    Die Liste ist leer
+    {t('Die Liste ist leer')}
   {:else}
-    {open.length} offen · {done.length} im Wagen
+    {t('{0} offen · {1} im Wagen', [open.length, done.length])}
   {/if}
 {/snippet}
 
@@ -239,13 +243,13 @@
   <button
     class="btn-primary px-3"
     onclick={() => (showForm ? (showForm = false) : startNew())}
-    aria-label={showForm ? 'Abbrechen' : 'Eintrag hinzufügen'}
+    aria-label={showForm ? t('Abbrechen') : t('Eintrag hinzufügen')}
   >
     {#if showForm}<X class="h-5 w-5" />{:else}<Plus class="h-5 w-5" />{/if}
   </button>
 {/snippet}
 
-<Kachel ton="var(--ton-einkaufen)" titel="Einkaufen" icon={ShoppingCart} {zeile} {aktionen}>
+<Kachel ton="var(--ton-einkaufen)" titel={t('Einkaufen')} icon={ShoppingCart} {zeile} {aktionen}>
 
   {#if done.length > 0}
     <!-- Finishing the shop is the moment points are earned, so it gets a real
@@ -257,7 +261,7 @@
     >
       <span class="flex items-center gap-2">
         <Check class="h-5 w-5" />
-        Einkauf abschließen
+        {t('Einkauf abschließen')}
       </span>
       <span class="flex items-center gap-1 rounded-full bg-white/20 px-2.5 py-1 text-sm font-bold">
         <Sparkles class="h-3.5 w-3.5" />
@@ -272,7 +276,7 @@
         <!-- svelte-ignore a11y_autofocus -->
         <input
           class="input flex-1"
-          placeholder="Was fehlt?"
+          placeholder={t('Was fehlt?')}
           bind:value={name}
           maxlength="80"
           onkeydown={onEnter}
@@ -280,21 +284,21 @@
         />
         <input
           class="input w-24 shrink-0"
-          placeholder="Menge"
+          placeholder={t('Menge')}
           bind:value={quantity}
           maxlength="20"
           onkeydown={onEnter}
         />
       </div>
-      <select class="input text-sm" bind:value={category} aria-label="Kategorie">
-        <option value="">Ohne Kategorie</option>
-        {#each categories as cat}<option value={cat}>{cat}</option>{/each}
+      <select class="input text-sm" bind:value={category} aria-label={t('Kategorie')}>
+        <option value="">{t('Ohne Kategorie')}</option>
+        {#each categories as cat}<option value={cat}>{t(cat)}</option>{/each}
       </select>
       <button class="btn-primary w-full" disabled={!name.trim() || busy}>
-        <Plus class="h-4 w-4" /> Auf die Liste
+        <Plus class="h-4 w-4" /> {t('Auf die Liste')}
       </button>
       {#if vorschlaege.length > 0}
-        <div class="flex flex-wrap gap-1.5 pt-1" aria-label="Häufig gekauft">
+        <div class="flex flex-wrap gap-1.5 pt-1" aria-label={t('Häufig gekauft')}>
           {#each vorschlaege as v (v.name)}
             <span class="chip !gap-0 !pr-0">
               <button type="button" class="flex items-center gap-1.5" onclick={() => vorschlagNehmen(v)}>
@@ -306,7 +310,7 @@
                 class="flex h-9 w-8 items-center justify-center text-muted-foreground hover:text-destructive"
                 onclick={() => vorschlagVergessen(v)}
                 aria-label="{v.name} nicht mehr vorschlagen"
-                title="Nicht mehr vorschlagen"
+                title={t('Nicht mehr vorschlagen')}
               >
                 <X class="h-3.5 w-3.5" />
               </button>
@@ -320,15 +324,15 @@
   {#if error}
     <p class="mb-3 flex items-center justify-between rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
       {error}
-      <button onclick={() => (error = '')} aria-label="Schließen"><X class="h-4 w-4" /></button>
+      <button onclick={() => (error = '')} aria-label={t('Schließen')}><X class="h-4 w-4" /></button>
     </p>
   {/if}
 
   {#if items.length === 0}
     <KachelLeer
       icon={ShoppingCart}
-      titel="Die Liste ist leer"
-      hinweis="Mit + etwas eintragen. Was im Laden abgehakt wird, verschwindet sofort auf allen Geräten."
+      titel={t('Die Liste ist leer')}
+      hinweis={t('Mit + etwas eintragen. Was im Laden abgehakt wird, verschwindet sofort auf allen Geräten.')}
     />
   {:else}
     <ul class="scrollbar-thin space-y-1.5 pr-1 {voll ? '' : 'max-h-[300px] overflow-y-auto'}">
@@ -336,7 +340,7 @@
         {#each gruppen as [kategorie, eintraege] (kategorie)}
           <li class="pt-3 first:pt-0">
             <p class="mb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              {kategorie} <span class="font-normal">· {eintraege.length}</span>
+              {t(kategorie)} <span class="font-normal">· {eintraege.length}</span>
             </p>
           </li>
           {#each eintraege as item (item.id)}
@@ -351,14 +355,14 @@
 
       {#if done.length > 0}
         <li class="pt-2">
-          <p class="mb-1 text-xs uppercase tracking-wider text-muted-foreground">Im Wagen</p>
+          <p class="mb-1 text-xs uppercase tracking-wider text-muted-foreground">{t('Im Wagen')}</p>
         </li>
         {#each done as item (item.id)}
           <li class="flex items-center gap-3 rounded-lg bg-success/5 p-2.5">
             <button
               class="touch-target shrink-0"
               onclick={() => toggle(item)}
-              aria-label="{item.name} wieder öffnen"
+              aria-label={t('{0} wieder öffnen', [item.name])}
             >
               <span class="flex h-6 w-6 items-center justify-center rounded-md bg-success text-success-foreground">
                 <Check class="h-4 w-4" />

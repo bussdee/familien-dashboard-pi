@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n';
   import { onMount } from 'svelte';
   import { Sun, SunDim } from 'lucide-svelte';
   import { connectShoppingSocket, shoppingApi } from '$lib/api';
@@ -44,7 +45,7 @@
     shoppingApi
       .list()
       .then((liste) => (items = liste))
-      .catch(() => (fehler = 'Die Liste konnte nicht geladen werden.'))
+      .catch(() => (fehler = t('Die Liste konnte nicht geladen werden.')))
       .finally(() => (geladen = true));
 
     const trennen = connectShoppingSocket(
@@ -81,25 +82,25 @@
   });
 </script>
 
-<svelte:head><title>Einkaufen · Familien Dashboard</title></svelte:head>
+<svelte:head><title>{t('Einkaufen · Familien Dashboard')}</title></svelte:head>
 
 <div class="mx-auto w-full max-w-2xl px-4 py-5 sm:py-7">
   <header class="mb-5 flex items-end justify-between gap-3">
     <div>
       <p class="text-[11px] font-medium uppercase tracking-[0.2em] text-muted-foreground">
-        {$connection.live ? 'Live mit allen Geräten' : 'Einkaufsliste'}
+        {$connection.live ? t('Live mit allen Geräten') : t('Einkaufsliste')}
       </p>
-      <h1 class="seiten-titel mt-1">Einkaufen</h1>
+      <h1 class="seiten-titel mt-1">{t('Einkaufen')}</h1>
     </div>
     {#if wachMoeglich}
       <button
         class="chip shrink-0"
         onclick={wachUmschalten}
         aria-pressed={wach}
-        title="Verhindert, dass der Bildschirm im Laden ausgeht"
+        title={t('Verhindert, dass der Bildschirm im Laden ausgeht')}
       >
         {#if wach}<Sun class="h-4 w-4" />{:else}<SunDim class="h-4 w-4" />{/if}
-        {wach ? 'Bleibt an' : 'Bildschirm an'}
+        {wach ? t('Bleibt an') : t('Bildschirm an')}
       </button>
     {/if}
   </header>

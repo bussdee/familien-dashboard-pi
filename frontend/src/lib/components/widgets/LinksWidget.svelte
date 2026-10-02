@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { t } from '$lib/i18n';
   import { session } from '$lib/stores';
   import { onMount } from 'svelte';
   import { ExternalLink, Link as LinkIcon, Plus, Users } from 'lucide-svelte';
@@ -31,9 +32,9 @@
 
 {#snippet zeile()}
   {#if $session.device}
-    {links.length === 0 ? 'Keine geteilten Links' : `${links.length} für die Familie`}
+    {links.length === 0 ? t('Keine geteilten Links') : t('{0} für die Familie', [links.length])}
   {:else}
-    {links.length === 0 ? 'Nichts angepinnt' : `${links.length} angepinnt`}
+    {links.length === 0 ? t('Nichts angepinnt') : `${links.length} angepinnt`}
   {/if}
 {/snippet}
 
@@ -41,11 +42,11 @@
      eine Sperre. Deshalb dort kein Knopf. -->
 {#snippet aktionen()}
   {#if !$session.device}
-    <a class="btn-ghost px-3 text-sm text-muted-foreground" href="/links">Alle</a>
+    <a class="btn-ghost px-3 text-sm text-muted-foreground" href="/links">{t('Alle')}</a>
   {/if}
 {/snippet}
 
-<Kachel ton="var(--ton-links)" titel="Links" icon={LinkIcon} {zeile} {aktionen}>
+<Kachel ton="var(--ton-links)" titel={t('Links')} icon={LinkIcon} {zeile} {aktionen}>
   {#if loading}
     <div class="space-y-2">
       {#each Array(3) as _, i (i)}
@@ -56,18 +57,18 @@
     {#if $session.device}
       <KachelLeer
         icon={LinkIcon}
-        titel="Noch keine geteilten Links"
-        hinweis="Wer sich anmeldet, kann einen Link mit der Familie teilen."
+        titel={t('Noch keine geteilten Links')}
+        hinweis={t('Wer sich anmeldet, kann einen Link mit der Familie teilen.')}
       />
     {:else}
       <KachelLeer
         icon={LinkIcon}
-        titel="Nichts angepinnt"
-        hinweis="Was du oft brauchst, direkt auf der Übersicht."
+        titel={t('Nichts angepinnt')}
+        hinweis={t('Was du oft brauchst, direkt auf der Übersicht.')}
       >
         {#snippet aktion()}
           <a href="/links" class="btn-outline text-sm">
-            <Plus class="h-4 w-4" /> Links anpinnen
+            <Plus class="h-4 w-4" /> {t('Links anpinnen')}
           </a>
         {/snippet}
       </KachelLeer>
