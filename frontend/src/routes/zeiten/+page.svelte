@@ -42,9 +42,12 @@
 
   const ich = $derived($session.user);
   const istAdmin = $derived($session.user?.role === 'admin');
-  /** Für wen wird gerade eingetragen. Wer kein Admin ist, kann nur sich selbst. */
+  /**
+   * Für wen die Zeiten gerade gezeigt werden. Eintragen dürfen nur Eltern;
+   * alle anderen sehen die Zeiten der Familie, ohne sie ändern zu können.
+   */
   let fuer = $state(0);
-  const bearbeitbar = $derived(istAdmin ? personen : personen.filter((p) => p.id === ich?.id));
+  const bearbeitbar = $derived(personen);
 
   // ───────────────────────── Wochenplan ─────────────────────────
   let neuerTag = $state(0);
@@ -270,6 +273,11 @@
   {#if loading}
     <p class="py-10 text-center text-sm text-muted-foreground">{t('Lade…')}</p>
   {:else}
+    {#if !istAdmin}
+      <p class="mb-4 rounded-lg bg-muted/50 px-4 py-2.5 text-sm text-muted-foreground">
+        {t('Die Eltern tragen die Zeiten ein. Hier siehst du, wer wann weg ist.')}
+      </p>
+    {/if}
     {#if bearbeitbar.length > 1}
       <label class="mb-4 block text-sm">
         {t('Für wen')}
@@ -300,12 +308,15 @@
       </button>
     </div>
 
+    <!-- Ohne Berechtigung bleiben die Felder zum Ansehen da, aber gesperrt. -->
+    <fieldset disabled={!istAdmin} class="m-0 min-w-0 border-0 p-0">
     {#if reiter === 'wochenplan'}
       <section class="card p-5">
         <p class="mb-4 text-sm text-muted-foreground">
           {t('Für alles, was jede Woche gleich ist — ein Stundenplan zum Beispiel. Gilt, bis er geändert wird.')} <strong>{t('Ein eingetragener Tag im Kalender sticht den Wochenplan')}</strong>{t(', ein Feiertag hebt ihn also auf, ohne ihn zu löschen.')}
         </p>
 
+        {#if istAdmin}
         <form class="mb-5 grid gap-2 sm:grid-cols-[1fr_auto_auto_auto]" onsubmit={musterAnlegen}>
           <select class="input min-w-0" bind:value={neuerTag} aria-label={t('Wochentag')}>
             {#each WOCHENTAGE as tag, i (tag)}
@@ -329,6 +340,7 @@
             <Plus class="h-4 w-4" /> {t('Eintragen')}
           </button>
         </form>
+        {/if}
 
         {#if meinMuster.length === 0}
           <p class="py-6 text-center text-sm text-muted-foreground">
@@ -344,13 +356,15 @@
                   {ARTEN.find((a) => a.wert === m.kind)?.label ?? m.kind}
                   {#if m.note}· {m.note}{/if}
                 </span>
-                <button
-                  class="touch-target shrink-0 text-muted-foreground hover:text-destructive"
-                  onclick={() => musterEntfernen(m)}
-                  aria-label={t('Eintrag entfernen')}
-                >
-                  <Trash2 class="h-4 w-4" />
-                </button>
+                {#if istAdmin}
+                  <button
+                    class="touch-target shrink-0 text-muted-foreground hover:text-destructive"
+                    onclick={() => musterEntfernen(m)}
+                    aria-label={t('Eintrag entfernen')}
+                  >
+                    <Trash2 class="h-4 w-4" />
+                  </button>
+                {/if}
               </li>
             {/each}
           </ul>
@@ -371,7 +385,7 @@
               <h2 class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 {t('Woche {0}', [woche + 1])}
               </h2>
-              {#if woche > 0}
+              {#if woche > 0 && istAdmin}
                 <button
                   class="btn-ghost px-2 text-xs text-muted-foreground"
                   onclick={() => wocheKopieren(woche)}
@@ -450,24 +464,29 @@
                     {/if}
                   {/each}
 
-                  <button
-                    type="button"
-                    class="ml-[5.5rem] mt-1 text-[11px] text-muted-foreground hover:text-foreground sm:ml-28"
-                    onclick={() => blockDazu(tag)}
-                  >
-                    {t('+ zweite Zeit an diesem Tag')}
-                  </button>
+                  {#if istAdmin}
+                    <button
+                      type="button"
+                      class="ml-[5.5rem] mt-1 text-[11px] text-muted-foreground hover:text-foreground sm:ml-28"
+                      onclick={() => blockDazu(tag)}
+                    >
+                      {t('+ zweite Zeit an diesem Tag')}
+                    </button>
+                  {/if}
                 </div>
               {/each}
             </div>
           </div>
         {/each}
 
-        <button class="btn-primary w-full" onclick={speichern} disabled={busy}>
-          <Check class="h-4 w-4" />
-          {busy ? t('Speichere…') : t('Vier Wochen speichern')}
-        </button>
+        {#if istAdmin}
+          <button class="btn-primary w-full" onclick={speichern} disabled={busy}>
+            <Check class="h-4 w-4" />
+            {busy ? t('Speichere…') : t('Vier Wochen speichern')}
+          </button>
+        {/if}
       </section>
     {/if}
+    </fieldset>
   {/if}
 </div>

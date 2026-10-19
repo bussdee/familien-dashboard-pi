@@ -6,6 +6,7 @@
   } from 'lucide-svelte';
   import { differenceInCalendarDays, format, parseISO, startOfDay } from 'date-fns';
   import { ApiError, calendarApi } from '$lib/api';
+  import { darfEintragen } from '$lib/stores';
   import { confirmAction } from '$lib/stores/confirm.svelte';
   import { schnell } from '$lib/stores/schnell.svelte';
   import Kachel from './Kachel.svelte';
@@ -165,7 +166,7 @@
           </div>
         </button>
 
-        {#if auf}
+        {#if auf && (!item.event.editable || $darfEintragen)}
           <div class="border-t border-border/60 px-2 py-2">
             {#if item.event.editable && item.event.event_id}
               <div class="flex gap-2">

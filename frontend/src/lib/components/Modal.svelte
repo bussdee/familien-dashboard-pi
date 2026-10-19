@@ -2,6 +2,7 @@
   import { t } from '$lib/i18n';
   import { X } from 'lucide-svelte';
   import type { Snippet } from 'svelte';
+  import { portal } from '$lib/utils/portal';
 
   let {
     open = $bindable(false),
@@ -42,6 +43,7 @@
        Das Formular liegt damit ÜBER der Kachel, statt sie aufzublähen. -->
   <!-- svelte-ignore a11y_no_static_element_interactions -->
   <div
+    use:portal
     class="fixed inset-0 z-[60] flex items-end justify-center bg-black/50 p-0 backdrop-blur-sm sm:items-center sm:p-4"
     onclick={(e) => e.target === e.currentTarget && close()}
     role="presentation"

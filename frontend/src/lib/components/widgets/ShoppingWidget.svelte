@@ -2,7 +2,7 @@
   import { t } from '$lib/i18n';
   import { Check, Plus, ShoppingCart, Sparkles, Trash2, X } from 'lucide-svelte';
   import { ApiError, shoppingApi } from '$lib/api';
-  import { session } from '$lib/stores';
+  import { darfEintragen, session } from '$lib/stores';
   import { board } from '$lib/stores/scores.svelte';
   import { werWarDas } from '$lib/stores/werwardas.svelte';
   import { toast } from '$lib/stores/toast.svelte';
@@ -132,7 +132,7 @@
   async function toggle(item: ShoppingItem) {
     if (navigator.vibrate) navigator.vibrate(item.checked ? 8 : [10, 25, 10]);
     try {
-      await shoppingApi.update(item.id, { checked: !item.checked });
+      await shoppingApi.setChecked(item.id, !item.checked);
     } catch (e) {
       error = e instanceof ApiError ? e.message : t('Konnte nicht speichern');
     }
@@ -219,15 +219,17 @@
               {/if}
             </div>
           </div>
-          <span class="row-actions">
-            <button
-              class="touch-target text-muted-foreground hover:text-destructive"
-              onclick={() => remove(item)}
-              aria-label={t('{0} löschen', [item.name])}
-            >
-              <Trash2 class="h-4 w-4" />
-            </button>
-          </span>
+          {#if $darfEintragen}
+            <span class="row-actions">
+              <button
+                class="touch-target text-muted-foreground hover:text-destructive"
+                onclick={() => remove(item)}
+                aria-label={t('{0} löschen', [item.name])}
+              >
+                <Trash2 class="h-4 w-4" />
+              </button>
+            </span>
+          {/if}
         </li>
 {/snippet}
 
@@ -240,13 +242,15 @@
 {/snippet}
 
 {#snippet aktionen()}
-  <button
-    class="btn-primary px-3"
-    onclick={() => (showForm ? (showForm = false) : startNew())}
-    aria-label={showForm ? t('Abbrechen') : t('Eintrag hinzufügen')}
-  >
-    {#if showForm}<X class="h-5 w-5" />{:else}<Plus class="h-5 w-5" />{/if}
-  </button>
+  {#if $darfEintragen}
+    <button
+      class="btn-primary px-3"
+      onclick={() => (showForm ? (showForm = false) : startNew())}
+      aria-label={showForm ? t('Abbrechen') : t('Eintrag hinzufügen')}
+    >
+      {#if showForm}<X class="h-5 w-5" />{:else}<Plus class="h-5 w-5" />{/if}
+    </button>
+  {/if}
 {/snippet}
 
 <Kachel ton="var(--ton-einkaufen)" titel={t('Einkaufen')} icon={ShoppingCart} {zeile} {aktionen}>
@@ -270,7 +274,7 @@
     </button>
   {/if}
 
-  {#if showForm}
+  {#if showForm && $darfEintragen}
     <form class="mb-4 space-y-2 rounded-xl border border-border p-3" onsubmit={add}>
       <div class="flex gap-2">
         <!-- svelte-ignore a11y_autofocus -->
@@ -332,10 +336,12 @@
     <KachelLeer
       icon={ShoppingCart}
       titel={t('Die Liste ist leer')}
-      hinweis={t('Mit + etwas eintragen. Was im Laden abgehakt wird, verschwindet sofort auf allen Geräten.')}
+      hinweis={$darfEintragen
+        ? t('Mit + etwas eintragen. Was im Laden abgehakt wird, verschwindet sofort auf allen Geräten.')
+        : t('Die Eltern setzen auf die Liste, was gebraucht wird. Was im Laden abgehakt wird, verschwindet sofort auf allen Geräten.')}
     />
   {:else}
-    <ul class="scrollbar-thin space-y-1.5 pr-1 {voll ? '' : 'max-h-[300px] overflow-y-auto'}">
+    <ul class="scrollbar-thin space-y-1.5 pr-1 {voll ? '' : 'md:max-h-[300px] md:overflow-y-auto'}">
       {#if voll}
         {#each gruppen as [kategorie, eintraege] (kategorie)}
           <li class="pt-3 first:pt-0">

@@ -1,6 +1,6 @@
 import { t } from '$lib/i18n';
 import { browser } from '$app/environment';
-import { setzeElternFreigabe } from '$lib/api';
+import { registriereElternAnfrage, setzeElternFreigabe } from '$lib/api';
 
 /**
  * Die Eltern-Freigabe am Wandgerät.
@@ -79,3 +79,7 @@ class ElternStore {
 }
 
 export const eltern = new ElternStore();
+
+// Der Server sagt am Wandgerät selbst, welche Wege Elternsache sind
+// (X-Eltern-Noetig); die API-Schicht fragt dann über diesen Store nach.
+registriereElternAnfrage((grund) => eltern.brauche(grund));

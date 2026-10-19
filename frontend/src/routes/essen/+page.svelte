@@ -8,6 +8,7 @@
   } from 'lucide-svelte';
   import { addDays, addWeeks, format, isToday, parseISO, startOfWeek } from 'date-fns';
   import { ApiError, mealsApi } from '$lib/api';
+  import { darfEintragen } from '$lib/stores';
   import { confirmAction } from '$lib/stores/confirm.svelte';
   import { toast } from '$lib/stores/toast.svelte';
   import Modal from '$lib/components/Modal.svelte';
@@ -138,7 +139,7 @@
   onMount(() => {
     void laden_().then(() => {
       // Aus dem Plus unten: gleich den heutigen Tag öffnen.
-      if ($page.url.searchParams.has('heute')) {
+      if ($page.url.searchParams.has('heute') && $darfEintragen) {
         bearbeiten(new Date());
         const url = new URL($page.url);
         url.searchParams.delete('heute');
@@ -194,7 +195,7 @@
           <span class="font-display text-xl leading-none">{format(d, 'd')}</span>
         </div>
 
-        <button class="min-w-0 flex-1 text-left" onclick={() => bearbeiten(d)}>
+        {#snippet inhalt()}
           {#if m}
             <p class="truncate text-base font-semibold">{m.title}</p>
             <p class="truncate text-xs text-muted-foreground">
@@ -207,12 +208,23 @@
             </p>
           {:else}
             <p class="flex items-center gap-1.5 text-sm text-muted-foreground">
-              <Plus class="h-4 w-4" /> {heute ? t('Heute noch nichts geplant') : t('Noch nichts geplant')}
+              {#if $darfEintragen}<Plus class="h-4 w-4" />{/if}
+              {heute ? t('Heute noch nichts geplant') : t('Noch nichts geplant')}
             </p>
           {/if}
-        </button>
+        {/snippet}
+        <!-- Eintragen ist Elternsache: Kinder lesen den Plan nur. -->
+        {#if $darfEintragen}
+          <button class="min-w-0 flex-1 text-left" onclick={() => bearbeiten(d)}>
+            {@render inhalt()}
+          </button>
+        {:else}
+          <div class="min-w-0 flex-1 text-left">
+            {@render inhalt()}
+          </div>
+        {/if}
 
-        {#if m && m.ingredients.length > 0}
+        {#if $darfEintragen && m && m.ingredients.length > 0}
           <button
             class="touch-target shrink-0 rounded-xl text-muted-foreground hover:bg-accent hover:text-foreground"
             onclick={() => aufDieListe(m.day)}
@@ -230,7 +242,9 @@
     <p class="mt-6 flex items-start gap-3 rounded-2xl bg-muted/50 p-4 text-sm text-muted-foreground">
       <UtensilsCrossed class="mt-0.5 h-5 w-5 shrink-0" />
       <span>
-        {t('Tippe auf einen Tag und trag ein, was es gibt. Mit Zutaten wandert der Einkauf dafür mit einem Tipp auf die Einkaufsliste — ohne Doppelte.')}
+        {$darfEintragen
+          ? t('Tippe auf einen Tag und trag ein, was es gibt. Mit Zutaten wandert der Einkauf dafür mit einem Tipp auf die Einkaufsliste — ohne Doppelte.')
+          : t('Die Eltern tragen ein, was es gibt.')}
       </span>
     </p>
   {/if}

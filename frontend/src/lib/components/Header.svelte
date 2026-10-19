@@ -10,6 +10,7 @@
   } from 'lucide-svelte';
   import { punkte } from '$lib/stores/punkte.svelte';
   import { eltern } from '$lib/stores/eltern.svelte';
+  import { pwa } from '$lib/stores/pwa.svelte';
   import { LockKeyholeOpen } from 'lucide-svelte';
   import { aktiv, menu, zieleFuer } from '$lib/stores/navigation.svelte';
 
@@ -47,6 +48,7 @@
     menu.offen = false;
     try {
       await authApi.logout();
+      pwa.leereOfflineDaten();
     } catch {
       /* die Sitzung ist so oder so vorbei */
     }

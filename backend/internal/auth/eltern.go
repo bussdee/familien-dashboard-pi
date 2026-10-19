@@ -29,6 +29,11 @@ import (
 const (
 	ElternIDHeader  = "X-Eltern-Id"
 	ElternPINHeader = "X-Eltern-Pin"
+
+	// ElternNoetigHeader steht an der Antwort, wenn ein Wandgerät einen
+	// Eltern-Weg ohne PIN gerufen hat. Die Oberfläche fragt dann nach der PIN
+	// und wiederholt die Anfrage — ohne eine Liste, welche Wege das sind.
+	ElternNoetigHeader = "X-Eltern-Noetig"
 )
 
 var (
@@ -87,6 +92,7 @@ func (s *Service) ElternMiddleware(next http.Handler) http.Handler {
 		if id == 0 && pin == "" {
 			// 403 und nicht 401: Ein 401 schickte die Oberfläche auf den
 			// Anmeldebildschirm — am Wandgerät genau das Falsche.
+			w.Header().Set(ElternNoetigHeader, "1")
 			httpError(w, http.StatusForbidden, "Dafür braucht es die PIN eines Elternteils")
 			return
 		}

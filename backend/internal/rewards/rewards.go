@@ -374,7 +374,14 @@ func (s *Service) Decide(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res, err := s.db.Exec(`
+	tx, err := s.db.Begin()
+	if err != nil {
+		auth.HTTPError(w, http.StatusInternalServerError, "Server-Fehler")
+		return
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	res, err := tx.Exec(`
 		UPDATE reward_redemptions SET status = ?, decided_at = CURRENT_TIMESTAMP
 		WHERE id = ? AND status = 'offen'`, req.Status, id)
 	if err != nil {
@@ -383,6 +390,22 @@ func (s *Service) Decide(w http.ResponseWriter, r *http.Request) {
 	}
 	if n, _ := res.RowsAffected(); n == 0 {
 		auth.HTTPError(w, http.StatusConflict, "Diese Anfrage ist schon entschieden")
+		return
+	}
+	// Stammt die Einlösung aus der Wunschliste, zieht der Wunsch nach:
+	// eingelöst = erfüllt; abgelehnt = wieder auf der Liste, die Punkte sind
+	// zurück und das Kind kann es später noch einmal versuchen.
+	wunsch := "bepreist"
+	if req.Status == StatusEingelöst {
+		wunsch = "erfuellt"
+	}
+	if _, err := tx.Exec(`UPDATE wishes SET status = ?, decided_at = CURRENT_TIMESTAMP
+		WHERE redemption_id = ? AND status = 'angefragt'`, wunsch, id); err != nil {
+		auth.HTTPError(w, http.StatusInternalServerError, "Server-Fehler")
+		return
+	}
+	if err := tx.Commit(); err != nil {
+		auth.HTTPError(w, http.StatusInternalServerError, "Server-Fehler")
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
@@ -401,7 +424,14 @@ func (s *Service) Cancel(w http.ResponseWriter, r *http.Request) {
 		auth.HTTPError(w, http.StatusBadRequest, "Ungültige ID")
 		return
 	}
-	res, err := s.db.Exec(
+	tx, err := s.db.Begin()
+	if err != nil {
+		auth.HTTPError(w, http.StatusInternalServerError, "Server-Fehler")
+		return
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	res, err := tx.Exec(
 		`DELETE FROM reward_redemptions WHERE id = ? AND user_id = ? AND status = 'offen'`,
 		id, userID)
 	if err != nil {
@@ -410,6 +440,16 @@ func (s *Service) Cancel(w http.ResponseWriter, r *http.Request) {
 	}
 	if n, _ := res.RowsAffected(); n == 0 {
 		auth.HTTPError(w, http.StatusConflict, "Diese Anfrage lässt sich nicht mehr zurückziehen")
+		return
+	}
+	// Ein zurückgezogener Wunsch steht wieder auf der Liste.
+	if _, err := tx.Exec(`UPDATE wishes SET status = 'bepreist', redemption_id = NULL
+		WHERE redemption_id = ? AND status = 'angefragt'`, id); err != nil {
+		auth.HTTPError(w, http.StatusInternalServerError, "Server-Fehler")
+		return
+	}
+	if err := tx.Commit(); err != nil {
+		auth.HTTPError(w, http.StatusInternalServerError, "Server-Fehler")
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)

@@ -8,6 +8,7 @@ import type {
   PhotoUploadResult, Score, ShoppingEvent, ShoppingItem, TimeOverview, Track,
   User, WeatherData, WeatherLocation, WeeklyTime, Meal, RecentMeal, Reward,
   RewardOverview, ShoppingSuggestion, RedemptionStatus, PendingCompletion, GoalOverview,
+  Wish,
 } from '$lib/types';
 
 const BASE = '/api';
@@ -33,6 +34,18 @@ export function setzeElternFreigabe(freigabe: { id: number; pin: string; bis: nu
   elternFreigabe = freigabe;
 }
 
+/**
+ * Am Wandgerät fragt der Server bei Eltern-Wegen nach der PIN, wenn keine
+ * Freigabe gilt (Antwort 403 mit X-Eltern-Noetig). Wer fragt, hängt von der
+ * Oberfläche ab; der Eltern-Store meldet sich hier an, damit diese Datei ihn
+ * nicht importieren muss.
+ */
+let elternAnfrage: ((grund: string) => Promise<boolean>) | null = null;
+
+export function registriereElternAnfrage(frage: (grund: string) => Promise<boolean>) {
+  elternAnfrage = frage;
+}
+
 export class ApiError extends Error {
   constructor(
     public status: number,
@@ -48,7 +61,7 @@ export class ApiError extends Error {
  * the login screen — except when we are already there, which is what made the
  * old client reload itself in a loop.
  */
-async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+async function request<T>(path: string, init: RequestInit = {}, gefragt = false): Promise<T> {
   const headers = new Headers(init.headers);
   if (init.body !== undefined && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json');
@@ -66,6 +79,20 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   }
 
   if (!res.ok) {
+    // Ein Eltern-Weg am Wandgerät ohne Freigabe: einmal nach der PIN fragen,
+    // dann dieselbe Anfrage noch einmal schicken. So braucht keine Kachel zu
+    // wissen, welche ihrer Knöpfe Elternsache sind — der Server sagt es.
+    if (
+      res.status === 403 &&
+      res.headers.get('X-Eltern-Noetig') === '1' &&
+      !gefragt &&
+      elternAnfrage &&
+      imFamilienModus()
+    ) {
+      if (await elternAnfrage(t('Das ist Elternsache'))) return request<T>(path, init, true);
+      throw new ApiError(403, t('Abgebrochen — dafür braucht es die PIN eines Elternteils'));
+    }
+
     let message = t('Fehler {0}', [res.status]);
     try {
       const body = await res.json();
@@ -235,6 +262,9 @@ export const shoppingApi = {
     id: number,
     data: Partial<{ name: string; quantity: string; category: string; checked: boolean }>,
   ) => request<ShoppingItem>(`/shopping/${id}`, { method: 'PUT', ...json(data) }),
+  /** Abhaken darf jeder; Umbenennen und Löschen ist Elternsache. */
+  setChecked: (id: number, checked: boolean) =>
+    request<ShoppingItem>(`/shopping/${id}/checked`, { method: 'PUT', ...json({ checked }) }),
   remove: (id: number) => request<void>(`/shopping/${id}`, { method: 'DELETE' }),
   /** userId nur im Familien-Modus nötig — sonst zählt die eigene Anmeldung. */
   clearChecked: (userId?: number) =>
@@ -287,6 +317,27 @@ export const rewardsApi = {
       method: 'POST',
       ...json({ status }),
     }),
+};
+
+/**
+ * Die Wunschliste. Ein Kind trägt ein, die Eltern setzen den Preis, das Kind
+ * löst ein — über dieselbe Einlösung wie die Belohnungen.
+ */
+export const wishesApi = {
+  list: () => request<Wish[]>('/wishes'),
+  create: (data: { title: string; emoji?: string; user_id?: number }) =>
+    request<{ id: number }>('/wishes', { method: 'POST', ...json(data) }),
+  withdraw: (id: number) => request<void>(`/wishes/${id}`, { method: 'DELETE' }),
+  redeem: (id: number) =>
+    request<{ id: number; title: string; cost: number; balance: number }>(`/wishes/${id}/redeem`, {
+      method: 'POST',
+    }),
+  /** Eltern: Preis setzen (cost) oder ablehnen (reject), jeweils mit Hinweis. */
+  decide: (
+    id: number,
+    data: { cost?: number; note?: string; reject?: boolean; title?: string; emoji?: string },
+  ) => request<void>(`/admin/wishes/${id}`, { method: 'PUT', ...json(data) }),
+  remove: (id: number) => request<void>(`/admin/wishes/${id}`, { method: 'DELETE' }),
 };
 
 export const notesApi = {

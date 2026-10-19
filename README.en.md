@@ -53,6 +53,7 @@ application that sits on the internet:
 |---|---|
 | ⭐ **Chores** | Bins, dishwasher, litter tray. Every chore has an interval and a point value. Assigned *in turn*, to one person, to *everyone* or to *whoever wants it*. Done is done — no ticking it off twice on the same day. Optionally **a parent confirms** before the points are paid out. |
 | 🏆 **Points & levels** | Tick something off, get points. Levels from *Rookie* to *Legend*, streaks, eleven badges, a podium. Parents can also give and deduct points by hand — for one person or several at once, with a reason — on their phone or on the wall tablet with the **parent PIN**. |
+| ✨ **Wish list** | A child adds a wish — *go to the cinema* — and the parents decide how many points it costs. Once the balance is enough, the child redeems it. A wish belongs to the child; the wall tablet doesn't show the list. |
 | 🎯 **Family goal** | Something everyone works towards together: pizza night, the zoo, the cinema. Every point anyone earns counts, the bar shows who contributed how much. Deductions don't count against it. |
 | 🎁 **Rewards** | What the points are for: screen time, an ice cream, the film on family night. A child redeems, a parent approves. A **balance** is spent; levels and ranking stay untouched. |
 | 🛒 **Shopping list** | Shared and **live**: what's ticked off in the shop disappears on every device at once. Frequently bought items are offered as suggestions, and there's a shop view sorted by aisle that keeps the screen on. |

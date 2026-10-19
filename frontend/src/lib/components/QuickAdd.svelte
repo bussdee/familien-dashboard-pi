@@ -7,7 +7,7 @@
   } from 'lucide-svelte';
   import { punkte } from '$lib/stores/punkte.svelte';
   import { ApiError, shoppingApi } from '$lib/api';
-  import { session } from '$lib/stores';
+  import { darfEintragen, session } from '$lib/stores';
   import { layout } from '$lib/stores/layout.svelte';
   import { player } from '$lib/stores/player.svelte';
   import { schnell, type SchnellZiel } from '$lib/stores/schnell.svelte';
@@ -106,6 +106,7 @@
   /** Am Rechner öffnet „n" das Blatt — nur, solange man nicht gerade tippt. */
   function taste(event: KeyboardEvent) {
     if (event.key !== 'n' || event.metaKey || event.ctrlKey || event.altKey) return;
+    if (!$darfEintragen) return;
     const ziel = event.target as HTMLElement | null;
     if (ziel?.closest('input, textarea, select, [contenteditable="true"]')) return;
     event.preventDefault();
@@ -117,15 +118,17 @@
 
 <!-- Am grossen Bildschirm gibt es die Leiste unten nicht; dort schwebt das
      Plus rechts unten — über der Abspielleiste, falls Musik läuft. -->
-<button
-  class="fixed right-6 z-40 hidden h-14 w-14 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-[rgb(var(--akzent-rgb)/0.35)] transition-transform hover:scale-105 active:scale-95 lg:flex
-    {player.aktiv ? 'bottom-24' : 'bottom-6'}"
-  onclick={() => (schnell.offen = true)}
-  aria-label={t('Schnell hinzufügen')}
-  title={t('Schnell hinzufügen (Taste N)')}
->
-  <Plus class="h-7 w-7" />
-</button>
+{#if $darfEintragen}
+  <button
+    class="fixed right-6 z-40 hidden h-14 w-14 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-[rgb(var(--akzent-rgb)/0.35)] transition-transform hover:scale-105 active:scale-95 lg:flex
+      {player.aktiv ? 'bottom-24' : 'bottom-6'}"
+    onclick={() => (schnell.offen = true)}
+    aria-label={t('Schnell hinzufügen')}
+    title={t('Schnell hinzufügen (Taste N)')}
+  >
+    <Plus class="h-7 w-7" />
+  </button>
+{/if}
 
 <Modal bind:open={schnell.offen} title={t('Schnell hinzufügen')}>
   <div class="space-y-5">

@@ -9,6 +9,7 @@
   import { confirmAction } from '$lib/stores/confirm.svelte';
   import { toast } from '$lib/stores/toast.svelte';
   import Modal from '$lib/components/Modal.svelte';
+  import Wunschliste from '$lib/components/Wunschliste.svelte';
   import type { Redemption, Reward, RewardOverview } from '$lib/types';
 
   /**
@@ -287,6 +288,9 @@
         {/each}
       </ul>
     {/if}
+
+    <!-- Am Wandgerät ist niemand angemeldet — dort gibt es keine Wunschliste. -->
+    <Wunschliste {guthaben} onGeaendert={laden} />
 
     {#if !admin && (daten.redemptions.length > 0)}
       <section class="mt-8">

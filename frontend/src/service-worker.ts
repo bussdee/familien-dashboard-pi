@@ -7,6 +7,16 @@ import { build, files, version } from '$service-worker';
 // shell can never drift out of sync with what was deployed.
 const CACHE = `family-dashboard-${version}`;
 
+// Die zuletzt gesehenen Daten (Einkaufsliste, Aufgaben, Termine …) für den
+// Fall, dass das Gerät gerade kein Netz hat. Bewusst NICHT an die Version
+// gebunden: Sonst wäre die Offline-Ansicht nach jedem Update leer, und das
+// Tablet im Flur zeigte nach einem WLAN-Aussetzer gar nichts.
+//
+// Die Einträge sind persönlich (Notizen, Belohnungen, wer angemeldet ist).
+// Beim An- und Abmelden schickt die Seite deshalb 'clear-api-cache' — sonst
+// sähe auf einem geteilten Gerät der Nächste die Daten des Vorgängers.
+const API_CACHE = 'family-dashboard-api';
+
 // The app shell itself is in neither `build` nor `files`, so without adding it
 // explicitly the offline navigation fallback below would never find anything.
 const SHELL = '/';
@@ -20,8 +30,12 @@ worker.addEventListener('install', (event) => {
       .open(CACHE)
       // addAll rejects the whole batch if a single entry 404s; adding one by
       // one means a stale entry cannot leave the app with no cache at all.
-      .then((cache) => Promise.allSettled(PRECACHE.map((url) => cache.add(url))))
-      .then(() => worker.skipWaiting()),
+      .then((cache) => Promise.allSettled(PRECACHE.map((url) => cache.add(url)))),
+    // Kein skipWaiting() hier. Eine neue Version wartet, bis die Seite sie
+    // freigibt (UpdatePrompt: beim Antippen, beim Verlassen der App, im
+    // Leerlauf des Wandgeräts). Vorher übernahm sie sofort und die Seite lud
+    // sich mitten in einer Eingabe von selbst neu — und die Meldung „Neue
+    // Version verfügbar" erschien nie, weil nichts mehr wartete.
   );
 });
 
@@ -29,7 +43,13 @@ worker.addEventListener('activate', (event) => {
   event.waitUntil(
     caches
       .keys()
-      .then((keys) => Promise.all(keys.filter((key) => key !== CACHE).map((key) => caches.delete(key))))
+      .then((keys) =>
+        Promise.all(
+          keys
+            .filter((key) => key.startsWith('family-dashboard-') && key !== CACHE && key !== API_CACHE)
+            .map((key) => caches.delete(key)),
+        ),
+      )
       .then(() => worker.clients.claim()),
   );
 });
@@ -37,11 +57,19 @@ worker.addEventListener('activate', (event) => {
 // The page asks for the new version to take over after the user agrees.
 worker.addEventListener('message', (event) => {
   if (event.data === 'skip-waiting') void worker.skipWaiting();
+  // Abmelden/Anmelden: persönliche Daten aus dem Offline-Speicher nehmen.
+  if (event.data === 'clear-api-cache') event.waitUntil(caches.delete(API_CACHE));
 });
 
-/** Read-only endpoints worth keeping for an offline glance at the dashboard. */
+/**
+ * Lesende Wege, die eine Offline-Ansicht tragen. /api/auth/me gehört dazu:
+ * Ohne die Antwort auf „wer bin ich" hielt die App ein Gerät ohne Netz für
+ * abgemeldet und schickte es auf den Anmeldebildschirm, der ohne Netz
+ * nichts anzeigen kann.
+ */
 const CACHEABLE_API = [
-  '/api/weather', '/api/calendar', '/api/chores', '/api/notes', '/api/scoreboard', '/api/meals',
+  '/api/auth/me', '/api/weather', '/api/calendar', '/api/chores', '/api/notes', '/api/scoreboard',
+  '/api/meals', '/api/shopping', '/api/rewards', '/api/goal', '/api/links', '/api/times',
 ];
 
 worker.addEventListener('fetch', (event) => {
@@ -80,12 +108,12 @@ worker.addEventListener('fetch', (event) => {
         .then((response) => {
           if (response.ok) {
             const copy = response.clone();
-            void caches.open(CACHE).then((cache) => cache.put(request, copy));
+            void caches.open(API_CACHE).then((cache) => cache.put(request, copy));
           }
           return response;
         })
         .catch(async () => {
-          const hit = await caches.match(request);
+          const hit = await caches.match(request, { cacheName: API_CACHE });
           if (hit) return hit;
           return new Response(JSON.stringify({ message: 'Offline – keine gespeicherten Daten' }), {
             status: 503,

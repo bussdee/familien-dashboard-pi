@@ -575,6 +575,24 @@ export interface RewardOverview {
   redemptions: Redemption[];
 }
 
+/** offen: wartet auf einen Preis · bepreist: Preis steht · angefragt: eingelöst, wartet auf die Eltern */
+export type WishStatus = 'offen' | 'bepreist' | 'angefragt' | 'erfuellt' | 'abgelehnt';
+
+export interface Wish {
+  id: number;
+  user_id: number;
+  user_name: string;
+  user_emoji: string;
+  title: string;
+  emoji: string;
+  /** null, solange die Eltern keinen Preis festgelegt haben. */
+  cost: number | null;
+  status: WishStatus;
+  note: string;
+  created_at: string;
+  decided_at?: string;
+}
+
 export interface ShoppingSuggestion {
   name: string;
   category: string;

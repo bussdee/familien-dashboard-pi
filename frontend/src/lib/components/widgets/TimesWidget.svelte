@@ -8,6 +8,8 @@
   import KachelLeer from './KachelLeer.svelte';
   import type { TimeBlock, TimeDay, TimeOverview } from '$lib/types';
 
+  const istAdmin = $derived($session.user?.role === 'admin');
+
   let daten = $state<TimeOverview | null>(null);
   let loading = $state(true);
 
@@ -73,7 +75,11 @@
   <!-- Eintragen gehört einer Person. Am Wandgerät führt der Weg nur in eine
        Sperre, deshalb dort kein Knopf. -->
   {#if !$session.device}
-    <a class="btn-ghost px-2 text-muted-foreground" href="/zeiten" aria-label={t('Zeiten eintragen')}>
+    <a
+      class="btn-ghost px-2 text-muted-foreground"
+      href="/zeiten"
+      aria-label={istAdmin ? t('Zeiten eintragen') : t('Zeiten ansehen')}
+    >
       <Pencil class="h-4 w-4" />
     </a>
   {/if}
@@ -90,12 +96,12 @@
     <KachelLeer
       icon={House}
       titel={t('Keine Zeiten eingetragen')}
-      hinweis={$session.device
-        ? t('Wer seinen Stundenplan oder seine Schichten einträgt, sieht hier, wann alle da sind.')
-        : t('Trag deinen Stundenplan oder deine Schichten ein — dann steht hier, ab wann alle da sind.')}
+      hinweis={!istAdmin
+        ? t('Die Eltern tragen Stundenpläne und Schichten ein — dann steht hier, wann alle da sind.')
+        : t('Trag Stundenpläne oder Schichten ein — dann steht hier, ab wann alle da sind.')}
     >
       {#snippet aktion()}
-        {#if !$session.device}
+        {#if istAdmin}
           <a href="/zeiten" class="btn-outline text-sm">{t('Zeiten eintragen')}</a>
         {/if}
       {/snippet}

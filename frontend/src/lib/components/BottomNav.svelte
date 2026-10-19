@@ -1,7 +1,8 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
   import { page } from '$app/stores';
-  import { Menu, Plus, ShoppingCart, House, UtensilsCrossed } from 'lucide-svelte';
+  import { Gift, Menu, Plus, ShoppingCart, House, UtensilsCrossed } from 'lucide-svelte';
+  import { darfEintragen } from '$lib/stores';
   import { aktiv, menu } from '$lib/stores/navigation.svelte';
   import { schnell } from '$lib/stores/schnell.svelte';
 
@@ -46,16 +47,28 @@
       {@render ziel(item)}
     {/each}
 
-    <!-- Das Plus in der Mitte: der eine Knopf, den man blind trifft. -->
+    <!-- Das Plus in der Mitte: der eine Knopf, den man blind trifft. Wer
+         nichts eintragen darf (Kinder), bekommt an derselben Stelle den Weg
+         zur Wunschliste — das Eintragen, das ihnen offen steht. -->
     <div class="flex flex-1 items-center justify-center">
-      <button
-        class="flex h-14 w-14 -translate-y-3 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-[rgb(var(--akzent-rgb)/0.35)] transition-transform active:scale-95"
-        onclick={() => (schnell.offen = true)}
-        aria-label={t('Schnell hinzufügen')}
-        aria-haspopup="dialog"
-      >
-        <Plus class="h-7 w-7" />
-      </button>
+      {#if $darfEintragen}
+        <button
+          class="flex h-14 w-14 -translate-y-3 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-[rgb(var(--akzent-rgb)/0.35)] transition-transform active:scale-95"
+          onclick={() => (schnell.offen = true)}
+          aria-label={t('Schnell hinzufügen')}
+          aria-haspopup="dialog"
+        >
+          <Plus class="h-7 w-7" />
+        </button>
+      {:else}
+        <a
+          href="/belohnungen#wuensche"
+          class="flex h-14 w-14 -translate-y-3 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-[rgb(var(--akzent-rgb)/0.35)] transition-transform active:scale-95"
+          aria-label={t('Wunschliste')}
+        >
+          <Gift class="h-7 w-7" />
+        </a>
+      {/if}
     </div>
 
     {#each rechts as item (item.href)}

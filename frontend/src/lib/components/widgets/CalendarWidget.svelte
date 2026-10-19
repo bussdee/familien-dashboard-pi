@@ -7,6 +7,7 @@
   } from 'lucide-svelte';
   import { addDays, differenceInCalendarDays, format, isToday, isTomorrow, parseISO } from 'date-fns';
   import { ApiError, calendarApi } from '$lib/api';
+  import { darfEintragen } from '$lib/stores';
   import Kachel from './Kachel.svelte';
   import KachelLeer from './KachelLeer.svelte';
   import Modal from '$lib/components/Modal.svelte';
@@ -230,13 +231,15 @@
 {/snippet}
 
 {#snippet aktionen()}
-  <button
-    class="btn-primary px-3"
-    onclick={startNew}
-    aria-label={t('Termin hinzufügen')}
-  >
-    <Plus class="h-5 w-5" />
-  </button>
+  {#if $darfEintragen}
+    <button
+      class="btn-primary px-3"
+      onclick={startNew}
+      aria-label={t('Termin hinzufügen')}
+    >
+      <Plus class="h-5 w-5" />
+    </button>
+  {/if}
 {/snippet}
 
 <Kachel ton="var(--ton-kalender)" titel={t('Kalender')} icon={CalendarDays} {zeile} {aktionen}>
@@ -357,10 +360,12 @@
     <KachelLeer
       icon={CalendarDays}
       titel={t('Keine Termine in nächster Zeit')}
-      hinweis={t('Mit + eintragen, oder eine .ics-Datei in data/ics/ ablegen.')}
+      hinweis={$darfEintragen
+        ? t('Mit + eintragen, oder eine .ics-Datei in data/ics/ ablegen.')
+        : t('Die Eltern tragen Termine ein.')}
     />
   {:else}
-    <div class="scrollbar-thin max-h-[340px] space-y-4 overflow-y-auto pr-1">
+    <div class="scrollbar-thin md:max-h-[340px] space-y-4 md:overflow-y-auto pr-1">
       {#each groups as group (group.label)}
         <div>
           <h3 class="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
@@ -416,7 +421,7 @@
                   </span>
                 </button>
 
-                {#if open}
+                {#if open && (!event.editable || $darfEintragen)}
                   <div class="border-t border-border/60 px-3 py-2">
                     {#if event.editable}
                       <div class="flex gap-2">

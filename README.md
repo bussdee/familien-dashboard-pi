@@ -63,6 +63,7 @@ solange es im eigenen, vertrauenswürdigen Netz bleibt.
 | ⭐ **Aufgaben** | Müll, Geschirrspüler, Katzenklo. Jede Aufgabe hat ein Intervall und einen Punktwert. Zuständig ist wahlweise *reihum*, eine feste Person, *alle* oder *wer mag*. Einmal erledigt ist erledigt — ein zweites Abhaken am selben Tag gibt es nicht. Auf Wunsch **bestätigt ein Elternteil**, bevor es Punkte gibt — *Zimmer aufräumen* heisst dann auch aufgeräumt. |
 | 🏆 **Punkte & Level** | Wer abhakt, bekommt Punkte. Level von *Neuling* bis *Legende*, Serien, elf Abzeichen, Siegertreppchen. Verklickt? Ein Elternteil nimmt es zurück — die Aufgabe wird dabei wieder fällig. Eltern vergeben und ziehen Punkte auch von Hand ab, für eine Person oder mehrere auf einmal, mit Grund — am Handy oder am Wandtablet mit der **Eltern-PIN**. |
 | 🎁 **Belohnungen** | Wofür die Punkte da sind: Die Eltern legen fest, was es gibt — Bildschirmzeit, ein Eis, den Film am Familienabend. Ein Kind löst ein, ein Elternteil bestätigt. Ausgegeben wird ein **Guthaben**; Level und Rangliste bleiben unberührt. |
+| ✨ **Wunschliste** | Ein Kind trägt einen Wunsch ein — *Ins Kino gehen* —, die Eltern legen fest, wie viele Punkte er kostet. Reicht das Guthaben, löst das Kind ihn ein. Ein Wunsch gehört dem Kind; am Wandgerät gibt es die Liste nicht. |
 | 🎯 **Familienziel** | Etwas, worauf alle gemeinsam hinarbeiten: Pizza-Abend, Zoo, Kino. Jeder verdiente Punkt zählt dazu, der Balken zeigt, wer wie viel beigetragen hat. Abzüge zählen nicht dagegen. |
 | 🛒 **Einkaufsliste** | Gemeinsam und **in Echtzeit**: Was im Laden abgehakt wird, verschwindet sofort auf allen Geräten. **Häufig gekaufte Artikel** stehen als Vorschläge zum Antippen bereit, und im Laden gibt es eine eigene Ansicht — nach Abteilung sortiert, der Bildschirm bleibt an. Punkte gibt es auch dafür. |
 | 🍝 **Essensplan** | Was gibt's heute — und die ganze Woche. Mit Zutaten, die **mit einem Tipp auf die Einkaufsliste** wandern, ohne Doppelte. Gerichte der letzten Monate stehen zum Wiederverwenden bereit. |
@@ -83,6 +84,13 @@ solange es im eigenen, vertrauenswürdigen Netz bleibt.
 | 📲 **Wie eine App** | Zum Startbildschirm hinzufügen: eigenes Symbol, keine Browserleiste, Offline-Ansicht. |
 
 ---
+
+## Neu in 2.3
+
+- **Wunschliste**: Kinder wünschen, Eltern legen den Preis in Punkten fest
+- **Eintragen ist Elternsache** — Kinder lesen und reagieren (abhaken, erledigen, einlösen, wünschen); der Server setzt das durch, nicht nur die Oberfläche
+- **Kacheln überlagern sich nicht mehr**, Links stehen in einer Zeile
+- **Die App hält ohne Netz durch** und aktualisiert sich, ohne mitten in einer Eingabe neu zu laden
 
 ## Neu in 2.2
 

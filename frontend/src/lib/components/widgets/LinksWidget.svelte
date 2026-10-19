@@ -58,46 +58,53 @@
       <KachelLeer
         icon={LinkIcon}
         titel={t('Noch keine geteilten Links')}
-        hinweis={t('Wer sich anmeldet, kann einen Link mit der Familie teilen.')}
+        hinweis={t('Ein Elternteil kann einen Link mit der Familie teilen.')}
       />
     {:else}
       <KachelLeer
         icon={LinkIcon}
         titel={t('Nichts angepinnt')}
-        hinweis={t('Was du oft brauchst, direkt auf der Übersicht.')}
+        hinweis={$session.user?.role === 'admin'
+          ? t('Was du oft brauchst, direkt auf der Übersicht.')
+          : t('Die Eltern pinnen hier an, was die Familie oft braucht.')}
       >
         {#snippet aktion()}
-          <a href="/links" class="btn-outline text-sm">
-            <Plus class="h-4 w-4" /> {t('Links anpinnen')}
-          </a>
+          {#if $session.user?.role === 'admin'}
+            <a href="/links" class="btn-outline text-sm">
+              <Plus class="h-4 w-4" /> {t('Links anpinnen')}
+            </a>
+          {/if}
         {/snippet}
       </KachelLeer>
     {/if}
   {:else}
-    <!-- Two columns from the smallest phone up: bookmarks are short. -->
-    <div class="grid grid-cols-2 gap-2">
+    <!--
+      Eine Zeile pro Link: Symbol, Name, rechts die Adresse. In zwei Spalten
+      mit je zwei Zeilen blieb von einem Namen auf dem Handy die Hälfte
+      übrig — und lesen soll man die Liste mit einem Blick.
+    -->
+    <ul class="divide-y divide-[color:var(--haarlinie)]">
       {#each links as link (link.id)}
-        <a
-          href={link.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          class="group flex items-center gap-2.5 rounded-xl border border-[color:var(--haarlinie)] p-2.5 transition-colors hover:bg-muted/25"
-        >
-          <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-card text-lg">
-            {link.emoji}
-          </span>
-          <span class="min-w-0 flex-1">
-            <span class="flex items-center gap-1 truncate text-sm font-medium">
-              {link.title}
-              {#if link.shared}<Users class="h-3 w-3 shrink-0 text-muted-foreground" />{/if}
-            </span>
-            <span class="block truncate text-[11px] text-muted-foreground">{host(link.url)}</span>
-          </span>
-          <ExternalLink
-            class="h-3.5 w-3.5 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100"
-          />
-        </a>
+        <li>
+          <a
+            href={link.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            title="{link.title} — {link.url}"
+            class="group flex min-h-[2.75rem] items-center gap-3 rounded-lg px-1 py-1.5 transition-colors hover:bg-muted/25"
+          >
+            <span class="w-7 shrink-0 text-center text-xl leading-none">{link.emoji}</span>
+            <!-- Der Name behält seine Breite; die Adresse nimmt, was übrig ist,
+                 und wird als Erste gekürzt. -->
+            <span class="min-w-0 truncate text-sm font-medium">{link.title}</span>
+            {#if link.shared}<Users class="h-3 w-3 shrink-0 text-muted-foreground" />{/if}
+            <span class="min-w-0 flex-1 truncate text-right text-xs text-muted-foreground">{host(link.url)}</span>
+            <ExternalLink
+              class="h-3.5 w-3.5 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100"
+            />
+          </a>
+        </li>
       {/each}
-    </div>
+    </ul>
   {/if}
 </Kachel>

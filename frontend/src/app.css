@@ -501,6 +501,15 @@
   }
 }
 
+/* Am grossen Bildschirm schwebt das Plus rechts unten (QuickAdd). Ohne
+   eigenen Platz lag es über der Fusszeile und über der letzten Kachel —
+   deren unterer Rand liess sich dann nicht mehr antippen. */
+@media (min-width: 1024px) {
+  .mit-fab {
+    --fab-platz: 4.5rem;
+  }
+}
+
 /* Standalone (installed) mode: the OS draws the status bar, so the sticky
    header needs to sit below it rather than under it. */
 @media (display-mode: standalone) {

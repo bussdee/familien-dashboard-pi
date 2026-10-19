@@ -459,7 +459,7 @@
         : t('Ein Elternteil legt die Aufgaben an.')}
     />
   {:else}
-    <ul class="scrollbar-thin max-h-[320px] overflow-y-auto pr-1">
+    <ul class="scrollbar-thin md:max-h-[320px] md:overflow-y-auto pr-1">
       {#each [...overdue, ...dueToday, ...later, ...abgehakt] as chore (chore.id)}
         <li
           class="group flex items-center gap-3 rounded-lg px-1 py-2.5 transition-colors

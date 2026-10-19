@@ -5,7 +5,7 @@ set -uo pipefail
 
 BASE="${BASE:-http://localhost:${HTTP_PORT:-8088}}"
 JAR="$(mktemp)"
-trap 'rm -f "$JAR" "$JAR.txt" "$JAR.geraet"' EXIT
+trap 'rm -f "$JAR" "$JAR.txt" "$JAR.geraet" "$JAR.kind"' EXIT
 
 pass=0
 fail=0
@@ -218,6 +218,55 @@ for e in json.load(sys.stdin):
          -X DELETE "$BASE/api/admin/points/$G_ID")"
   fi
   check "Verwaltung bleibt am Gerät zu"     403 "$(code -b "$JAR.geraet" "$BASE/api/admin/users")"
+
+  echo ""
+  echo "Rechte: Kinder lesen und reagieren"
+  # Ein Familienmitglied (kein Elternteil) darf nichts Neues eintragen und
+  # keine Punkte buchen — aber abhaken, wünschen und einlösen. Die PIN eines
+  # Kindes kennt dieser Test nur, wenn es noch die Standard-PIN hat; sonst
+  # wird übersprungen (SMOKE_MEMBER_PIN=… gibt sie vor).
+  MEMBER_ID="$(curl -s "$BASE/api/auth/users" | python3 -c '
+import json, sys
+m = [u["id"] for u in json.load(sys.stdin) if u["role"] != "admin"]
+print(m[0] if m else "")' 2>/dev/null)"
+  MJAR="$JAR.kind"
+  M_LOGIN=""
+  if [ -n "$MEMBER_ID" ]; then
+    M_LOGIN="$(code -c "$MJAR" -X POST -H 'Content-Type: application/json' \
+      -d "{\"user_id\":$MEMBER_ID,\"pin\":\"${SMOKE_MEMBER_PIN:-$PIN}\"}" "$BASE/api/auth/login")"
+  fi
+  if [ "$M_LOGIN" != "200" ]; then
+    uebersprungen "Rechte-Prüfung" "kein Familienmitglied mit bekannter PIN (SMOKE_MEMBER_PIN)"
+  else
+    check "Einkauf eintragen verboten"    403 \
+      "$(code -b "$MJAR" -X POST -H 'Content-Type: application/json' -d '{"name":"Smoke-Test"}' "$BASE/api/shopping")"
+    check "Aufgabe anlegen verboten"      403 \
+      "$(code -b "$MJAR" -X POST -H 'Content-Type: application/json' -d '{"title":"Smoke-Test"}' "$BASE/api/chores")"
+    check "Termin eintragen verboten"     403 \
+      "$(code -b "$MJAR" -X POST -H 'Content-Type: application/json' -d '{"title":"Smoke-Test"}' "$BASE/api/calendar/events")"
+    check "Essen eintragen verboten"      403 \
+      "$(code -b "$MJAR" -X PUT -H 'Content-Type: application/json' -d '{"title":"Smoke-Test"}' "$BASE/api/meals/2099-12-31")"
+    check "Notiz anlegen verboten"        403 \
+      "$(code -b "$MJAR" -X POST -H 'Content-Type: application/json' -d '{"title":"Smoke-Test"}' "$BASE/api/notes")"
+    check "Link anlegen verboten"         403 \
+      "$(code -b "$MJAR" -X POST -H 'Content-Type: application/json' -d '{"title":"x","url":"https://x.de"}' "$BASE/api/links")"
+    check "Punkte vergeben verboten"      403 \
+      "$(code -b "$MJAR" -X POST -H 'Content-Type: application/json' \
+         -d "{\"user_ids\":[$MEMBER_ID],\"points\":5}" "$BASE/api/admin/points")"
+    check "Wunsch eintragen erlaubt"      201 \
+      "$(code -b "$MJAR" -X POST -H 'Content-Type: application/json' -d '{"title":"Smoke-Test"}' "$BASE/api/wishes")"
+    # Aufräumen: den eben eingetragenen Wunsch wieder zurücknehmen.
+    W_ID="$(curl -s -b "$MJAR" "$BASE/api/wishes" | python3 -c 'import json,sys
+for w in json.load(sys.stdin):
+    if w["title"] == "Smoke-Test":
+        print(w["id"]); break' 2>/dev/null)"
+    if [ -n "$W_ID" ]; then
+      check "Wunsch wieder zurücknehmen"  204 "$(code -b "$MJAR" -X DELETE "$BASE/api/wishes/$W_ID")"
+    fi
+    check "Wandgerät sieht keine Wünsche" ja \
+      "$([ "$(curl -s -b "$JAR.geraet" "$BASE/api/wishes")" = '[]' ] && echo ja || echo nein)"
+  fi
+  rm -f "$MJAR"
 
   echo ""
   echo "Dateien"

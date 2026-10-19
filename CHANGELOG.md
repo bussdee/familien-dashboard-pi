@@ -12,6 +12,104 @@ Deshalb gibt es hier **keine 1.4.5**. Sie stand eine Weile in dieser Datei,
 wurde aber nie veröffentlicht: Auf GitHub steht v1.4.4, und der Pi läuft
 darauf. Was unter 1.4.5 gesammelt war, ist in 1.5.0 aufgegangen.
 
+## [2.3.0] — 2026-10-19
+
+Ein Dashboard, in dem Eltern bestimmen und Kinder mitmachen: Neues eintragen
+dürfen jetzt nur noch die Eltern, die Kinder lesen und reagieren — und haben
+dafür eine eigene Wunschliste. Dazu zwei Dinge, die im Alltag genervt haben:
+Kacheln, die sich überlagerten, und eine App, die ohne Netz auf dem
+Anmeldebildschirm stehenblieb.
+
+Bestehende Installationen übernehmen alles ohne Zutun: Die neue Tabelle legt
+das Backend beim ersten Start selbst an. **Eine Sache fällt auf:** Kinder
+können nach dem Update nichts mehr eintragen — siehe *Geändert*.
+
+### Hinzugefügt
+
+- **Wunschliste.** Ein Kind trägt einen Wunsch ein — *Ins Kino gehen*, *bei
+  Lena übernachten* —, die Eltern legen fest, **wie viele Punkte** er kostet
+  (oder sagen *Leider nein*, mit einem Hinweis). Reicht das Guthaben, löst das
+  Kind den Wunsch ein, und ein Elternteil bestätigt wie bei jeder Belohnung.
+
+  - Zu finden unter *Belohnungen → Wunschliste*; am Handy ersetzt ein
+    Geschenk-Knopf in der unteren Leiste das Plus.
+  - Ein Wunsch gehört dem Kind: Es sieht nur seine eigenen, die Eltern sehen
+    alle. **Am Wandgerät gibt es die Liste nicht** — ein Geburtstagswunsch
+    gehört nicht in den Flur.
+  - Eingelöst wird über dieselbe Einlösung wie bei den Belohnungen: Das
+    Guthaben sinkt sofort, *Ablehnen* gibt die Punkte zurück und der Wunsch
+    steht wieder auf der Liste. Level und Rangliste bleiben unberührt.
+  - Die Eltern können auch für ein Kind eintragen.
+
+- **Bereich *App & Offline* in den Einstellungen.** Zeigt, ob die Seite als App
+  läuft, ob der Offline-Speicher bereit ist — und **warum nicht**, falls die
+  Adresse kein https hat. Mit Installieren-Knopf und einem Notausgang
+  (*Zwischenspeicher leeren und neu laden*), falls eine App an einem alten
+  Stand hängt.
+
+### Geändert
+
+- **Neues eintragen, ändern und löschen ist Elternsache.** Bisher prüfte nur
+  die Oberfläche, wer was darf; der Server ließ jeden Angemeldeten durch.
+  Jetzt gilt es dort, wo es zählt:
+
+  | Eltern (und das Wandgerät mit Eltern-PIN) | Alle, auch Kinder |
+  |---|---|
+  | Termine, Einkaufsliste, Essensplan, Notizen, Aufgaben, Fotos, Links, Zeiten eintragen, ändern, löschen | lesen · Einkäufe **abhaken** und den Einkauf abschließen · Aufgaben **erledigen** · Belohnungen **einlösen** · **wünschen** · eigenes Profil und eigene PIN |
+
+  Die Knöpfe zum Eintragen verschwinden bei Kindern; die Zeiten-Seite ist für
+  sie eine reine Ansicht. Am Wandgerät erscheint beim ersten Schreibversuch die
+  Frage nach der Eltern-PIN — gleich welche Kachel es war.
+  *Punkte vergeben und abziehen* war und bleibt ausschließlich Elternsache.
+
+- **Links stehen in einer Zeile.** Symbol, Name, daneben die Adresse — auf der
+  Übersicht wie auf der Links-Seite. Der Name behält seine Breite, die Adresse
+  wird zuerst gekürzt. Mehr dazu im Hinweistext beim Daraufzeigen.
+
+### Behoben
+
+- **Kacheln überlappen, untere Inhalte nicht zu sehen oder anzutippen.** Ursache
+  war die Oberfläche *Glas*: Ihr Weichzeichner macht eine Kachel zum
+  Bezugsrahmen für alles, was fest auf dem Bildschirm sitzt — das Formular
+  (*Neuer Termin* …) füllte dann nur noch die Kachel, ragte über die Nachbarn
+  und verdeckte sie. Fenster hängen jetzt direkt unter `<body>`.
+  Dazu: Auf dem Handy rollen die Listen nicht mehr in einem Kasten innerhalb
+  der Kachel (Wischen scrollt die Seite statt der Liste, nichts mehr hinter
+  einem Rollbalken), und am großen Bildschirm liegt das schwebende Plus nicht
+  mehr über der letzten Kachel.
+
+- **Die App landete ohne Netz auf dem Anmeldebildschirm.** Eine einzige Frage
+  („wer bin ich?") entschied über Anmelden — und scheiterte sie ohne Antwort,
+  etwa weil das Tablet gerade aus dem Standby kam und das WLAN noch fehlte,
+  hielt die App das Gerät für abgemeldet. Jetzt heißt nur ein echtes „nicht
+  angemeldet" Anmeldung; sonst steht ein Hinweis da, und es wird von selbst
+  weiter versucht. Offline öffnet die installierte App mit den zuletzt
+  gesehenen Daten, auch die Einkaufsliste.
+
+- **Updates der App.** Eine neue Version übernahm sofort und lud die Seite mitten
+  in einer Eingabe neu; die Meldung *Neue Version verfügbar* erschien nie. Jetzt
+  wartet sie, bis es niemanden stört: auf Tipp, sobald die App in den
+  Hintergrund geht, am Wandgerät nach zwei Minuten ohne Berührung. Auf einem
+  Handy, das über Nacht im Hintergrund lag, wird beim Zurückkehren nachgesehen.
+
+- **Installationsangebot verpasst.** Chrome meldet die Installierbarkeit nur
+  einmal; wer sich dabei auf dem Anmeldebildschirm befand, sah den Vorschlag
+  nie. Das Abfangen geschieht jetzt von Anfang an.
+
+- **App-Symbol.** Das Symbol hatte transparente runde Ecken und diente zugleich
+  als „maskable" — Android schnitt es ab, iOS füllte die Ecken schwarz. Es gibt
+  jetzt eigene Symbole mit vollflächigem Grund.
+
+- **Weiße Seite nach einem Update.** nginx schickte `index.html` ohne
+  `Cache-Control`; ein Browser durfte sie behalten und rief danach Dateien ab,
+  die es nicht mehr gab. `index.html` wird jetzt jedes Mal geprüft (ein kurzes
+  „304", wenn sich nichts geändert hat). SvelteKit fragt zudem alle fünf
+  Minuten nach einer neuen Fassung.
+
+- **Persönliche Daten im Offline-Speicher.** Notizen, Belohnungen und „wer ist
+  angemeldet" lagen für jedermann am selben Gerät im Zwischenspeicher. Er wird
+  beim An- und Abmelden geleert.
+
 ## [2.2.0] — 2026-10-02
 
 Mehr Mitsprache für die Eltern, ohne dass das Wandtablet seine Einfachheit

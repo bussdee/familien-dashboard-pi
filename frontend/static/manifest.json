@@ -54,7 +54,7 @@
       "purpose": "any"
     },
     {
-      "src": "/icons/icon-192.png",
+      "src": "/icons/icon-maskable-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable"
@@ -71,7 +71,7 @@
       "purpose": "any"
     },
     {
-      "src": "/icons/icon-512.png",
+      "src": "/icons/icon-maskable-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
@@ -107,6 +107,18 @@
       "short_name": "Aufgaben",
       "description": "Was heute ansteht",
       "url": "/#chores",
+      "icons": [
+        {
+          "src": "/icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Wunschliste",
+      "short_name": "Wünsche",
+      "description": "Wünsche eintragen und Punkte dafür sammeln",
+      "url": "/belohnungen#wuensche",
       "icons": [
         {
           "src": "/icons/icon-192.png",
@@ -174,5 +186,11 @@
         }
       ]
     }
-  ]
+  ],
+  "launch_handler": {
+    "client_mode": [
+      "navigate-existing",
+      "auto"
+    ]
+  }
 }

@@ -30,6 +30,7 @@ import (
 	"family-dashboard/backend/internal/store"
 	"family-dashboard/backend/internal/times"
 	"family-dashboard/backend/internal/weather"
+	"family-dashboard/backend/internal/wishes"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -85,6 +86,7 @@ func main() {
 	mealsSvc := meals.NewService(sql, shoppingSvc)
 	rewardsSvc := rewards.NewService(sql)
 	goalsSvc := goals.NewService(sql)
+	wishesSvc := wishes.NewService(sql)
 	backupSvc := backup.NewService(sql, cfg.Database.Path, cfg.Database.BackupDir,
 		dataDir(cfg.Database.Path), cfg.Database.BackupRetention, cfg.Database.BackupCron)
 
@@ -153,23 +155,17 @@ func main() {
 				r.Get("/preferences/{key}", authSvc.GetPreference)
 				r.Put("/preferences/{key}", authSvc.SetPreference)
 
-				// Eintragen gehört einer Person: jeder seine eigenen Zeiten,
-				// ein Administrator die aller. Am Wandgerät steht niemand
-				// namentlich davor, dort wird nur gelesen.
-				r.Post("/times/weekly", timesSvc.CreateWeekly)
-				r.Delete("/times/weekly/{id}", timesSvc.DeleteWeekly)
-				r.Put("/times/days", timesSvc.SaveDays)
-
-				r.Post("/links", linksSvc.Create)
-				r.Put("/links/{id}", linksSvc.Update)
-				r.Post("/links/{id}/pin", linksSvc.TogglePin)
-				r.Delete("/links/{id}", linksSvc.Delete)
-				r.Post("/links/reorder", linksSvc.Reorder)
-
 				// Einlösen gehört einer Person: Am Wandgerät könnte sonst
 				// jeder das Guthaben der Schwester ausgeben.
 				r.Post("/rewards/{id}/redeem", rewardsSvc.Redeem)
 				r.Delete("/rewards/redemptions/{id}", rewardsSvc.Cancel)
+
+				// Die Wunschliste: ein Kind trägt einen Wunsch ein, die
+				// Eltern legen den Preis fest, das Kind löst ihn ein.
+				// Auch das gehört einer Person.
+				r.Post("/wishes", wishesSvc.Create)
+				r.Delete("/wishes/{id}", wishesSvc.Withdraw)
+				r.Post("/wishes/{id}/redeem", wishesSvc.Redeem)
 			})
 
 			r.Get("/weather", weatherSvc.GetWeather)
@@ -178,42 +174,27 @@ func main() {
 
 			r.Get("/calendar", calendarSvc.GetEvents)
 			r.Get("/calendar/events", calendarSvc.ListStored)
-			r.Post("/calendar/events", calendarSvc.CreateEvent)
-			r.Put("/calendar/events/{id}", calendarSvc.UpdateEvent)
-			r.Delete("/calendar/events/{id}", calendarSvc.DeleteEvent)
 
+			// Abhaken darf jeder, auch das Wandgerät — das ist „reagieren".
+			// Was auf der Liste steht, bestimmen die Eltern (siehe unten).
 			r.Get("/shopping", shoppingSvc.List)
-			r.Post("/shopping", shoppingSvc.Create)
-			r.Put("/shopping/{id}", shoppingSvc.Update)
-			r.Delete("/shopping/{id}", shoppingSvc.Delete)
+			r.Put("/shopping/{id}/checked", shoppingSvc.SetChecked)
 			r.Post("/shopping/clear-checked", shoppingSvc.ClearChecked)
 			r.Get("/shopping/reward", shoppingSvc.Reward)
 			r.Get("/shopping/ws", shoppingSvc.WebSocket)
 			r.Get("/shopping/suggestions", shoppingSvc.Suggestions)
-			r.Delete("/shopping/suggestions", shoppingSvc.ForgetSuggestion)
 
-			// Der Essensplan gehört der Familie. Eintragen darf jeder, auch
-			// das Tablet in der Küche — dort wird er meistens gemacht.
 			r.Get("/meals", mealsSvc.List)
 			r.Get("/meals/recent", mealsSvc.Recent)
-			r.Put("/meals/{day}", mealsSvc.Save)
-			r.Delete("/meals/{day}", mealsSvc.Delete)
-			r.Post("/meals/{day}/shopping", mealsSvc.ToShopping)
 
 			// Das Angebot sehen darf jeder, auch das Wandgerät: Es spornt an.
 			r.Get("/rewards", rewardsSvc.List)
 
 			r.Get("/notes", notesSvc.List)
-			r.Post("/notes", notesSvc.Create)
-			r.Put("/notes/{id}", notesSvc.Update)
-			r.Delete("/notes/{id}", notesSvc.Delete)
 
 			r.Get("/chores", choresSvc.List)
-			r.Post("/chores", choresSvc.Create)
-			r.Put("/chores/{id}", choresSvc.Update)
-			// Steht vor /chores/{id}, damit „done" nicht als ID gelesen wird.
-			r.Delete("/chores/done", choresSvc.DeleteDone)
-			r.Delete("/chores/{id}", choresSvc.Delete)
+			// Eine Aufgabe erledigen darf jeder: Die Punkte gehen an den, der
+			// sie gemacht hat. Anlegen, ändern und löschen ist Elternsache.
 			r.Post("/chores/{id}/complete", choresSvc.Complete)
 			// Was auf ein Elternteil wartet. Lesen darf jeder, auch das
 			// Wandgerät; bestätigen nur Eltern (siehe unten).
@@ -221,6 +202,11 @@ func main() {
 
 			// Das Familienziel sieht jeder — es gehört allen.
 			r.Get("/goal", goalsSvc.Get)
+
+			// Die Wunschliste sieht jeder, auch das Wandgerät: Eltern sehen
+			// alle Wünsche, ein Kind seine eigenen und das Wandgerät die der
+			// ganzen Familie (es spornt an, wie das Angebot der Belohnungen).
+			r.Get("/wishes", wishesSvc.List)
 
 			// Eltern-Wege: für Eltern immer, am Wandgerät mit der PIN eines
 			// Elternteils. So lassen sich dort Punkte vergeben und Aufgaben
@@ -232,6 +218,49 @@ func main() {
 				r.Delete("/admin/points/{id}", pointsSvc.Revoke)
 				r.Post("/chores/pending/{id}/approve", choresSvc.Approve)
 				r.Post("/chores/pending/{id}/reject", choresSvc.Reject)
+
+				// Neues eintragen, ändern und löschen: nur Eltern. Kinder
+				// lesen und reagieren (abhaken, erledigen, einlösen, wünschen).
+				// Am Wandgerät geht es mit der PIN eines Elternteils.
+				r.Post("/calendar/events", calendarSvc.CreateEvent)
+				r.Put("/calendar/events/{id}", calendarSvc.UpdateEvent)
+				r.Delete("/calendar/events/{id}", calendarSvc.DeleteEvent)
+
+				r.Post("/shopping", shoppingSvc.Create)
+				r.Put("/shopping/{id}", shoppingSvc.Update)
+				r.Delete("/shopping/{id}", shoppingSvc.Delete)
+				r.Delete("/shopping/suggestions", shoppingSvc.ForgetSuggestion)
+
+				r.Put("/meals/{day}", mealsSvc.Save)
+				r.Delete("/meals/{day}", mealsSvc.Delete)
+				r.Post("/meals/{day}/shopping", mealsSvc.ToShopping)
+
+				r.Post("/notes", notesSvc.Create)
+				r.Put("/notes/{id}", notesSvc.Update)
+				r.Delete("/notes/{id}", notesSvc.Delete)
+
+				r.Post("/chores", choresSvc.Create)
+				r.Put("/chores/{id}", choresSvc.Update)
+				// Steht vor /chores/{id}, damit „done" nicht als ID gelesen wird.
+				r.Delete("/chores/done", choresSvc.DeleteDone)
+				r.Delete("/chores/{id}", choresSvc.Delete)
+
+				r.Post("/photos", photosSvc.Upload)
+				r.Delete("/photos/{name}", photosSvc.Delete)
+
+				r.Post("/times/weekly", timesSvc.CreateWeekly)
+				r.Delete("/times/weekly/{id}", timesSvc.DeleteWeekly)
+				r.Put("/times/days", timesSvc.SaveDays)
+
+				r.Post("/links", linksSvc.Create)
+				r.Put("/links/{id}", linksSvc.Update)
+				r.Post("/links/{id}/pin", linksSvc.TogglePin)
+				r.Delete("/links/{id}", linksSvc.Delete)
+				r.Post("/links/reorder", linksSvc.Reorder)
+
+				// Die Preise der Wunschliste legen die Eltern fest.
+				r.Put("/admin/wishes/{id}", wishesSvc.Decide)
+				r.Delete("/admin/wishes/{id}", wishesSvc.Remove)
 			})
 
 			// The scoreboard spans chores and shopping, so it lives outside
@@ -246,9 +275,7 @@ func main() {
 			r.Get("/devices", devicesSvc.GetStatus)
 
 			r.Get("/photos", photosSvc.List)
-			r.Post("/photos", photosSvc.Upload)
 			r.Get("/photos/{name}", photosSvc.Serve)
-			r.Delete("/photos/{name}", photosSvc.Delete)
 
 			// Herunterladen darf jeder, auch das Wandgerät. Hochladen und
 			// Löschen stehen weiter unten im Adminbereich.

@@ -2,13 +2,16 @@
   import { t, SPRACHEN, sprache, setzeSprache } from '$lib/i18n';
   import { onMount } from 'svelte';
   import {
-    Check, KeyRound, LayoutGrid, Layers, Minus, Monitor, Moon, Palette, Sun, User as UserIcon,
+    Check, Download, KeyRound, LayoutGrid, Layers, Minus, Monitor, Moon, Palette, RefreshCw,
+    Smartphone, Sun, TriangleAlert, User as UserIcon,
   } from 'lucide-svelte';
   import { ApiError, authApi } from '$lib/api';
   import {
     AKZENTE, akzent, oberflaeche, session, theme, type Oberflaeche, type Theme,
   } from '$lib/stores';
   import { board } from '$lib/stores/scores.svelte';
+  import { pwa } from '$lib/stores/pwa.svelte';
+  import { toast } from '$lib/stores/toast.svelte';
 
   let currentPin = $state('');
   let newPin = $state('');
@@ -29,6 +32,18 @@
   ];
 
   const user = $derived($session.user);
+
+  // ---- App & Offline ----
+  async function appInstallieren() {
+    const ergebnis = await pwa.installieren();
+    if (ergebnis === 'angenommen') toast(t('Wird installiert …'), { ton: 'erfolg' });
+  }
+
+  let zuruecksetzen = $state(false);
+  async function appZuruecksetzen() {
+    zuruecksetzen = true;
+    await pwa.zuruecksetzen();
+  }
 
   // ---- Profil ----
   const emojis = [
@@ -291,6 +306,76 @@
     <p class="mt-3 text-[11px] text-muted-foreground">
       {t('Glas sieht auf einem hellen Hintergrund am besten aus. Auf sehr alten Geräten kann das Weichzeichnen ruckeln — dann lieber Nachtlicht. Farbe, Oberfläche und hell/dunkel gelten nur für dieses Gerät.')}
     </p>
+  </section>
+
+  <section class="card mb-4 p-5">
+    <h2 class="mb-1 flex items-center gap-2 font-semibold">
+      <Smartphone class="h-5 w-5" /> {t('App & Offline')}
+    </h2>
+    <p class="mb-4 text-sm text-muted-foreground">
+      {t('Als App installiert öffnet das Dashboard ohne Browserleiste und zeigt die zuletzt gesehenen Daten, auch wenn das WLAN kurz weg ist.')}
+    </p>
+
+    <ul class="mb-4 space-y-2 text-sm">
+      <li class="flex items-start gap-2">
+        {#if pwa.installiert}<Check class="mt-0.5 h-4 w-4 shrink-0 text-success" />{:else}<TriangleAlert class="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />{/if}
+        <span>
+          {#if pwa.installiert}
+            {t('Läuft als installierte App.')}
+          {:else}
+            {t('Läuft im Browser, nicht als App.')}
+          {/if}
+        </span>
+      </li>
+      <li class="flex items-start gap-2">
+        {#if pwa.offlineBereit}<Check class="mt-0.5 h-4 w-4 shrink-0 text-success" />{:else}<TriangleAlert class="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />{/if}
+        <span>
+          {#if pwa.offlineBereit}
+            {t('Offline-Speicher ist bereit.')}
+          {:else if !pwa.sicher}
+            {t('Offline-Speicher ist aus: Die Adresse ist nicht https. Browser erlauben ihn nur über eine gesicherte Verbindung (https://… oder localhost).')}
+          {:else if !pwa.unterstuetzt}
+            {t('Dieser Browser kennt keinen Offline-Speicher.')}
+          {:else}
+            {t('Offline-Speicher richtet sich gerade ein — nach dem nächsten Laden der Seite ist er bereit.')}
+          {/if}
+        </span>
+      </li>
+    </ul>
+
+    {#if !pwa.installiert}
+      {#if pwa.installierbar}
+        <button class="btn-primary w-full" onclick={appInstallieren}>
+          <Download class="h-4 w-4" /> {t('Als App installieren')}
+        </button>
+      {:else if !pwa.sicher}
+        <p class="rounded-lg bg-amber-500/10 px-3 py-2 text-sm text-amber-700 dark:text-amber-400">
+          {t('Installieren geht nur über eine gesicherte Adresse (https://…). Mit dem Skript scripts/make-cert.sh lässt sich dafür ein Zertifikat für euer Netz anlegen.')}
+        </p>
+      {:else if pwa.iosSafari}
+        <p class="rounded-lg bg-muted/50 px-3 py-2 text-sm">
+          {t('In Safari unten auf „Teilen“ tippen, dann „Zum Home-Bildschirm“.')}
+        </p>
+      {:else if pwa.ios}
+        <p class="rounded-lg bg-muted/50 px-3 py-2 text-sm">
+          {t('Auf dem iPhone und iPad geht die Installation nur in Safari.')}
+        </p>
+      {:else}
+        <p class="rounded-lg bg-muted/50 px-3 py-2 text-sm text-muted-foreground">
+          {t('Der Browser bietet die Installation gerade nicht an. In Chrome: Menü ⋮ → „App installieren“ oder „Zum Startbildschirm hinzufügen“.')}
+        </p>
+      {/if}
+    {/if}
+
+    <details class="mt-4 text-sm">
+      <summary class="cursor-pointer text-muted-foreground">{t('Hängt die App an einem alten Stand?')}</summary>
+      <p class="mt-2 text-muted-foreground">
+        {t('Das leert den Zwischenspeicher dieses Geräts und lädt neu. Daten gehen dabei nicht verloren — die liegen auf dem Server.')}
+      </p>
+      <button class="btn-outline mt-2 w-full" onclick={appZuruecksetzen} disabled={zuruecksetzen}>
+        <RefreshCw class="h-4 w-4 {zuruecksetzen ? 'animate-spin' : ''}" /> {t('Zwischenspeicher leeren und neu laden')}
+      </button>
+    </details>
   </section>
 
   <section class="card p-5">

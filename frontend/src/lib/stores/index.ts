@@ -1,6 +1,6 @@
 import { t } from '$lib/i18n';
 import { browser } from '$app/environment';
-import { writable } from 'svelte/store';
+import { derived, writable } from 'svelte/store';
 import type { User } from '$lib/types';
 
 /**
@@ -51,6 +51,18 @@ function createSession() {
 }
 
 export const session = createSession();
+
+/**
+ * Wer neue Dinge eintragen, ändern und löschen darf: Eltern — und das
+ * Wandgerät, das dafür die PIN eines Elternteils verlangt. Kinder lesen und
+ * reagieren (abhaken, erledigen, einlösen, wünschen). Durchgesetzt wird das
+ * vom Server; das hier blendet nur die Knöpfe aus, die ohnehin abgelehnt
+ * würden.
+ */
+export const darfEintragen = derived(
+  session,
+  ($s) => $s.user?.role === 'admin' || $s.device,
+);
 
 export type Theme = 'light' | 'dark' | 'system';
 

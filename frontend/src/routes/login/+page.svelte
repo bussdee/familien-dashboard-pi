@@ -4,6 +4,7 @@
   import { goto } from '$app/navigation';
   import { ApiError, authApi } from '$lib/api';
   import { session } from '$lib/stores';
+  import { pwa } from '$lib/stores/pwa.svelte';
   import { Delete, LoaderCircle, TriangleAlert } from 'lucide-svelte';
   import type { User } from '$lib/types';
 
@@ -65,6 +66,8 @@
     loading = true;
     try {
       const { user } = await authApi.login(selected.id, pin);
+      // Der Offline-Speicher gehört dem Gerät: nichts vom Vorgänger übernehmen.
+      pwa.leereOfflineDaten();
       session.set(user);
       await goto('/');
     } catch (e) {

@@ -534,6 +534,43 @@ func (s *Service) Update(w http.ResponseWriter, r *http.Request) {
 	auth.WriteJSON(w, item)
 }
 
+// SetChecked hakt einen Eintrag ab oder nimmt das Häkchen wieder weg. Das darf
+// jeder, auch das Wandgerät: Wer im Laden steht, soll abhaken können, ohne
+// dass ein Elternteil danebensteht. Was auf der Liste steht und wie es heisst,
+// ändert nur ein Elternteil (Update).
+func (s *Service) SetChecked(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(chi.URLParam(r, "id"))
+	if err != nil {
+		auth.HTTPError(w, http.StatusBadRequest, "Ungültige ID")
+		return
+	}
+	var req struct {
+		Checked *bool `json:"checked"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil || req.Checked == nil {
+		auth.HTTPError(w, http.StatusBadRequest, "Ungültige Anfrage")
+		return
+	}
+	res, err := s.db.Exec(
+		"UPDATE shopping_items SET checked = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?", *req.Checked, id)
+	if err != nil {
+		log.Error().Err(err).Msg("DB error ticking shopping item")
+		auth.HTTPError(w, http.StatusInternalServerError, "Server-Fehler")
+		return
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		auth.HTTPError(w, http.StatusNotFound, "Eintrag nicht gefunden")
+		return
+	}
+	item, err := s.byID(id)
+	if err != nil {
+		auth.HTTPError(w, http.StatusNotFound, "Eintrag nicht gefunden")
+		return
+	}
+	s.broadcast("updated", item)
+	auth.WriteJSON(w, item)
+}
+
 func (s *Service) Delete(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.Atoi(chi.URLParam(r, "id"))
 	if err != nil {

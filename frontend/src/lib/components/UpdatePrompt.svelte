@@ -2,32 +2,73 @@
   import { t } from '$lib/i18n';
   import { onMount } from 'svelte';
   import { RefreshCw } from 'lucide-svelte';
+  import { session } from '$lib/stores';
+
+  /**
+   * Eine neue Version der App übernimmt nicht von allein, solange jemand
+   * etwas tut — sie wartet im Hintergrund (siehe service-worker.ts) und wird
+   * zu einem Zeitpunkt freigegeben, an dem das Neuladen nichts kaputtmacht:
+   *
+   *  - auf Tipp („Neu laden"),
+   *  - sobald die App in den Hintergrund geht oder das Handy gesperrt wird —
+   *    das Neuladen merkt dann niemand, und beim nächsten Öffnen läuft die
+   *    neue Version,
+   *  - am Wandgerät nach zwei Minuten ohne Berührung: Dort drückt niemand
+   *    auf „Neu laden", und ein Tablet, das wochenlang auf dem Stand vom
+   *    ersten Tag stehenbleibt, ist genau die Klage, die hier behoben wird.
+   */
+  const RUHE_WANDGERAET_MS = 2 * 60_000;
 
   let waiting = $state<ServiceWorker | null>(null);
 
-  function reload() {
-    // The worker calls clients.claim() after skipWaiting, and the
-    // controllerchange listener below reloads once it has taken over.
+  function anwenden() {
+    // Der Worker übernimmt, die Seite hört auf controllerchange und lädt neu.
     waiting?.postMessage('skip-waiting');
   }
 
-  // onMount cannot both be async and return a cleanup, so the async work runs
-  // in a nested call and the timer is held in a variable the cleanup can see.
-  onMount(() => {
-    if (!('serviceWorker' in navigator)) return;
+  // Im Hintergrund freigeben.
+  $effect(() => {
+    if (!waiting) return;
+    const bemerkt = () => document.visibilityState === 'hidden' && anwenden();
+    document.addEventListener('visibilitychange', bemerkt);
+    return () => document.removeEventListener('visibilitychange', bemerkt);
+  });
 
-    let timer: ReturnType<typeof setInterval> | null = null;
-    void setup().then((handle) => (timer = handle ?? null));
-
+  // Am Wandgerät nach einer Ruhepause freigeben; jede Berührung schiebt sie nach hinten.
+  $effect(() => {
+    if (!waiting || !$session.device) return;
+    let timer: ReturnType<typeof setTimeout>;
+    const neu = () => {
+      clearTimeout(timer);
+      timer = setTimeout(anwenden, RUHE_WANDGERAET_MS);
+    };
+    neu();
+    window.addEventListener('pointerdown', neu);
+    window.addEventListener('keydown', neu);
     return () => {
-      if (timer) clearInterval(timer);
+      clearTimeout(timer);
+      window.removeEventListener('pointerdown', neu);
+      window.removeEventListener('keydown', neu);
     };
   });
 
-  async function setup(): Promise<ReturnType<typeof setInterval> | undefined> {
+  // onMount cannot both be async and return a cleanup, so the async work runs
+  // in a nested call and the cleanup is held in a variable it can see.
+  onMount(() => {
+    if (!('serviceWorker' in navigator)) return;
+
+    let aufraeumen: (() => void) | undefined;
+    void setup().then((fn) => (aufraeumen = fn));
+    return () => aufraeumen?.();
+  });
+
+  async function setup(): Promise<(() => void) | undefined> {
+    // Beim allerersten Besuch übernimmt der Worker per clients.claim() — das
+    // ist keine Aktualisierung, und ein Neuladen dort wäre überflüssig.
+    const hatteWorker = !!navigator.serviceWorker.controller;
     let reloading = false;
     navigator.serviceWorker.addEventListener('controllerchange', () => {
-      if (reloading) return;
+      if (reloading || !hatteWorker) return;
       reloading = true;
       location.reload();
     });
@@ -39,7 +80,7 @@
       return;
     }
 
-    if (registration.waiting) waiting = registration.waiting;
+    if (registration.waiting && navigator.serviceWorker.controller) waiting = registration.waiting;
 
     registration.addEventListener('updatefound', () => {
       const installing = registration.installing;
@@ -53,8 +94,19 @@
       });
     });
 
-    // A wall tablet may run for weeks; check hourly so it does not fall behind.
-    return setInterval(() => void registration?.update(), 60 * 60 * 1000);
+    // Nachsehen, ob es etwas Neues gibt: stündlich (ein Wandgerät läuft
+    // wochenlang) und jedes Mal, wenn die App wieder nach vorn kommt —
+    // ein Handy, das über Nacht im Hintergrund lag, soll nicht bis zur
+    // nächsten vollen Stunde auf dem alten Stand bleiben.
+    const pruefen = () => void registration?.update().catch(() => {});
+    const timer = setInterval(pruefen, 60 * 60 * 1000);
+    const sichtbar = () => document.visibilityState === 'visible' && pruefen();
+    document.addEventListener('visibilitychange', sichtbar);
+
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener('visibilitychange', sichtbar);
+    };
   }
 </script>
 
@@ -67,6 +119,6 @@
       <span class="font-medium">{t('Neue Version verfügbar')}</span>
       <span class="block text-xs text-muted-foreground">{t('Neu laden, um sie zu benutzen.')}</span>
     </p>
-    <button class="btn-primary shrink-0 px-3 text-sm" onclick={reload}>{t('Neu laden')}</button>
+    <button class="btn-primary shrink-0 px-3 text-sm" onclick={anwenden}>{t('Neu laden')}</button>
   </div>
 {/if}

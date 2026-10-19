@@ -367,6 +367,24 @@ func (s *Store) Migrate() error {
 			closed_at DATETIME,
 			created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 		)`,
+		// Die Wunschliste der Kinder. cost bleibt leer, bis ein Elternteil
+		// einen Preis festlegt; redemption_id verweist auf die Einlösung, sobald
+		// das Kind den Wunsch eingelöst hat.
+		`CREATE TABLE IF NOT EXISTS wishes (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			user_id INTEGER NOT NULL,
+			title TEXT NOT NULL,
+			emoji TEXT NOT NULL DEFAULT '⭐',
+			cost INTEGER,
+			-- offen | bepreist | angefragt | erfuellt | abgelehnt
+			status TEXT NOT NULL DEFAULT 'offen',
+			note TEXT NOT NULL DEFAULT '',
+			redemption_id INTEGER,
+			created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			decided_at DATETIME,
+			FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+		)`,
+		`CREATE INDEX IF NOT EXISTS idx_wishes_user ON wishes(user_id, status)`,
 		`CREATE TABLE IF NOT EXISTS login_attempts (
 			user_id INTEGER PRIMARY KEY,
 			failures INTEGER NOT NULL DEFAULT 0,
@@ -432,6 +450,13 @@ func (s *Store) Migrate() error {
 	// der ganzen Familie — und „Mama: Zahnarzt 14 Uhr" liess sich gar nicht
 	// eintragen.
 	if err := s.addColumn("calendar_events", "user_id", "INTEGER"); err != nil {
+		return err
+	}
+
+	// Eine Einlösung, die aus einem Wunsch der Wunschliste stammt. Der
+	// Verweis führt zurück: Entscheiden die Eltern über die Einlösung,
+	// bekommt der Wunsch seinen neuen Stand.
+	if err := s.addColumn("reward_redemptions", "wish_id", "INTEGER"); err != nil {
 		return err
 	}
 

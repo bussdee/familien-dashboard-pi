@@ -6,6 +6,7 @@
   import { marked } from 'marked';
   import DOMPurify from 'dompurify';
   import { ApiError, notesApi } from '$lib/api';
+  import { darfEintragen } from '$lib/stores';
   import Kachel from './Kachel.svelte';
   import KachelLeer from './KachelLeer.svelte';
   import type { Note } from '$lib/types';
@@ -124,13 +125,15 @@
 {/snippet}
 
 {#snippet aktionen()}
-  <button
-    class="btn-primary px-3"
-    onclick={() => (showForm ? (showForm = false) : startNew())}
-    aria-label={showForm ? t('Abbrechen') : t('Notiz hinzufügen')}
-  >
-    {#if showForm}<X class="h-5 w-5" />{:else}<Plus class="h-5 w-5" />{/if}
-  </button>
+  {#if $darfEintragen}
+    <button
+      class="btn-primary px-3"
+      onclick={() => (showForm ? (showForm = false) : startNew())}
+      aria-label={showForm ? t('Abbrechen') : t('Notiz hinzufügen')}
+    >
+      {#if showForm}<X class="h-5 w-5" />{:else}<Plus class="h-5 w-5" />{/if}
+    </button>
+  {/if}
 {/snippet}
 
 <Kachel ton="var(--ton-notizen)" titel={t('Notizen')} icon={FileText} {zeile} {aktionen}>
@@ -170,10 +173,12 @@
     <KachelLeer
       icon={FileText}
       titel={t('Noch keine Notizen')}
-      hinweis={t('Mit + eine anlegen. Notizen liegen als Markdown-Dateien auf dem Server und bleiben auch ohne dieses Programm lesbar.')}
+      hinweis={$darfEintragen
+        ? t('Mit + eine anlegen. Notizen liegen als Markdown-Dateien auf dem Server und bleiben auch ohne dieses Programm lesbar.')
+        : t('Die Eltern schreiben die Notizen.')}
     />
   {:else}
-    <ul class="scrollbar-thin max-h-[340px] space-y-2 overflow-y-auto pr-1">
+    <ul class="scrollbar-thin md:max-h-[340px] space-y-2 md:overflow-y-auto pr-1">
       {#each sorted as note (note.id)}
         <li class="group rounded-lg px-1 py-2.5 transition-colors hover:bg-muted/25">
           <div class="flex items-start gap-2">
@@ -197,6 +202,7 @@
               {/if}
             </button>
 
+            {#if $darfEintragen}
             <div class="row-actions">
               <button
                 class="touch-target text-muted-foreground"
@@ -220,6 +226,7 @@
                 <Trash2 class="h-4 w-4" />
               </button>
             </div>
+            {/if}
           </div>
 
           {#if expanded === note.id}

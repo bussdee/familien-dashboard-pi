@@ -9,6 +9,7 @@
   import type { Link, LinkDraft } from '$lib/types';
   import { confirmAction } from '$lib/stores/confirm.svelte';
 
+  const istAdmin = $derived($session.user?.role === 'admin');
   let links = $state<Link[]>([]);
   let suggested = $state<string[]>([]);
   let loading = $state(true);
@@ -158,19 +159,23 @@
         <LinkIcon class="h-6 w-6" /> {t('Links')}
       </h1>
       <p class="text-sm text-muted-foreground">
-        {t('Deine Lesezeichen. Angepinnte erscheinen auf der Übersicht.')}
+        {istAdmin
+          ? t('Deine Lesezeichen. Angepinnte erscheinen auf der Übersicht.')
+          : t('Die Lesezeichen der Familie. Angepinnte erscheinen auf der Übersicht.')}
       </p>
     </div>
-    <button class="btn-primary shrink-0 px-3" onclick={() => (showForm ? (showForm = false) : startNew())}>
-      {#if showForm}<X class="h-5 w-5" />{:else}<Plus class="h-5 w-5" />{/if}
-    </button>
+    {#if istAdmin}
+      <button class="btn-primary shrink-0 px-3" onclick={() => (showForm ? (showForm = false) : startNew())}>
+        {#if showForm}<X class="h-5 w-5" />{:else}<Plus class="h-5 w-5" />{/if}
+      </button>
+    {/if}
   </header>
 
   {#if error}
     <p class="mb-4 rounded-xl bg-destructive/10 px-4 py-2.5 text-sm text-destructive">{error}</p>
   {/if}
 
-  {#if showForm}
+  {#if showForm && istAdmin}
     <form class="card mb-4 space-y-3 p-4" onsubmit={save}>
       <div class="flex gap-2">
         <select class="input w-20 shrink-0 text-center text-xl" bind:value={draft.emoji} aria-label={t('Symbol')}>
@@ -238,9 +243,13 @@
       <LinkIcon class="mx-auto mb-3 h-10 w-10 text-muted-foreground opacity-40" />
       <p class="font-medium">{t('Noch keine Links')}</p>
       <p class="mt-1 text-sm text-muted-foreground">
-        {t('Sammle hier, was du regelmäßig brauchst – Schulportal, Streaming, Bank.')}
+        {istAdmin
+          ? t('Sammle hier, was du regelmäßig brauchst – Schulportal, Streaming, Bank.')
+          : t('Die Eltern sammeln hier, was die Familie regelmäßig braucht.')}
       </p>
-      <button class="btn-primary mt-4" onclick={startNew}>{t('Ersten Link anlegen')}</button>
+      {#if istAdmin}
+        <button class="btn-primary mt-4" onclick={startNew}>{t('Ersten Link anlegen')}</button>
+      {/if}
     </section>
   {:else if filtered.length === 0}
     <p class="py-8 text-center text-sm text-muted-foreground">
@@ -255,37 +264,36 @@
           </h2>
           <div class="card divide-y divide-border">
             {#each entries as link (link.id)}
-              <div class="group flex items-center gap-3 p-3">
+              <!--
+                Eine Zeile pro Link. Der Name hat Vorrang und wird erst als
+                letzter gekürzt; Adresse oder Notiz stehen daneben, solange
+                Platz ist. Wer wissen will, was dahinter steckt, hält den
+                Mauszeiger darüber (title) — mehr Zeilen machen eine Liste
+                mit vielen Links nur unübersichtlich.
+              -->
+              <div class="group flex min-h-[3rem] items-center gap-3 px-3 py-1.5">
                 <a
                   href={link.url}
                   target="_blank"
                   rel="noopener noreferrer"
+                  title={[link.title, link.description, link.url, link.owner_name && !link.editable ? t('geteilt von {0}', [link.owner_name]) : '']
+                    .filter(Boolean)
+                    .join(' — ')}
                   class="flex min-w-0 flex-1 items-center gap-3"
                 >
-                  <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-muted text-xl">
-                    {link.emoji}
+                  <span class="w-7 shrink-0 text-center text-xl leading-none">{link.emoji}</span>
+                  <span class="min-w-0 truncate text-sm font-medium">{link.title}</span>
+                  {#if link.pinned}<Pin class="h-3 w-3 shrink-0 text-primary" />{/if}
+                  {#if link.shared}
+                    <Users class="h-3 w-3 shrink-0 text-muted-foreground" />
+                  {/if}
+                  <span class="hidden min-w-0 flex-1 truncate text-xs text-muted-foreground sm:block">
+                    {link.description || host(link.url)}
                   </span>
-                  <span class="min-w-0 flex-1">
-                    <span class="flex items-center gap-1.5 truncate text-sm font-medium">
-                      {link.title}
-                      {#if link.pinned}<Pin class="h-3 w-3 shrink-0 text-primary" />{/if}
-                      {#if link.shared}
-                        <Users class="h-3 w-3 shrink-0 text-muted-foreground" />
-                      {/if}
-                      <ExternalLink class="h-3 w-3 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
-                    </span>
-                    <span class="block truncate text-xs text-muted-foreground">
-                      {link.description || host(link.url)}
-                    </span>
-                    {#if !link.editable && link.owner_name}
-                      <span class="block text-[11px] text-muted-foreground">
-                        {t('geteilt von {0}', [link.owner_name])}
-                      </span>
-                    {/if}
-                  </span>
+                  <ExternalLink class="h-3 w-3 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
                 </a>
 
-                {#if link.editable}
+                {#if link.editable && istAdmin}
                   <div class="flex shrink-0 gap-0.5">
                     <button
                       class="touch-target {link.pinned ? 'text-primary' : 'text-muted-foreground'}"
