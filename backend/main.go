@@ -33,9 +33,7 @@ import (
 	"family-dashboard/backend/internal/weather"
 	"family-dashboard/backend/internal/wishes"
 
-	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
-	"github.com/go-chi/cors"
 	"github.com/joho/godotenv"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -119,248 +117,26 @@ func main() {
 	go backupSvc.Start(ctx)
 	go musicSvc.Start(ctx)
 
-	r := chi.NewRouter()
-	r.Use(middleware.RequestID)
-	// Die Adresse des Geräts, nicht die, die der Absender behauptet — die
-	// Sperre nach Fehlversuchen hängt daran (siehe auth/quelle.go).
-	r.Use(auth.RealClientIP(cfg.Server.ProxyHops))
-	r.Use(middleware.Recoverer)
-	r.Use(requestLogger)
-	// Ein Zeitlimit von 60 Sekunden ist für Anfragen richtig und für alles
-	// falsch, was einen Datenstrom offen hält: den WebSocket, ein Hörspiel von
-	// 80 Minuten, eine Datei von 100 MB über schwaches WLAN.
-	r.Use(skipFor(langlaeufer, middleware.Timeout(60*time.Second)))
-
-	if len(cfg.Server.AllowedOrigins) > 0 {
-		r.Use(cors.Handler(cors.Options{
-			AllowedOrigins:   cfg.Server.AllowedOrigins,
-			AllowedMethods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
-			AllowedHeaders:   []string{"Accept", "Content-Type"},
-			AllowCredentials: true,
-			MaxAge:           300,
-		}))
-	}
-
-	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "text/plain")
-		_, _ = w.Write([]byte("OK"))
-	})
-
-	r.Route("/api", func(r chi.Router) {
-		r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
-			auth.WriteJSON(w, map[string]string{"status": "ok"})
-		})
-
-		// Public: the login screen needs the roster before anyone is signed in.
-		r.Get("/auth/users", authSvc.PublicUsers)
-		r.Post("/auth/login", authSvc.Login)
-		r.Post("/auth/logout", authSvc.Logout)
-
-		r.Group(func(r chi.Router) {
-			r.Use(authSvc.AuthMiddleware)
-
-			r.Get("/auth/me", authSvc.Me)
-			// Wandgerät ein- und ausschalten. Einschalten darf nur ein
-			// Administrator, ausschalten das Gerät selbst.
-			r.Delete("/auth/device", authSvc.DisableDevice)
-
-			// Lesen darf auch das Wandgerät: es sieht nur die geteilten Links.
-			r.Get("/links", linksSvc.List)
-
-			// Alles, was einer Person gehört: am Wandgerät gesperrt, dort ist
-			// niemand persönlich angemeldet.
-			r.Group(func(r chi.Router) {
-				r.Use(authSvc.PersonMiddleware)
-				r.Put("/auth/profile", authSvc.UpdateOwnProfile)
-				r.Post("/auth/pin", authSvc.ChangeOwnPIN)
-				r.Get("/preferences/{key}", authSvc.GetPreference)
-				r.Put("/preferences/{key}", authSvc.SetPreference)
-
-				// Einlösen gehört einer Person: Am Wandgerät könnte sonst
-				// jeder das Guthaben der Schwester ausgeben.
-				r.Post("/rewards/{id}/redeem", rewardsSvc.Redeem)
-				r.Delete("/rewards/redemptions/{id}", rewardsSvc.Cancel)
-
-				// Die Wunschliste: ein Kind trägt einen Wunsch ein, die
-				// Eltern legen den Preis fest, das Kind löst ihn ein.
-				// Auch das gehört einer Person.
-				r.Post("/wishes", wishesSvc.Create)
-				r.Delete("/wishes/{id}", wishesSvc.Withdraw)
-				r.Post("/wishes/{id}/redeem", wishesSvc.Redeem)
-			})
-
-			r.Get("/weather", weatherSvc.GetWeather)
-			r.Get("/weather/location", weatherSvc.GetLocation)
-			r.Get("/weather/search", weatherSvc.SearchLocations)
-
-			r.Get("/calendar", calendarSvc.GetEvents)
-			r.Get("/calendar/events", calendarSvc.ListStored)
-
-			// Abhaken darf jeder, auch das Wandgerät — das ist „reagieren".
-			// Was auf der Liste steht, bestimmen die Eltern (siehe unten).
-			r.Get("/shopping", shoppingSvc.List)
-			r.Put("/shopping/{id}/checked", shoppingSvc.SetChecked)
-			r.Post("/shopping/clear-checked", shoppingSvc.ClearChecked)
-			r.Get("/shopping/reward", shoppingSvc.Reward)
-			r.Get("/shopping/ws", shoppingSvc.WebSocket)
-			r.Get("/shopping/suggestions", shoppingSvc.Suggestions)
-
-			r.Get("/meals", mealsSvc.List)
-			r.Get("/meals/recent", mealsSvc.Recent)
-
-			// Das Angebot sehen darf jeder, auch das Wandgerät: Es spornt an.
-			r.Get("/rewards", rewardsSvc.List)
-
-			r.Get("/notes", notesSvc.List)
-
-			r.Get("/chores", choresSvc.List)
-			// Eine Aufgabe erledigen darf jeder: Die Punkte gehen an den, der
-			// sie gemacht hat. Anlegen, ändern und löschen ist Elternsache.
-			r.Post("/chores/{id}/complete", choresSvc.Complete)
-			// Was auf ein Elternteil wartet. Lesen darf jeder, auch das
-			// Wandgerät; bestätigen nur Eltern (siehe unten).
-			r.Get("/chores/pending", choresSvc.ListPending)
-
-			// Das Familienziel sieht jeder — es gehört allen.
-			r.Get("/goal", goalsSvc.Get)
-
-			// Die Wunschliste sieht jeder, auch das Wandgerät: Eltern sehen
-			// alle Wünsche, ein Kind seine eigenen und das Wandgerät die der
-			// ganzen Familie (es spornt an, wie das Angebot der Belohnungen).
-			r.Get("/wishes", wishesSvc.List)
-
-			// Eltern-Wege: für Eltern immer, am Wandgerät mit der PIN eines
-			// Elternteils. So lassen sich dort Punkte vergeben und Aufgaben
-			// bestätigen, ohne das Tablet als Papa angemeldet zurückzulassen.
-			r.Group(func(r chi.Router) {
-				r.Use(authSvc.ElternMiddleware)
-				r.Post("/auth/eltern", authSvc.ElternPruefen)
-				r.Post("/admin/points", pointsSvc.Adjust)
-				r.Delete("/admin/points/{id}", pointsSvc.Revoke)
-				r.Post("/chores/pending/{id}/approve", choresSvc.Approve)
-				r.Post("/chores/pending/{id}/reject", choresSvc.Reject)
-
-				// Neues eintragen, ändern und löschen: nur Eltern. Kinder
-				// lesen und reagieren (abhaken, erledigen, einlösen, wünschen).
-				// Am Wandgerät geht es mit der PIN eines Elternteils.
-				r.Post("/calendar/events", calendarSvc.CreateEvent)
-				r.Put("/calendar/events/{id}", calendarSvc.UpdateEvent)
-				r.Delete("/calendar/events/{id}", calendarSvc.DeleteEvent)
-				r.Post("/calendar/events/{id}/skip", calendarSvc.SkipOccurrence)
-				r.Delete("/calendar/events/{id}/skip/{date}", calendarSvc.RestoreOccurrence)
-
-				r.Post("/shopping", shoppingSvc.Create)
-				r.Put("/shopping/{id}", shoppingSvc.Update)
-				r.Delete("/shopping/{id}", shoppingSvc.Delete)
-				r.Delete("/shopping/suggestions", shoppingSvc.ForgetSuggestion)
-
-				r.Put("/meals/{day}", mealsSvc.Save)
-				r.Delete("/meals/{day}", mealsSvc.Delete)
-				r.Post("/meals/{day}/shopping", mealsSvc.ToShopping)
-
-				r.Post("/notes", notesSvc.Create)
-				r.Put("/notes/{id}", notesSvc.Update)
-				r.Delete("/notes/{id}", notesSvc.Delete)
-
-				r.Post("/chores", choresSvc.Create)
-				r.Put("/chores/{id}", choresSvc.Update)
-				// Steht vor /chores/{id}, damit „done" nicht als ID gelesen wird.
-				r.Delete("/chores/done", choresSvc.DeleteDone)
-				r.Delete("/chores/{id}", choresSvc.Delete)
-
-				r.Post("/photos", photosSvc.Upload)
-				r.Delete("/photos/{name}", photosSvc.Delete)
-
-				r.Post("/times/weekly", timesSvc.CreateWeekly)
-				r.Delete("/times/weekly/{id}", timesSvc.DeleteWeekly)
-				r.Put("/times/days", timesSvc.SaveDays)
-
-				r.Post("/links", linksSvc.Create)
-				r.Put("/links/{id}", linksSvc.Update)
-				r.Post("/links/{id}/pin", linksSvc.TogglePin)
-				r.Delete("/links/{id}", linksSvc.Delete)
-				r.Post("/links/reorder", linksSvc.Reorder)
-
-				// Die Preise der Wunschliste legen die Eltern fest.
-				r.Put("/admin/wishes/{id}", wishesSvc.Decide)
-				r.Delete("/admin/wishes/{id}", wishesSvc.Remove)
-			})
-
-			// The scoreboard spans chores and shopping, so it lives outside
-			// either one. /chores/stats stays as the historical path.
-			r.Get("/scoreboard", pointsSvc.Scoreboard)
-			r.Get("/scoreboard/history", pointsSvc.History)
-			// Die Monatsranglisten. Sie bleiben stehen, wenn die einmaligen
-			// Aufgaben des Monats längst gelöscht sind.
-			r.Get("/scoreboard/months", pointsSvc.Months)
-			r.Get("/chores/stats", pointsSvc.Scoreboard)
-
-			r.Get("/devices", devicesSvc.GetStatus)
-
-			r.Get("/photos", photosSvc.List)
-			r.Get("/photos/{name}", photosSvc.Serve)
-
-			// Herunterladen darf jeder, auch das Wandgerät. Hochladen und
-			// Löschen stehen weiter unten im Adminbereich.
-			r.Get("/files", filesSvc.List)
-			r.Get("/files/{name}", filesSvc.Serve)
-
-			// Musik hören darf jeder, auch das Wandgerät — es ist Familienmusik
-			// und keine persönliche. Nur das Neu-Einlesen ist Adminsache: Bei
-			// einer grossen Sammlung ist das minutenlange Arbeit für die Platte.
-			// Wer wann weg ist. Lesen darf jeder, auch das Wandgerät — im Flur
-			// ist „ab wann sind alle da" genau die nützliche Frage.
-			r.Get("/times", timesSvc.Overview)
-			r.Get("/times/weekly", timesSvc.ListWeekly)
-			r.Get("/times/days", timesSvc.ListDays)
-
-			r.Get("/music/status", musicSvc.Status)
-			r.Get("/music/browse", musicSvc.Browse)
-			r.Get("/music/search", musicSvc.Search)
-			r.Get("/music/track/{id}", musicSvc.Stream)
-
-			r.Group(func(r chi.Router) {
-				r.Use(authSvc.AdminMiddleware)
-				r.Post("/auth/device", authSvc.EnableDevice)
-				r.Get("/admin/users", authSvc.ListUsers)
-				r.Post("/admin/users", authSvc.CreateUser)
-				r.Put("/admin/users/{id}", authSvc.UpdateUser)
-				r.Delete("/admin/users/{id}", authSvc.DeleteUser)
-				r.Put("/admin/weather/location", weatherSvc.SetLocation)
-				r.Get("/admin/points", pointsSvc.AdminHistory)
-				r.Post("/admin/points/reset", pointsSvc.ResetUser)
-				r.Get("/admin/calendar/subscriptions", calendarSvc.ListSubscriptions)
-				r.Post("/admin/calendar/subscriptions", calendarSvc.CreateSubscription)
-				r.Post("/admin/calendar/subscriptions/{id}/refresh", calendarSvc.RefreshSubscription)
-				r.Delete("/admin/calendar/subscriptions/{id}", calendarSvc.DeleteSubscription)
-				r.Get("/admin/notify", notifySvc.Status)
-				r.Post("/admin/notify/test", notifySvc.Test)
-				r.Get("/admin/devices", devicesSvc.List)
-				r.Post("/admin/devices", devicesSvc.Create)
-				r.Put("/admin/devices/{id}", devicesSvc.Update)
-				r.Delete("/admin/devices/{id}", devicesSvc.Delete)
-				r.Post("/admin/devices/reorder", devicesSvc.Reorder)
-				r.Post("/admin/devices/test", devicesSvc.Test)
-				r.Post("/music/rescan", musicSvc.Rescan)
-				// Welcher Ordner eingehängt wird, steht in der .env — das kann
-				// keine Weboberfläche ändern. Welcher Teil davon gehört wird,
-				// schon.
-				r.Get("/admin/music/folders", musicSvc.AdminFolders)
-				r.Put("/admin/music/dir", musicSvc.SetDir)
-				r.Post("/files", filesSvc.Upload)
-				r.Delete("/files/{name}", filesSvc.Delete)
-				r.Post("/admin/goal", goalsSvc.Create)
-				r.Put("/admin/goal/{id}", goalsSvc.Update)
-				r.Post("/admin/goal/{id}/close", goalsSvc.Close)
-				r.Post("/admin/rewards", rewardsSvc.Create)
-				r.Put("/admin/rewards/{id}", rewardsSvc.Update)
-				r.Delete("/admin/rewards/{id}", rewardsSvc.Delete)
-				r.Post("/admin/rewards/redemptions/{id}", rewardsSvc.Decide)
-				r.Get("/admin/backups", backupSvc.ListBackups)
-				r.Post("/admin/backup", backupSvc.TriggerBackup)
-				r.Get("/admin/backup/download", backupSvc.Download)
-			})
-		})
+	r := newRouter(cfg, dienste{
+		authSvc:     authSvc,
+		backupSvc:   backupSvc,
+		calendarSvc: calendarSvc,
+		choresSvc:   choresSvc,
+		devicesSvc:  devicesSvc,
+		filesSvc:    filesSvc,
+		goalsSvc:    goalsSvc,
+		linksSvc:    linksSvc,
+		mealsSvc:    mealsSvc,
+		musicSvc:    musicSvc,
+		notesSvc:    notesSvc,
+		notifySvc:   notifySvc,
+		photosSvc:   photosSvc,
+		pointsSvc:   pointsSvc,
+		rewardsSvc:  rewardsSvc,
+		shoppingSvc: shoppingSvc,
+		timesSvc:    timesSvc,
+		weatherSvc:  weatherSvc,
+		wishesSvc:   wishesSvc,
 	})
 
 	server := &http.Server{
