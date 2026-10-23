@@ -43,11 +43,11 @@ var (
 )
 
 // pruefeEltern sieht nach, ob die PIN zu einem Administrator passt.
-func (s *Service) pruefeEltern(userID int, pin string) (gesperrtBis string, err error) {
+func (s *Service) pruefeEltern(userID int, pin, source string) (gesperrtBis string, err error) {
 	if userID <= 0 || !validPIN(pin) {
 		return "", errElternPIN
 	}
-	if locked, until := s.isLocked(userID); locked {
+	if locked, until := s.isLocked(userID, source); locked {
 		return until.Format("15:04"), nil
 	}
 
@@ -65,10 +65,10 @@ func (s *Service) pruefeEltern(userID int, pin string) (gesperrtBis string, err 
 
 	match, err := argon2id.ComparePasswordAndHash(pin, hash)
 	if err != nil || !match {
-		s.recordFailure(userID)
+		s.recordFailure(userID, source)
 		return "", errElternPIN
 	}
-	s.clearFailures(userID)
+	s.clearFailures(userID, source)
 	return "", nil
 }
 
@@ -97,7 +97,7 @@ func (s *Service) ElternMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		gesperrt, err := s.pruefeEltern(id, pin)
+		gesperrt, err := s.pruefeEltern(id, pin, quelle(r))
 		switch {
 		case gesperrt != "":
 			httpError(w, http.StatusTooManyRequests,

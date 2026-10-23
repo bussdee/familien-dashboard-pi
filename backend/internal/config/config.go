@@ -32,6 +32,10 @@ type Server struct {
 	// AllowedOrigins is only consulted in dev, where Vite serves on another port.
 	AllowedOrigins []string `mapstructure:"allowed_origins"`
 	SecureCookies  bool     `mapstructure:"secure_cookies"`
+	// ProxyHops ist die Zahl der Zwischenstationen vor dem Backend, denen es
+	// glaubt (Traefik und nginx = 2). Daran erkennt es die Adresse eines
+	// Geräts, ohne sich auf Angaben des Absenders zu verlassen.
+	ProxyHops int `mapstructure:"proxy_hops"`
 }
 
 type Database struct {
@@ -118,6 +122,7 @@ func Load(path string) (*Config, error) {
 	v.SetDefault("server.read_timeout", "15s")
 	v.SetDefault("server.write_timeout", "30s")
 	v.SetDefault("server.secure_cookies", false)
+	v.SetDefault("server.proxy_hops", 2)
 	v.SetDefault("database.path", "/app/data/db.sqlite")
 	v.SetDefault("database.backup_dir", "/app/data/backup")
 	v.SetDefault("database.backup_retention_days", 7)
@@ -179,6 +184,9 @@ func (c *Config) validate() error {
 
 	if c.Server.Port <= 0 || c.Server.Port > 65535 {
 		return fmt.Errorf("server.port %d ist ungültig", c.Server.Port)
+	}
+	if c.Server.ProxyHops < 0 || c.Server.ProxyHops > 5 {
+		return fmt.Errorf("server.proxy_hops %d ist ungültig (0 bis 5)", c.Server.ProxyHops)
 	}
 	if c.Weather.CacheTTL <= 0 {
 		return fmt.Errorf("weather.cache_ttl muss > 0 sein")

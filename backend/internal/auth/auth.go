@@ -25,8 +25,20 @@ const (
 	// und nach dem Abmelden stünde das Tablet leer da, statt in den
 	// Familien-Modus zurückzufallen.
 	DeviceCookieName = "family_device"
-	maxPINFailures   = 5
-	lockoutWindow    = 5 * time.Minute
+
+	// Fehlversuche zählen je Person und Gerät: fünf innerhalb von 15
+	// Minuten sperren dieses Gerät für 5 Minuten. Danach beginnt das Zählen
+	// von vorn. (Vorher blieb der Zähler stehen, und der nächste einzelne
+	// Fehlversuch sperrte sofort wieder.)
+	maxPINFailures = 5
+	lockoutWindow  = 5 * time.Minute
+	failureWindow  = 15 * time.Minute
+
+	// Grobe Obergrenze je Person über alle Geräte, damit sich die PIN nicht
+	// von mehreren Geräten aus durchprobieren lässt.
+	maxPersonFailures = 25
+	personLockout     = 15 * time.Minute
+	personSource      = "*"
 )
 
 // PreferenceStore is the slice of the store this service needs for per-person
@@ -117,7 +129,8 @@ func (s *Service) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if locked, until := s.isLocked(req.UserID); locked {
+	src := quelle(r)
+	if locked, until := s.isLocked(req.UserID, src); locked {
 		w.Header().Set("Retry-After", strconv.Itoa(int(time.Until(until).Seconds())+1))
 		httpError(w, http.StatusTooManyRequests,
 			fmt.Sprintf("Zu viele Fehlversuche. Gesperrt bis %s", until.Format("15:04:05")))
@@ -144,11 +157,11 @@ func (s *Service) Login(w http.ResponseWriter, r *http.Request) {
 
 	match, err := argon2id.ComparePasswordAndHash(req.PIN, pinHash)
 	if err != nil || !match {
-		s.recordFailure(req.UserID)
+		s.recordFailure(req.UserID, src)
 		httpError(w, http.StatusUnauthorized, "Ungültige PIN")
 		return
 	}
-	s.clearFailures(req.UserID)
+	s.clearFailures(req.UserID, src)
 
 	token, err := s.generateToken(user.ID, user.Role)
 	if err != nil {
@@ -638,7 +651,7 @@ func (s *Service) UpdateUser(w http.ResponseWriter, r *http.Request) {
 		httpError(w, http.StatusInternalServerError, "Server-Fehler")
 		return
 	}
-	s.clearFailures(id)
+	s.clearAllFailures(id)
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -699,36 +712,100 @@ func (s *Service) hasOtherAdmin(excludeID int) (bool, error) {
 	return n > 0, err
 }
 
-func (s *Service) isLocked(userID int) (bool, time.Time) {
-	var until sql.NullTime
-	err := s.db.QueryRow("SELECT locked_until FROM login_attempts WHERE user_id = ?", userID).Scan(&until)
-	if err != nil || !until.Valid {
+// isLocked sagt, ob diese Person von diesem Gerät aus gerade gesperrt ist —
+// entweder das Gerät selbst oder die Person insgesamt (Obergrenze).
+func (s *Service) isLocked(userID int, source string) (bool, time.Time) {
+	rows, err := s.db.Query(
+		`SELECT locked_until FROM login_attempts_source
+		 WHERE user_id = ? AND source IN (?, ?) AND locked_until IS NOT NULL`,
+		userID, source, personSource)
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to read login lock")
 		return false, time.Time{}
 	}
-	if time.Now().Before(until.Time) {
-		return true, until.Time
+	defer rows.Close()
+
+	var bis time.Time
+	now := time.Now()
+	for rows.Next() {
+		var until time.Time
+		if err := rows.Scan(&until); err != nil {
+			continue
+		}
+		if now.Before(until) && until.After(bis) {
+			bis = until
+		}
 	}
-	return false, time.Time{}
+	return !bis.IsZero(), bis
 }
 
-func (s *Service) recordFailure(userID int) {
-	_, err := s.db.Exec(`
-		INSERT INTO login_attempts (user_id, failures, locked_until)
-		VALUES (?, 1, NULL)
-		ON CONFLICT(user_id) DO UPDATE SET
-			failures = login_attempts.failures + 1,
-			locked_until = CASE
-				WHEN login_attempts.failures + 1 >= ? THEN ?
-				ELSE NULL
-			END`,
-		userID, maxPINFailures, time.Now().Add(lockoutWindow))
+// recordFailure zählt einen Fehlversuch für das Gerät und für die Person.
+func (s *Service) recordFailure(userID int, source string) {
+	now := time.Now()
+	s.zaehle(userID, source, maxPINFailures, lockoutWindow, now)
+	s.zaehle(userID, personSource, maxPersonFailures, personLockout, now)
+}
+
+// zaehle erhöht den Zähler einer Zeile und sperrt, wenn die Grenze erreicht
+// ist. Ist das Zählfenster oder eine frühere Sperre abgelaufen, beginnt das
+// Zählen bei null.
+func (s *Service) zaehle(userID int, source string, limit int, sperre time.Duration, now time.Time) {
+	tx, err := s.db.Begin()
 	if err != nil {
+		log.Error().Err(err).Msg("Failed to record login failure")
+		return
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	var failures int
+	var first time.Time
+	var until sql.NullTime
+	err = tx.QueryRow(
+		`SELECT failures, first_at, locked_until FROM login_attempts_source WHERE user_id = ? AND source = ?`,
+		userID, source).Scan(&failures, &first, &until)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		log.Error().Err(err).Msg("Failed to read login failures")
+		return
+	}
+
+	locked := until.Valid && now.Before(until.Time)
+	if errors.Is(err, sql.ErrNoRows) || (!locked && (now.Sub(first) > failureWindow || until.Valid)) {
+		failures, first, until = 0, now, sql.NullTime{}
+	}
+
+	failures++
+	if failures >= limit {
+		until = sql.NullTime{Time: now.Add(sperre), Valid: true}
+	}
+
+	if _, err := tx.Exec(`
+		INSERT INTO login_attempts_source (user_id, source, failures, first_at, locked_until)
+		VALUES (?, ?, ?, ?, ?)
+		ON CONFLICT(user_id, source) DO UPDATE SET
+			failures = excluded.failures,
+			first_at = excluded.first_at,
+			locked_until = excluded.locked_until`,
+		userID, source, failures, first, until); err != nil {
+		log.Error().Err(err).Msg("Failed to record login failure")
+		return
+	}
+	if err := tx.Commit(); err != nil {
 		log.Error().Err(err).Msg("Failed to record login failure")
 	}
 }
 
-func (s *Service) clearFailures(userID int) {
-	if _, err := s.db.Exec("DELETE FROM login_attempts WHERE user_id = ?", userID); err != nil {
+// clearFailures vergisst die Fehlversuche dieses Geräts nach einer richtigen
+// PIN. Die Zählung über alle Geräte bleibt: Sie läuft von selbst aus.
+func (s *Service) clearFailures(userID int, source string) {
+	if _, err := s.db.Exec("DELETE FROM login_attempts_source WHERE user_id = ? AND source = ?", userID, source); err != nil {
+		log.Debug().Err(err).Msg("Failed to clear login failures")
+	}
+}
+
+// clearAllFailures hebt jede Sperre einer Person auf — etwa, wenn ein
+// Administrator ihre PIN neu setzt.
+func (s *Service) clearAllFailures(userID int) {
+	if _, err := s.db.Exec("DELETE FROM login_attempts_source WHERE user_id = ?", userID); err != nil {
 		log.Debug().Err(err).Msg("Failed to clear login failures")
 	}
 }

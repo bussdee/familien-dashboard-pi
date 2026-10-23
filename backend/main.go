@@ -102,7 +102,9 @@ func main() {
 
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID)
-	r.Use(middleware.RealIP)
+	// Die Adresse des Geräts, nicht die, die der Absender behauptet — die
+	// Sperre nach Fehlversuchen hängt daran (siehe auth/quelle.go).
+	r.Use(auth.RealClientIP(cfg.Server.ProxyHops))
 	r.Use(middleware.Recoverer)
 	r.Use(requestLogger)
 	// Ein Zeitlimit von 60 Sekunden ist für Anfragen richtig und für alles

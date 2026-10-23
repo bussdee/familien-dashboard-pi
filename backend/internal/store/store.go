@@ -391,13 +391,16 @@ func (s *Store) Migrate() error {
 			locked_until DATETIME
 		)`,
 		// Fehlversuche je Person UND Gerät. Ein Kind, das Papas PIN rät,
-		// sperrt damit nur sein eigenes Gerät, nicht Papas Anmeldung.
+		// sperrt damit nur sein eigenes Gerät, nicht Papas Anmeldung. Die
+		// Quelle "*" zählt alle Geräte zusammen (grobe Obergrenze je Person).
+		// Die ältere Tabelle login_attempts bleibt bestehen, wird aber nicht
+		// mehr gelesen.
 		`CREATE TABLE IF NOT EXISTS login_attempts_source (
 			user_id INTEGER NOT NULL,
 			source TEXT NOT NULL,
 			failures INTEGER NOT NULL DEFAULT 0,
+			first_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			locked_until DATETIME,
-			updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 			PRIMARY KEY (user_id, source)
 		)`,
 		// Ein einzelner Termin einer Wiederholung, der ausfällt. Die Serie
