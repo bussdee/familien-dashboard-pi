@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -70,6 +71,11 @@ type StoredEvent struct {
 	UserName  string `json:"user_name,omitempty"`
 	UserColor string `json:"user_color,omitempty"`
 	UserEmoji string `json:"user_emoji,omitempty"`
+
+	// Skipped sind die Tage (JJJJ-MM-TT), an denen ein einzelner Termin der
+	// Wiederholung ausfällt. Nur die Verwaltung braucht sie, um „wieder
+	// aufnehmen" anzubieten.
+	Skipped []string `json:"skipped,omitempty"`
 }
 
 type eventPayload struct {
@@ -111,6 +117,10 @@ func (s *Service) storedEvents(from, until time.Time) []Event {
 		return nil
 	}
 
+	// Die Absagen zuerst: Die Datenbank hat nur eine Verbindung, und solange
+	// die Terminliste offen ist, käme keine zweite Abfrage durch.
+	skips := s.loadSkips()
+
 	rows, err := s.db.Query(`SELECT ` + eventColumns + eventFrom + ` ORDER BY e.start_at`)
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to load calendar events")
@@ -125,9 +135,39 @@ func (s *Service) storedEvents(from, until time.Time) []Event {
 			log.Error().Err(err).Msg("Failed to scan calendar event")
 			continue
 		}
-		events = append(events, s.expandStored(stored, from, until)...)
+		for _, occ := range s.expandStored(stored, from, until) {
+			// Abgesagt wird nur ein Termin einer Wiederholung; einmalige
+			// Termine löscht man.
+			if occ.Recurring && skips[stored.ID][occ.Day] {
+				continue
+			}
+			events = append(events, occ)
+		}
 	}
 	return events
+}
+
+// loadSkips liest alle abgesagten Tage: Termin-ID -> Tag -> abgesagt.
+func (s *Service) loadSkips() map[int]map[string]bool {
+	out := map[int]map[string]bool{}
+	rows, err := s.db.Query(`SELECT event_id, day FROM calendar_skips`)
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to load skipped calendar days")
+		return out
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var id int
+		var day string
+		if err := rows.Scan(&id, &day); err != nil {
+			continue
+		}
+		if out[id] == nil {
+			out[id] = map[string]bool{}
+		}
+		out[id][day] = true
+	}
+	return out
 }
 
 func (s *Service) expandStored(e StoredEvent, from, until time.Time) []Event {
@@ -149,12 +189,15 @@ func (s *Service) expandStored(e StoredEvent, from, until time.Time) []Event {
 			id = fmt.Sprintf("local-%d@%d", e.ID, start.Unix())
 		}
 		var serie *time.Time
+		var tag string
 		if recurring {
 			erster := e.Start
 			serie = &erster
+			tag = start.In(s.loc).Format("2006-01-02")
 		}
 		return Event{
 			SeriesStart: serie,
+			Day:         tag,
 			ID:          id,
 			Title:       e.Title,
 			Description: e.Description,
@@ -255,19 +298,21 @@ func (s *Service) ListStored(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	skips := s.loadSkips()
+
 	rows, err := s.db.Query(`SELECT ` + eventColumns + eventFrom + ` ORDER BY e.start_at DESC`)
 	if err != nil {
 		auth.HTTPError(w, http.StatusInternalServerError, "Server-Fehler")
 		return
 	}
 	defer rows.Close()
-
 	events := []StoredEvent{}
 	for rows.Next() {
 		e, err := scanEvent(rows)
 		if err != nil {
 			continue
 		}
+		e.Skipped = sortierteTage(skips[e.ID])
 		events = append(events, e)
 	}
 	auth.WriteJSON(w, events)
@@ -388,6 +433,100 @@ func (s *Service) UpdateEvent(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	auth.WriteJSON(w, event)
+}
+
+// SkipOccurrence sagt einen einzelnen Termin einer Wiederholung ab. Die Serie
+// bleibt, wie sie ist; nur dieser eine Tag fällt aus.
+func (s *Service) SkipOccurrence(w http.ResponseWriter, r *http.Request) {
+	if s.db == nil {
+		auth.HTTPError(w, http.StatusServiceUnavailable, "Termine sind nicht verfügbar")
+		return
+	}
+	id, err := eventIDParam(r)
+	if err != nil {
+		auth.HTTPError(w, http.StatusBadRequest, "Ungültige ID")
+		return
+	}
+	var req struct {
+		Date string `json:"date"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		auth.HTTPError(w, http.StatusBadRequest, "Ungültige Anfrage")
+		return
+	}
+	if _, err := time.Parse("2006-01-02", req.Date); err != nil {
+		auth.HTTPError(w, http.StatusBadRequest, "Datum muss im Format JJJJ-MM-TT sein")
+		return
+	}
+
+	event, err := s.eventByID(id)
+	if err != nil {
+		auth.HTTPError(w, http.StatusNotFound, "Termin nicht gefunden")
+		return
+	}
+	if event.Repeat == RepeatNone || event.Repeat == "" {
+		auth.HTTPError(w, http.StatusBadRequest, "Nur Wiederholungen lassen sich einzeln absagen")
+		return
+	}
+
+	if _, err := s.db.Exec(
+		`INSERT OR IGNORE INTO calendar_skips (event_id, day) VALUES (?, ?)`, id, req.Date); err != nil {
+		log.Error().Err(err).Msg("Failed to skip calendar occurrence")
+		auth.HTTPError(w, http.StatusInternalServerError, "Server-Fehler")
+		return
+	}
+	s.antwortMitAbsagen(w, id)
+}
+
+// RestoreOccurrence nimmt eine Absage zurück.
+func (s *Service) RestoreOccurrence(w http.ResponseWriter, r *http.Request) {
+	if s.db == nil {
+		auth.HTTPError(w, http.StatusServiceUnavailable, "Termine sind nicht verfügbar")
+		return
+	}
+	id, err := eventIDParam(r)
+	if err != nil {
+		auth.HTTPError(w, http.StatusBadRequest, "Ungültige ID")
+		return
+	}
+	date := chi.URLParam(r, "date")
+	if _, err := time.Parse("2006-01-02", date); err != nil {
+		auth.HTTPError(w, http.StatusBadRequest, "Datum muss im Format JJJJ-MM-TT sein")
+		return
+	}
+	if _, err := s.eventByID(id); err != nil {
+		auth.HTTPError(w, http.StatusNotFound, "Termin nicht gefunden")
+		return
+	}
+	if _, err := s.db.Exec(`DELETE FROM calendar_skips WHERE event_id = ? AND day = ?`, id, date); err != nil {
+		auth.HTTPError(w, http.StatusInternalServerError, "Server-Fehler")
+		return
+	}
+	s.antwortMitAbsagen(w, id)
+}
+
+// antwortMitAbsagen liefert den Termin samt seinen abgesagten Tagen zurück,
+// damit die Oberfläche ohne zweiten Abruf auskommt.
+func (s *Service) antwortMitAbsagen(w http.ResponseWriter, id int) {
+	event, err := s.eventByID(id)
+	if err != nil {
+		auth.HTTPError(w, http.StatusNotFound, "Termin nicht gefunden")
+		return
+	}
+	event.Skipped = sortierteTage(s.loadSkips()[id])
+	auth.WriteJSON(w, event)
+}
+
+func sortierteTage(tage map[string]bool) []string {
+	if len(tage) == 0 {
+		return nil
+	}
+	out := make([]string, 0, len(tage))
+	for t := range tage {
+		out = append(out, t)
+	}
+	sort.Strings(out)
+	return out
 }
 
 func (s *Service) DeleteEvent(w http.ResponseWriter, r *http.Request) {

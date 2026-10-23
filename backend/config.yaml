@@ -34,7 +34,7 @@ weather:
 calendar:
   ics_dir: "/app/data/ics"
   watch: true
-  lookahead_days: 60
+  lookahead_days: 400
 
 notes:
   dir: "/app/data/notes"

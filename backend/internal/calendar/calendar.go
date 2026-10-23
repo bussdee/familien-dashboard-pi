@@ -47,6 +47,11 @@ type Event struct {
 	// Serie (und liesse einen monatlichen Termin am 31. auf den 3. abrutschen).
 	SeriesStart *time.Time `json:"series_start,omitempty"`
 
+	// Day ist der Kalendertag (JJJJ-MM-TT, Ortszeit des Dashboards) dieses
+	// Termins einer Wiederholung. Damit sagt die Oberfläche genau diesen Tag
+	// ab, ohne selbst Zeitzonen zu rechnen.
+	Day string `json:"day,omitempty"`
+
 	// Wem der Termin gehört. Leer heisst: der ganzen Familie. Name, Farbe
 	// und Emoji reisen mit, damit die Oberfläche für „Mama: Zahnarzt" nicht
 	// erst die Benutzerliste nachladen muss.
@@ -58,10 +63,16 @@ type Event struct {
 
 type Service struct {
 	icsDir        string
+	aboDir        string
 	lookaheadDays int
 	watch         bool
 	loc           *time.Location
 	db            *sql.DB
+
+	// clientFabrik tauscht den HTTP-Client der Kalender-Abos aus. Nur für
+	// Tests: Der echte Client sperrt jede lokale Adresse, auch die eines
+	// Testservers.
+	clientFabrik func() *http.Client
 
 	mu     sync.RWMutex
 	events []Event
@@ -74,10 +85,11 @@ func NewService(icsDir string, lookaheadDays int, watch bool, timezone string) *
 		loc = time.Local
 	}
 	if lookaheadDays <= 0 {
-		lookaheadDays = 60
+		lookaheadDays = 400
 	}
 	return &Service{
 		icsDir:        icsDir,
+		aboDir:        filepath.Join(filepath.Dir(filepath.Clean(icsDir)), "ics-abo"),
 		lookaheadDays: lookaheadDays,
 		watch:         watch,
 		loc:           loc,
@@ -93,6 +105,7 @@ func (s *Service) Start(ctx context.Context) {
 	if s.watch {
 		go s.watchDir(ctx)
 	}
+	go s.aboLoop(ctx)
 
 	ticker := time.NewTicker(5 * time.Minute)
 	defer ticker.Stop()
@@ -154,10 +167,11 @@ func (s *Service) watchDir(ctx context.Context) {
 func (s *Service) parseAll() {
 	colors := []string{"#3b82f6", "#ec4899", "#f59e0b", "#10b981", "#8b5cf6", "#ef4444"}
 
+	// Ein unlesbarer Ordner bricht nicht ab: Eigene Termine und Abos
+	// sollen trotzdem erscheinen.
 	entries, err := os.ReadDir(s.icsDir)
 	if err != nil {
 		log.Debug().Err(err).Msg("ICS dir not readable")
-		return
 	}
 
 	var all []Event
@@ -175,6 +189,8 @@ func (s *Service) parseAll() {
 		all = append(all, events...)
 		colorIdx++
 	}
+
+	all = append(all, s.aboEvents()...)
 
 	sort.Slice(all, func(i, j int) bool { return all[i].Start.Before(all[j].Start) })
 

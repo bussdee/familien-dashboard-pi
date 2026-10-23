@@ -129,7 +129,7 @@ func Load(path string) (*Config, error) {
 	v.SetDefault("weather.cache_ttl", "10m")
 	v.SetDefault("calendar.ics_dir", "/app/data/ics")
 	v.SetDefault("calendar.watch", true)
-	v.SetDefault("calendar.lookahead_days", 60)
+	v.SetDefault("calendar.lookahead_days", 400)
 	v.SetDefault("notes.dir", "/app/data/notes")
 	v.SetDefault("notes.watch", true)
 	v.SetDefault("photos.dir", "/app/data/photos")

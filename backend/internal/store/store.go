@@ -390,6 +390,37 @@ func (s *Store) Migrate() error {
 			failures INTEGER NOT NULL DEFAULT 0,
 			locked_until DATETIME
 		)`,
+		// Fehlversuche je Person UND Gerät. Ein Kind, das Papas PIN rät,
+		// sperrt damit nur sein eigenes Gerät, nicht Papas Anmeldung.
+		`CREATE TABLE IF NOT EXISTS login_attempts_source (
+			user_id INTEGER NOT NULL,
+			source TEXT NOT NULL,
+			failures INTEGER NOT NULL DEFAULT 0,
+			locked_until DATETIME,
+			updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			PRIMARY KEY (user_id, source)
+		)`,
+		// Ein einzelner Termin einer Wiederholung, der ausfällt. Die Serie
+		// bleibt unberührt; day ist der Kalendertag (JJJJ-MM-TT) in der
+		// Ortszeit des Dashboards.
+		`CREATE TABLE IF NOT EXISTS calendar_skips (
+			event_id INTEGER NOT NULL,
+			day TEXT NOT NULL,
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			PRIMARY KEY (event_id, day),
+			FOREIGN KEY (event_id) REFERENCES calendar_events(id) ON DELETE CASCADE
+		)`,
+		// Kalender, die das Dashboard per Adresse abonniert (Schulkalender,
+		// Müllabfuhr). Die letzte gute Fassung liegt als Datei im Datenordner.
+		`CREATE TABLE IF NOT EXISTS calendar_subscriptions (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			name TEXT NOT NULL,
+			url TEXT NOT NULL,
+			color TEXT NOT NULL DEFAULT '#6366f1',
+			last_ok DATETIME,
+			last_error TEXT NOT NULL DEFAULT '',
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+		)`,
 		`CREATE INDEX IF NOT EXISTS idx_shopping_checked ON shopping_items(checked, created_at)`,
 		`CREATE INDEX IF NOT EXISTS idx_notes_owner ON notes(owner_id)`,
 		`CREATE UNIQUE INDEX IF NOT EXISTS idx_notes_source_file ON notes(source_file) WHERE source_file IS NOT NULL`,
