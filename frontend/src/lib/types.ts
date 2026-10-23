@@ -129,6 +129,29 @@ export interface CalendarEvent {
   user_name?: string;
   user_color?: string;
   user_emoji?: string;
+  /** Der Kalendertag (JJJJ-MM-TT) eines Termins aus einer Wiederholung. */
+  day?: string;
+  /** true für Termine aus einem abonnierten Kalender. */
+  subscription?: boolean;
+}
+
+/** Ein im Dashboard eingetragener Termin, wie ihn die Verwaltung liest. */
+export interface StoredCalendarEvent {
+  id: number;
+  title: string;
+  repeat: EventRepeat;
+  /** Tage (JJJJ-MM-TT), an denen ein einzelner Termin der Serie ausfällt. */
+  skipped?: string[];
+}
+
+/** Ein abonnierter Kalender. */
+export interface CalendarSubscription {
+  id: number;
+  name: string;
+  url: string;
+  color: string;
+  last_ok: string | null;
+  last_error: string;
 }
 
 export interface EventDraft {

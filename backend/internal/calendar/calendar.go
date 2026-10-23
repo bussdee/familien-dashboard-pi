@@ -47,6 +47,10 @@ type Event struct {
 	// Serie (und liesse einen monatlichen Termin am 31. auf den 3. abrutschen).
 	SeriesStart *time.Time `json:"series_start,omitempty"`
 
+	// Subscription markiert Termine aus einem abonnierten Kalender. Sie
+	// stammen von fremder Seite und lassen sich hier nicht ändern.
+	Subscription bool `json:"subscription,omitempty"`
+
 	// Day ist der Kalendertag (JJJJ-MM-TT, Ortszeit des Dashboards) dieses
 	// Termins einer Wiederholung. Damit sagt die Oberfläche genau diesen Tag
 	// ab, ohne selbst Zeitzonen zu rechnen.

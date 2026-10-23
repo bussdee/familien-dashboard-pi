@@ -3,7 +3,7 @@
   import { untrack } from 'svelte';
   import { schnell } from '$lib/stores/schnell.svelte';
   import {
-    CalendarDays, FileText, Lock, Pencil, Plus, Repeat, Trash2,
+    CalendarDays, CalendarX2, FileText, Lock, Pencil, Plus, Repeat, RotateCcw, Trash2,
   } from 'lucide-svelte';
   import { addDays, differenceInCalendarDays, format, isToday, isTomorrow, parseISO } from 'date-fns';
   import { ApiError, calendarApi } from '$lib/api';
@@ -90,6 +90,8 @@
   let draft = $state<EventDraft>(emptyDraft());
   let error = $state('');
   let busy = $state(false);
+  /** Abgesagte Tage des Termins, der gerade bearbeitet wird. */
+  let abgesagt = $state<string[]>([]);
 
   type Group = { label: string; events: CalendarEvent[] };
 
@@ -169,6 +171,8 @@
     const start = event.series_start ? parseISO(event.series_start) : angezeigt;
     const end = new Date(start.getTime() + dauer);
     editingId = event.event_id;
+    abgesagt = [];
+    if (event.recurring) ladeAbsagen(event.event_id);
     draft = {
       title: event.title,
       description: event.description,
@@ -186,6 +190,48 @@
     };
     error = '';
     showForm = true;
+  }
+
+  /** Welche Tage der Serie ausfallen, weiss nur der Server. */
+  async function ladeAbsagen(id: number) {
+    try {
+      const alle = await calendarApi.stored();
+      if (editingId === id) abgesagt = alle.find((e) => e.id === id)?.skipped ?? [];
+    } catch {
+      /* ohne die Liste fehlt nur „wieder aufnehmen" */
+    }
+  }
+
+  function tagText(tag: string): string {
+    return format(parseISO(tag), t('EEEE, d. MMMM yyyy'), { locale: dfLocale });
+  }
+
+  /** Nur dieser eine Termin einer Wiederholung fällt aus; die Serie bleibt. */
+  async function absagen(event: CalendarEvent) {
+    if (!event.event_id || !event.day) return;
+    const ok = await confirmAction({
+      title: t('„{0}“ am {1} absagen?', [event.title, tagText(event.day)]),
+      message: t('Nur dieser Termin fällt aus. Alle anderen bleiben.'),
+    });
+    if (!ok) return;
+    try {
+      await calendarApi.skip(event.event_id, event.day);
+      selectedId = null;
+      await onRefresh();
+    } catch (e) {
+      error = e instanceof ApiError ? e.message : t('Termin konnte nicht abgesagt werden');
+    }
+  }
+
+  async function wiederAufnehmen(tag: string) {
+    if (editingId === null) return;
+    try {
+      const neu = await calendarApi.restore(editingId, tag);
+      abgesagt = neu.skipped ?? [];
+      await onRefresh();
+    } catch (e) {
+      error = e instanceof ApiError ? e.message : t('Absage konnte nicht zurückgenommen werden');
+    }
   }
 
   async function save(submitEvent: SubmitEvent) {
@@ -350,6 +396,22 @@
         </div>
       </div>
 
+      {#if editingId !== null && abgesagt.length > 0}
+        <div class="rounded-lg bg-muted/30 p-2 text-xs">
+          <p class="mb-1 font-medium text-muted-foreground">{t('Abgesagte Termine')}</p>
+          <ul class="space-y-1">
+            {#each abgesagt as tag (tag)}
+              <li class="flex items-center justify-between gap-2">
+                <span>{tagText(tag)}</span>
+                <button type="button" class="btn-outline px-2 py-1 text-xs" onclick={() => wiederAufnehmen(tag)}>
+                  <RotateCcw class="h-3.5 w-3.5" /> {t('Wieder aufnehmen')}
+                </button>
+              </li>
+            {/each}
+          </ul>
+        </div>
+      {/if}
+
       <button class="btn-primary w-full" disabled={busy || !draft.title.trim()}>
         {editingId !== null ? t('Änderungen speichern') : t('Termin eintragen')}
       </button>
@@ -435,6 +497,18 @@
                           <Trash2 class="h-4 w-4" /> {t('Löschen')}
                         </button>
                       </div>
+                      {#if event.recurring && event.day}
+                        <button class="btn-outline mt-2 w-full text-sm" onclick={() => absagen(event)}>
+                          <CalendarX2 class="h-4 w-4" /> {t('Nur diesen Termin absagen')}
+                        </button>
+                      {/if}
+                    {:else if event.subscription}
+                      <p class="flex items-start gap-2 text-xs text-muted-foreground">
+                        <FileText class="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                        <span>
+                          {t('Kommt aus dem abonnierten Kalender')} <strong>{event.calendar}</strong> {t('und lässt sich hier nicht ändern.')}
+                        </span>
+                      </p>
                     {:else}
                       <!--
                         Events parsed from an .ics file belong to the app that

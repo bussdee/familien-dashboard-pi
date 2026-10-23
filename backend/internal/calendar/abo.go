@@ -327,6 +327,7 @@ func (s *Service) aboEvents() []Event {
 		}
 		for i := range events {
 			events[i].ID = fmt.Sprintf("abo%d-%s", a.ID, events[i].ID)
+			events[i].Subscription = true
 		}
 		all = append(all, events...)
 	}

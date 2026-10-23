@@ -2,7 +2,7 @@ import { t, tServer } from '$lib/i18n';
 import { browser } from '$app/environment';
 import { goto } from '$app/navigation';
 import type {
-  Activity, BackupFile, CalendarEvent, Chore, DashboardLayout, DeviceStatus,
+  Activity, BackupFile, CalendarEvent, CalendarSubscription, StoredCalendarEvent, Chore, DashboardLayout, DeviceStatus,
   DeviceTarget, EventDraft, FileListing, FileUploadResult, Link, LinkDraft,
   DayTime, MonthBoard, MusicBrowse, MusicDirListing, MusicStatus, Note, Photo,
   PhotoUploadResult, Score, ShoppingEvent, ShoppingItem, TimeOverview, Track,
@@ -252,6 +252,23 @@ export const calendarApi = {
   update: (id: number, draft: EventDraft) =>
     request<{ id: number }>(`/calendar/events/${id}`, { method: 'PUT', ...json(draft) }),
   remove: (id: number) => request<void>(`/calendar/events/${id}`, { method: 'DELETE' }),
+  /** Die Termine, wie sie gespeichert sind, samt abgesagten Tagen. */
+  stored: () => request<StoredCalendarEvent[]>('/calendar/events'),
+  /** Einen einzelnen Termin einer Wiederholung absagen. */
+  skip: (id: number, date: string) =>
+    request<StoredCalendarEvent>(`/calendar/events/${id}/skip`, { method: 'POST', ...json({ date }) }),
+  /** Eine Absage zurücknehmen. */
+  restore: (id: number, date: string) =>
+    request<StoredCalendarEvent>(`/calendar/events/${id}/skip/${date}`, { method: 'DELETE' }),
+};
+
+export const subscriptionsApi = {
+  list: () => request<CalendarSubscription[]>('/admin/calendar/subscriptions'),
+  create: (data: { name: string; url: string; color: string }) =>
+    request<CalendarSubscription>('/admin/calendar/subscriptions', { method: 'POST', ...json(data) }),
+  refresh: (id: number) =>
+    request<CalendarSubscription>(`/admin/calendar/subscriptions/${id}/refresh`, { method: 'POST' }),
+  remove: (id: number) => request<void>(`/admin/calendar/subscriptions/${id}`, { method: 'DELETE' }),
 };
 
 export const shoppingApi = {
