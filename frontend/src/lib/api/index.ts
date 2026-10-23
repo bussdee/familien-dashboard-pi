@@ -262,6 +262,11 @@ export const calendarApi = {
     request<StoredCalendarEvent>(`/calendar/events/${id}/skip/${date}`, { method: 'DELETE' }),
 };
 
+export const notifyApi = {
+  status: () => request<{ enabled: boolean; host: string }>('/admin/notify'),
+  test: () => request<void>('/admin/notify/test', { method: 'POST' }),
+};
+
 export const subscriptionsApi = {
   list: () => request<CalendarSubscription[]>('/admin/calendar/subscriptions'),
   create: (data: { name: string; url: string; color: string }) =>

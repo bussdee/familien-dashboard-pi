@@ -41,6 +41,14 @@ calendar:
   watch: true
   lookahead_days: 400
 
+# Benachrichtigungen aufs Handy über ntfy (https://ntfy.sh). Standardmäßig AUS.
+# Eintragen, um sie einzuschalten, zum Beispiel
+#   ntfy_url: "https://ntfy.example.com/familie"
+# Ein Token, falls der Server eines verlangt, gehört nicht hierher, sondern in
+# die .env (NTFY_TOKEN). Siehe INSTALL.md.
+notify:
+  ntfy_url: ""
+
 notes:
   dir: "/app/data/notes"
   watch: true

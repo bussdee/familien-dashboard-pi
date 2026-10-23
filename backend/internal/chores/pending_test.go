@@ -8,9 +8,11 @@ import (
 	"net/http/httptest"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"testing"
 
 	"family-dashboard/backend/internal/auth"
+	"family-dashboard/backend/internal/notify"
 	"family-dashboard/backend/internal/store"
 	"github.com/go-chi/chi/v5"
 )
@@ -148,5 +150,30 @@ func TestOhneBestaetigung(t *testing.T) {
 	out = abhaken(t, s, neueAufgabe(t, db, false), 3, "member")
 	if out["pending"] == true || punkteVon(t, db, 3) != 15 {
 		t.Errorf("ohne Markierung sollte das Kind die Punkte sofort bekommen: %v", out)
+	}
+}
+
+type merker struct{ list []notify.Message }
+
+func (m *merker) Notify(n notify.Message) { m.list = append(m.list, n) }
+
+// Eine Aufgabe, die auf Bestätigung wartet, meldet sich bei den Eltern. Eine,
+// die sofort Punkte bringt, nicht.
+func TestWartendeAufgabeMeldetSich(t *testing.T) {
+	db := testDB(t)
+	s := NewService(db)
+	m := &merker{}
+	s.SetNotifier(m)
+
+	abhaken(t, s, neueAufgabe(t, db, true), 3, "member")
+	if len(m.list) != 1 || !strings.Contains(m.list[0].Body, "Zimmer aufräumen") {
+		t.Fatalf("erwartet eine Nachricht zur Aufgabe: %+v", m.list)
+	}
+
+	// Ein Elternteil bestätigt sich nicht selbst; ohne Prüfung gibt es nichts zu melden.
+	abhaken(t, s, neueAufgabe(t, db, true), 1, "admin")
+	abhaken(t, s, neueAufgabe(t, db, false), 3, "member")
+	if len(m.list) != 1 {
+		t.Errorf("weitere Nachrichten ohne Grund: %+v", m.list)
 	}
 }

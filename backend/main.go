@@ -23,6 +23,7 @@ import (
 	"family-dashboard/backend/internal/meals"
 	"family-dashboard/backend/internal/music"
 	"family-dashboard/backend/internal/notes"
+	"family-dashboard/backend/internal/notify"
 	"family-dashboard/backend/internal/photos"
 	"family-dashboard/backend/internal/points"
 	"family-dashboard/backend/internal/rewards"
@@ -90,6 +91,18 @@ func main() {
 	backupSvc := backup.NewService(sql, cfg.Database.Path, cfg.Database.BackupDir,
 		dataDir(cfg.Database.Path), cfg.Database.BackupRetention, cfg.Database.BackupCron)
 
+	// Benachrichtigungen sind aus, solange keine ntfy-Adresse eingetragen ist.
+	// Eine kaputte Adresse hält den Start nicht auf.
+	notifySvc, err := notify.Neu(cfg.Notify.NtfyURL, cfg.Notify.NtfyToken)
+	if err != nil {
+		log.Error().Err(err).Msg("Benachrichtigungen bleiben aus")
+		notifySvc, _ = notify.Neu("", "")
+	}
+	choresSvc.SetNotifier(notifySvc)
+	wishesSvc.SetNotifier(notifySvc)
+	rewardsSvc.SetNotifier(notifySvc)
+
+	go notifySvc.Start(ctx)
 	go weatherSvc.Start(ctx)
 	go calendarSvc.Start(ctx)
 	go shoppingSvc.Start(ctx)
@@ -314,6 +327,8 @@ func main() {
 				r.Post("/admin/calendar/subscriptions", calendarSvc.CreateSubscription)
 				r.Post("/admin/calendar/subscriptions/{id}/refresh", calendarSvc.RefreshSubscription)
 				r.Delete("/admin/calendar/subscriptions/{id}", calendarSvc.DeleteSubscription)
+				r.Get("/admin/notify", notifySvc.Status)
+				r.Post("/admin/notify/test", notifySvc.Test)
 				r.Get("/admin/devices", devicesSvc.List)
 				r.Post("/admin/devices", devicesSvc.Create)
 				r.Put("/admin/devices/{id}", devicesSvc.Update)

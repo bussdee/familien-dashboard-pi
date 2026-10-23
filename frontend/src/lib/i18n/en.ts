@@ -1166,4 +1166,16 @@ export const en: Record<string, string> = {
   "Der Kalender antwortet mit einem Fehler": "The calendar responds with an error",
   "Der Kalender ist nicht erreichbar": "The calendar cannot be reached",
   "Nur Wiederholungen lassen sich einzeln absagen": "Only repeating appointments can be cancelled one at a time",
+
+  // 2.4.0 — Benachrichtigungen
+  "Benachrichtigungen": "Notifications",
+  "Probenachricht gesendet": "Test message sent",
+  "Probenachricht konnte nicht gesendet werden": "Could not send the test message",
+  "Eingeschaltet. Meldungen gehen an den ntfy-Server": "On. Messages go to the ntfy server",
+  ": wenn eine Aufgabe auf Bestätigung wartet, ein Kind sich etwas wünscht oder etwas einlösen möchte.": ": when a chore is waiting for approval, a child makes a wish or wants to redeem something.",
+  "Probenachricht senden": "Send test message",
+  "Ausgeschaltet. Mit einem eigenen ntfy-Server melden sich Aufgaben, Wünsche und Einlösungen aufs Handy. Zum Einschalten die Adresse in der config.yaml eintragen — siehe INSTALL.md.": "Off. With your own ntfy server, chores, wishes and redemptions show up on your phone. To turn it on, enter the address in config.yaml — see INSTALL.md.",
+  "Benachrichtigungen sind nicht eingerichtet": "Notifications are not set up",
+  "Der ntfy-Server ist nicht erreichbar": "The ntfy server cannot be reached",
+  "Der ntfy-Server hat die Nachricht abgelehnt": "The ntfy server rejected the message",
 };

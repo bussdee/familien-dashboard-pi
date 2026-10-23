@@ -22,6 +22,7 @@ type Config struct {
 	Files    Files    `mapstructure:"files"`
 	Music    Music    `mapstructure:"music"`
 	Devices  Devices  `mapstructure:"devices"`
+	Notify   Notify   `mapstructure:"notify"`
 }
 
 type Server struct {
@@ -36,6 +37,13 @@ type Server struct {
 	// glaubt (Traefik und nginx = 2). Daran erkennt es die Adresse eines
 	// Geräts, ohne sich auf Angaben des Absenders zu verlassen.
 	ProxyHops int `mapstructure:"proxy_hops"`
+}
+
+// Notify steuert die Benachrichtigungen über ntfy. Ohne Adresse ist sie aus.
+type Notify struct {
+	NtfyURL string `mapstructure:"ntfy_url"`
+	// NtfyToken kommt aus der Umgebung (NTFY_TOKEN), nie aus der YAML-Datei.
+	NtfyToken string `mapstructure:"ntfy_token"`
 }
 
 type Database struct {
@@ -140,6 +148,7 @@ func Load(path string) (*Config, error) {
 	v.SetDefault("photos.dir", "/app/data/photos")
 	v.SetDefault("files.dir", "/app/data/files")
 	v.SetDefault("music.dir", "/app/audio")
+	v.SetDefault("notify.ntfy_url", "")
 	v.SetDefault("devices.check_interval", "30s")
 	v.SetDefault("devices.timeout", "5s")
 
@@ -157,6 +166,8 @@ func Load(path string) (*Config, error) {
 		"music.dir":             "MUSIC_DIR",
 		"server.port":           "SERVER_PORT",
 		"server.secure_cookies": "SECURE_COOKIES",
+		"notify.ntfy_url":       "NTFY_URL",
+		"notify.ntfy_token":     "NTFY_TOKEN",
 	} {
 		if err := v.BindEnv(key, env); err != nil {
 			return nil, err

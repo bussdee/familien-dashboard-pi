@@ -3,12 +3,12 @@
   import { onMount, untrack } from 'svelte';
   import { goto } from '$app/navigation';
   import {
-    CalendarDays, Check, ChevronDown, ChevronUp, Database, Download, HardDriveDownload,
+    Bell, CalendarDays, Check, ChevronDown, ChevronUp, Database, Download, HardDriveDownload,
     ChevronRight, CornerLeftUp, Folder, MonitorSmartphone, Music, Plus, RefreshCw,
     Minus, RotateCcw, Shield, Sparkles, Trash2, TriangleAlert, Undo2, Users, X, Zap,
   } from 'lucide-svelte';
   import { formatDistanceToNow, parseISO } from 'date-fns';
-  import { ApiError, adminApi, authApi, subscriptionsApi } from '$lib/api';
+  import { ApiError, adminApi, authApi, notifyApi, subscriptionsApi } from '$lib/api';
   import { session } from '$lib/stores';
   import { board, mitVorzeichen, quelle } from '$lib/stores/scores.svelte';
   import { punkte } from '$lib/stores/punkte.svelte';
@@ -130,6 +130,24 @@
       notice = t('{0} Einträge entfernt', [removed]);
     } catch (e) {
       pointsError = e instanceof ApiError ? e.message : t('Zurücksetzen fehlgeschlagen');
+    }
+  }
+
+  // ---- Benachrichtigungen ----
+  let benachrichtigung = $state<{ enabled: boolean; host: string } | null>(null);
+  let benachrichtigungFehler = $state('');
+  let benachrichtigungBusy = $state(false);
+
+  async function benachrichtigungTesten() {
+    benachrichtigungBusy = true;
+    benachrichtigungFehler = '';
+    try {
+      await notifyApi.test();
+      notice = t('Probenachricht gesendet');
+    } catch (e) {
+      benachrichtigungFehler = e instanceof ApiError ? e.message : t('Probenachricht konnte nicht gesendet werden');
+    } finally {
+      benachrichtigungBusy = false;
     }
   }
 
@@ -352,6 +370,7 @@
       teil(t('Familienmitglieder'), () => adminApi.listUsers(), (v) => (users = v)),
       teil(t('Sicherungen'), () => adminApi.listBackups(), (v) => (backups = v)),
       teil(t('Geräte'), () => adminApi.listDevices(), (v) => (devices = v)),
+      teil(t('Benachrichtigungen'), () => notifyApi.status(), (v) => (benachrichtigung = v)),
       teil(t('Kalender-Abos'), () => subscriptionsApi.list(), (v) => (abos = v)),
       teil(t('Punkteverlauf'), () => adminApi.pointHistory(), (v) => (history = v)),
       board.loaded ? Promise.resolve() : board.refresh().catch(() => fehlgeschlagen.push(t('Rangliste'))),
@@ -1109,6 +1128,29 @@
           </button>
         </div>
       {/if}
+    {/if}
+  </section>
+
+  <section class="card mb-4 p-5">
+    <h2 class="mb-2 flex items-center gap-2 font-semibold">
+      <Bell class="h-5 w-5" /> {t('Benachrichtigungen')}
+    </h2>
+    {#if benachrichtigung?.enabled}
+      <p class="mb-3 text-sm text-muted-foreground">
+        {t('Eingeschaltet. Meldungen gehen an den ntfy-Server')} <strong>{benachrichtigung.host}</strong>{t(': wenn eine Aufgabe auf Bestätigung wartet, ein Kind sich etwas wünscht oder etwas einlösen möchte.')}
+      </p>
+      {#if benachrichtigungFehler}
+        <p class="mb-3 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          {tServer(benachrichtigungFehler)}
+        </p>
+      {/if}
+      <button class="btn-outline px-3 text-sm" onclick={benachrichtigungTesten} disabled={benachrichtigungBusy}>
+        <Bell class="h-4 w-4" /> {t('Probenachricht senden')}
+      </button>
+    {:else}
+      <p class="text-sm text-muted-foreground">
+        {t('Ausgeschaltet. Mit einem eigenen ntfy-Server melden sich Aufgaben, Wünsche und Einlösungen aufs Handy. Zum Einschalten die Adresse in der config.yaml eintragen — siehe INSTALL.md.')}
+      </p>
     {/if}
   </section>
 

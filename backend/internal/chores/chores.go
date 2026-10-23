@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"family-dashboard/backend/internal/auth"
+	"family-dashboard/backend/internal/notify"
 	"family-dashboard/backend/internal/points"
 	"github.com/go-chi/chi/v5"
 	"github.com/rs/zerolog/log"
@@ -99,11 +100,19 @@ type UpdateRequest struct {
 }
 
 type Service struct {
-	db *sql.DB
+	db       *sql.DB
+	notifier notify.Notifier
 }
 
 func NewService(db *sql.DB) *Service {
-	return &Service{db: db}
+	return &Service{db: db, notifier: notify.Aus{}}
+}
+
+// SetNotifier schaltet Benachrichtigungen auf die Eltern zu.
+func (s *Service) SetNotifier(n notify.Notifier) {
+	if n != nil {
+		s.notifier = n
+	}
 }
 
 func (s *Service) Start(ctx context.Context) {
@@ -594,6 +603,11 @@ func (s *Service) Complete(w http.ResponseWriter, r *http.Request) {
 	vergeben := reward
 	if wartet {
 		vergeben = 0
+		s.notifier.Notify(notify.Message{
+			Title: "Aufgabe wartet auf Bestätigung",
+			Body:  notify.Name(s.db, userID) + ": " + title,
+			Tags:  []string{"white_check_mark"},
+		})
 	}
 	auth.WriteJSON(w, map[string]any{
 		"completed_at":   now,
