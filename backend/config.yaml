@@ -35,6 +35,14 @@ weather:
   longitude: 16.3738
   timezone: "Europe/Vienna"
   cache_ttl: "10m"
+  # Wann das Dashboard von einem „Trockenfenster" spricht. Die Werte hier sind
+  # die Voreinstellung; ändern nur, wenn die Fenster im Alltag nicht stimmen
+  # (zu wenige im Herbst: wet_from_probability erhöhen, z. B. auf 65).
+  dry_window:
+    wet_from_mm: 0.1            # ab so viel Regen (mm/Std.) ist eine Stunde nass
+    wet_from_probability: 55    # oder ab dieser Regenwahrscheinlichkeit (%)
+    min_hours: 1.5              # kürzere trockene Lücken zählen nicht
+    sunny_below_cloud: 40       # unter dieser Bewölkung (%) heißt ein Fenster sonnig
 
 calendar:
   ics_dir: "/app/data/ics"

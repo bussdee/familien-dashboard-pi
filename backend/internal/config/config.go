@@ -63,6 +63,34 @@ type Weather struct {
 	Longitude float64       `mapstructure:"longitude"`
 	Timezone  string        `mapstructure:"timezone"`
 	CacheTTL  time.Duration `mapstructure:"cache_ttl"`
+	DryWindow DryWindow     `mapstructure:"dry_window"`
+}
+
+// DryWindow sind die Schwellen, nach denen das Dashboard Trockenfenster
+// sucht. Die Voreinstellung ist, womit es bisher gerechnet hat.
+type DryWindow struct {
+	// Ab wie viel Regen (mm pro Stunde) eine Stunde nass ist …
+	WetFromMM float64 `mapstructure:"wet_from_mm"`
+	// … und ab welcher Regenwahrscheinlichkeit (%). Eines von beiden genügt.
+	WetFromProbability int `mapstructure:"wet_from_probability"`
+	// Wie lang ein trockener Zeitraum mindestens sein muss (Stunden).
+	MinHours float64 `mapstructure:"min_hours"`
+	// Unter welcher Bewölkung (%) ein Fenster „sonnig" heißt.
+	SunnyBelowCloud int `mapstructure:"sunny_below_cloud"`
+}
+
+func (d DryWindow) validate() error {
+	switch {
+	case d.WetFromMM < 0.01 || d.WetFromMM > 5:
+		return fmt.Errorf("weather.dry_window.wet_from_mm %v ist ungültig (0,01 bis 5)", d.WetFromMM)
+	case d.WetFromProbability < 1 || d.WetFromProbability > 100:
+		return fmt.Errorf("weather.dry_window.wet_from_probability %d ist ungültig (1 bis 100)", d.WetFromProbability)
+	case d.MinHours < 0.5 || d.MinHours > 6:
+		return fmt.Errorf("weather.dry_window.min_hours %v ist ungültig (0,5 bis 6)", d.MinHours)
+	case d.SunnyBelowCloud < 1 || d.SunnyBelowCloud > 100:
+		return fmt.Errorf("weather.dry_window.sunny_below_cloud %d ist ungültig (1 bis 100)", d.SunnyBelowCloud)
+	}
+	return nil
 }
 
 type Calendar struct {
@@ -140,6 +168,10 @@ func Load(path string) (*Config, error) {
 	v.SetDefault("weather.longitude", 16.3738)
 	v.SetDefault("weather.timezone", "Europe/Vienna")
 	v.SetDefault("weather.cache_ttl", "10m")
+	v.SetDefault("weather.dry_window.wet_from_mm", 0.1)
+	v.SetDefault("weather.dry_window.wet_from_probability", 55)
+	v.SetDefault("weather.dry_window.min_hours", 1.5)
+	v.SetDefault("weather.dry_window.sunny_below_cloud", 40)
 	v.SetDefault("calendar.ics_dir", "/app/data/ics")
 	v.SetDefault("calendar.watch", true)
 	v.SetDefault("calendar.lookahead_days", 400)
@@ -201,6 +233,9 @@ func (c *Config) validate() error {
 	}
 	if c.Weather.CacheTTL <= 0 {
 		return fmt.Errorf("weather.cache_ttl muss > 0 sein")
+	}
+	if err := c.Weather.DryWindow.validate(); err != nil {
+		return err
 	}
 	if c.Devices.CheckInterval <= 0 {
 		return fmt.Errorf("devices.check_interval muss > 0 sein")

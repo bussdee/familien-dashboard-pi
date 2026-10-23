@@ -185,6 +185,8 @@ type Service struct {
 	db       *sql.DB
 	settings SettingsStore
 	client   *http.Client
+	// schwellen entscheiden, was als Regen und was als Trockenfenster gilt.
+	schwellen Schwellen
 
 	// refresh lets a location change trigger an immediate refetch instead of
 	// waiting for the next tick.
@@ -195,6 +197,12 @@ type Service struct {
 	location Location
 }
 
+// SetSchwellen ersetzt die Zahlen für „nass" und „Trockenfenster". Ohne den
+// Aufruf gelten die Standardschwellen.
+func (s *Service) SetSchwellen(sw Schwellen) {
+	s.schwellen = sw
+}
+
 func NewService(db *sql.DB, settings SettingsStore, lat, lon float64, timezone string, cacheTTL time.Duration) *Service {
 	fallback := Location{
 		Name:      "Zuhause",
@@ -203,13 +211,14 @@ func NewService(db *sql.DB, settings SettingsStore, lat, lon float64, timezone s
 		Timezone:  timezone,
 	}
 	return &Service{
-		fallback: fallback,
-		location: fallback,
-		cacheTTL: cacheTTL,
-		db:       db,
-		settings: settings,
-		client:   &http.Client{Timeout: 15 * time.Second},
-		refresh:  make(chan struct{}, 1),
+		fallback:  fallback,
+		location:  fallback,
+		cacheTTL:  cacheTTL,
+		db:        db,
+		settings:  settings,
+		client:    &http.Client{Timeout: 15 * time.Second},
+		schwellen: Standardschwellen(),
+		refresh:   make(chan struct{}, 1),
 	}
 }
 
@@ -331,7 +340,7 @@ func (s *Service) fetch(ctx context.Context) {
 			Icon:        CodeToIcon(api.Current.WeatherCode),
 			Description: CodeToDescription(api.Current.WeatherCode),
 		},
-		Hourly:   hourlyFromNow(stunden, loc.Timezone),
+		Hourly:   hourlyFromNow(stunden, loc.Timezone, s.schwellen),
 		Rain:     rainWindow(api.Minutely15.Time, api.Minutely15.Precip, api.Hourly.Time, api.Hourly.Precip, loc.Timezone),
 		Forecast: make([]Daily, 0, len(api.Daily.Time)),
 		Location: loc,
@@ -356,7 +365,7 @@ func (s *Service) fetch(ctx context.Context) {
 		d.Fenster = fensterFuerTag(
 			tagesZeit(d.Sunrise, loc.Timezone),
 			tagesZeit(d.Sunset, loc.Timezone),
-			stunden, time.Now(),
+			stunden, time.Now(), s.schwellen,
 		)
 		data.Forecast = append(data.Forecast, d)
 	}
@@ -626,7 +635,7 @@ func CodeToDescription(code int) string {
 // braucht: Die Wetterseite zeigt damit den ganzen Tagesverlauf, und beide
 // nehmen dieselben Zahlen — sonst widersprechen sich zwei Ansichten
 // derselben Sache.
-func hourlyFromNow(stunden []stunde, tz string) []Hourly {
+func hourlyFromNow(stunden []stunde, tz string, sw Schwellen) []Hourly {
 	loc, err := time.LoadLocation(tz)
 	if err != nil {
 		loc = time.Local
@@ -649,7 +658,7 @@ func hourlyFromNow(stunden []stunde, tz string) []Hourly {
 			CloudCover:        st.Cloud,
 			WindSpeed:         st.Wind,
 			Icon:              CodeToIcon(st.Code),
-			Nass:              st.nass(),
+			Nass:              st.nass(sw),
 		})
 		if len(out) >= hourlyHours {
 			break

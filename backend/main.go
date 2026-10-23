@@ -69,6 +69,12 @@ func main() {
 	sql := db.DB()
 	authSvc := auth.NewService(sql, db, cfg.Auth.JWTSecret, cfg.Auth.TokenTTL, cfg.Server.SecureCookies)
 	weatherSvc := weather.NewService(sql, db, cfg.Weather.Latitude, cfg.Weather.Longitude, cfg.Weather.Timezone, cfg.Weather.CacheTTL)
+	weatherSvc.SetSchwellen(weather.Schwellen{
+		NassAbMillimeter:     cfg.Weather.DryWindow.WetFromMM,
+		NassAbWahrscheinlich: cfg.Weather.DryWindow.WetFromProbability,
+		MindestStunden:       cfg.Weather.DryWindow.MinHours,
+		SonnigBisBewoelkung:  cfg.Weather.DryWindow.SunnyBelowCloud,
+	})
 	calendarSvc := calendar.NewService(cfg.Calendar.ICSDir, cfg.Calendar.LookaheadDays, cfg.Calendar.Watch, cfg.Weather.Timezone)
 	calendarSvc.SetDB(sql)
 	shoppingSvc := shopping.NewService(sql, cfg.Server.AllowedOrigins)
