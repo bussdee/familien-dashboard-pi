@@ -58,7 +58,8 @@ application that sits on the internet:
 | 🎁 **Rewards** | What the points are for: screen time, an ice cream, the film on family night. A child redeems, a parent approves. A **balance** is spent; levels and ranking stay untouched. |
 | 🛒 **Shopping list** | Shared and **live**: what's ticked off in the shop disappears on every device at once. Frequently bought items are offered as suggestions, and there's a shop view sorted by aisle that keeps the screen on. |
 | 🍝 **Meal plan** | What's for dinner today — and all week. Ingredients go **onto the shopping list with one tap**, without duplicates. |
-| 📅 **Calendar** | Add events directly, one-off or repeating, or drop in an `.ics` file. Countdowns pick up birthdays and holidays. |
+| 📅 **Calendar** | Add events directly, one-off or repeating — and **cancel a single occurrence** of a repeating event without touching the series (piano is off next Thursday). Drop in an `.ics` file, or **subscribe to a calendar by address** (school, waste collection, club). Countdowns pick up birthdays and holidays. |
+| 🔔 **Notifications** | Optional and **off** by default: when a chore waits for approval, a child makes a wish or wants to redeem something, the parents' phone gets a message — through your own [ntfy](https://ntfy.sh) server. See [INSTALL.md](INSTALL.md#benachrichtigungen-aufs-handy) (German). |
 | 📝 **Notes** | Markdown, synced both ways with real files on disk. |
 | 🔗 **Links** | Bookmarks with categories, private or shared with the family. |
 | 🌧️ **Weather with rain times** | Not "98 % rain" but **"rain from 18:30"**, plus dry windows for a walk. Data from Open-Meteo — no account, no API key. |
@@ -158,7 +159,7 @@ early. Nobody gets signed in.
 
 Go backend with SQLite (pure Go, no CGO), SvelteKit frontend as a single-page
 app, Traefik as reverse proxy. **Three containers, about 150 MB of RAM.**
-PINs hashed with argon2id, lockout after five failed attempts, JWT in an
+PINs hashed with argon2id, lockout after five failed attempts (per device, so a child guessing a parent's PIN only locks their own device), JWT in an
 HttpOnly cookie, containers as non-root with a read-only filesystem.
 
 ```bash

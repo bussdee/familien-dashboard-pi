@@ -166,6 +166,7 @@ var lesewege = map[string]stufe{
 	"GET /api/admin/points":                 admin,
 	"GET /api/admin/calendar/subscriptions": admin,
 	"GET /api/admin/notify":                 admin,
+	"GET /api/admin/client":                 admin,
 	"GET /api/admin/devices":                admin,
 	"GET /api/admin/music/folders":          admin,
 	"GET /api/admin/backups":                admin,

@@ -271,6 +271,7 @@ func newRouter(cfg *config.Config, d dienste) http.Handler {
 				r.Post("/admin/calendar/subscriptions", d.calendarSvc.CreateSubscription)
 				r.Post("/admin/calendar/subscriptions/{id}/refresh", d.calendarSvc.RefreshSubscription)
 				r.Delete("/admin/calendar/subscriptions/{id}", d.calendarSvc.DeleteSubscription)
+				r.Get("/admin/client", d.authSvc.Client)
 				r.Get("/admin/notify", d.notifySvc.Status)
 				r.Post("/admin/notify/test", d.notifySvc.Test)
 				r.Get("/admin/devices", d.devicesSvc.List)

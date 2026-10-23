@@ -12,6 +12,89 @@ Deshalb gibt es hier **keine 1.4.5**. Sie stand eine Weile in dieser Datei,
 wurde aber nie veröffentlicht: Auf GitHub steht v1.4.4, und der Pi läuft
 darauf. Was unter 1.4.5 gesammelt war, ist in 1.5.0 aufgegangen.
 
+## [2.4.0] — 2026-10-23
+
+Ein Termin, der nur einmal ausfällt, ein Schulkalender, der sich von selbst
+aktualisiert, eine Meldung aufs Handy, wenn etwas auf die Eltern wartet — und
+eine PIN-Sperre, die nicht mehr die Falschen aussperrt. Dazu eine breitere
+Absicherung durch Tests.
+
+Bestehende Installationen übernehmen alles ohne Zutun: Die neuen Tabellen legt
+das Backend beim ersten Start selbst an, vorhandene Daten bleiben unberührt.
+Neue Schalter sind aus: **Benachrichtigungen und Kalender-Abos tun nichts, bis
+du sie einrichtest.**
+
+### Hinzugefügt
+
+- **Einzelne Termine einer Wiederholung absagen.** Klavier fällt nächsten
+  Donnerstag aus, die anderen Donnerstage bleiben: Termin antippen →
+  *Nur diesen Termin absagen*. Zurücknehmen unter *Bearbeiten → Abgesagte
+  Termine*. Gilt für eigene Termine; Termine aus `.ics`-Dateien bleiben
+  schreibgeschützt.
+
+- **Kalender per Adresse abonnieren.** Unter *Verwaltung → Kalender-Abos*
+  trägt ein Administrator die Adresse eines Kalenders ein (Schule,
+  Abfallbetrieb, Verein; auch `webcal://`). Das Dashboard holt ihn sofort und
+  danach alle sechs Stunden; fällt der Anbieter aus, bleibt die letzte gute
+  Fassung stehen.
+
+  Weil hier der Server auf Wunsch eine fremde Adresse aufruft, ist das streng
+  begrenzt: nur `http` und `https`, keine Zugangsdaten in der Adresse, **keine
+  Adressen im Heimnetz** (auch nicht über eine Weiterleitung oder einen Namen,
+  der dorthin zeigt), höchstens drei Weiterleitungen, 15 Sekunden, 5 MB, und die
+  Antwort muss ein Kalender sein. Bis zu 10 Abos.
+
+- **Benachrichtigungen über ntfy** (standardmäßig aus). Wartet eine Aufgabe auf
+  Bestätigung, wünscht sich ein Kind etwas oder will etwas einlösen, bekommen die
+  Eltern eine Nachricht. Gesendet wird an einen **eigenen ntfy-Server**
+  (`notify.ntfy_url` in der `config.yaml` oder `NTFY_URL`; ein Token gehört in
+  die `.env` als `NTFY_TOKEN`). Ein Ausfall von ntfy hält nie eine Aufgabe oder
+  Einlösung auf. Unter *Verwaltung → Benachrichtigungen* gibt es eine
+  Probenachricht. Siehe [INSTALL.md](INSTALL.md#benachrichtigungen-aufs-handy).
+
+- **Trockenfenster-Schwellen einstellbar.** Ab wann eine Stunde als nass gilt,
+  wie lang ein Fenster mindestens sein muss und wann es „sonnig" heißt, steht
+  jetzt in der `config.yaml` unter `weather.dry_window`. Die Voreinstellung sind
+  die bisherigen Werte, ungültige Werte hält der Start auf.
+
+### Geändert
+
+- **Die PIN-Sperre gilt je Gerät, nicht je Person.** Bisher sperrten fünf
+  falsche Versuche die Anmeldung der Person für alle — ein Kind konnte so Papas
+  Anmeldung blockieren. Jetzt wird das Gerät gesperrt, von dem die Versuche
+  kamen. Zusätzlich gilt eine grobe Obergrenze je Person über alle Geräte (25
+  Fehlversuche in 15 Minuten), damit sich die PIN nicht von mehreren Geräten aus
+  durchprobieren lässt. Dasselbe gilt für die Eltern-PIN am Wandgerät.
+
+  Das Gerät erkennt das Backend an dem, was Traefik und nginx anhängen, nicht an
+  einer Angabe des Absenders (`server.proxy_hops`, Voreinstellung 2).
+
+- **Termine aus `.ics`-Dateien erscheinen bis zu 400 Tage im Voraus** (bisher
+  60). Der Countdown fragt nach bis zu 400 Tagen, bekam aus `.ics`-Dateien
+  aber nur zwei Monate.
+
+- **Die Sicherung enthält jetzt auch `ics-abo`**, die zuletzt geholte Fassung
+  abonnierter Kalender.
+
+- Abhängigkeiten aktualisiert: Svelte 5.57, DOMPurify 3.4, svelte-check 4.7,
+  PostCSS 8.5, Autoprefixer 10.6 und `modernc.org/sqlite` 1.59.
+
+### Behoben
+
+- **Nach einer abgelaufenen Sperre sperrte der nächste einzelne Fehlversuch
+  sofort wieder.** Der Zähler blieb bei fünf stehen. Jetzt beginnt er nach der
+  Sperre von vorn, und Fehlversuche verfallen nach 15 Minuten.
+
+### Intern
+
+- Das Backend hat jetzt Tests für die Sicherung (inklusive Integritätsprüfung
+  der Kopie und Aufbewahrung), die Konfiguration, die Datenbankmigration (auch
+  vom Stand 2.3.0 aus) und eine **Rechtematrix**, die für jeden Weg prüft, wer
+  ihn aufrufen darf: niemand, Kind, Elternteil, Wandgerät, Wandgerät mit
+  Eltern-PIN. Ein neuer Weg, der dort nicht eingetragen ist, lässt den Test
+  fehlschlagen.
+- Die CI prüft die Formatierung und führt die Tests mit dem Race-Detector aus.
+
 ## [2.3.0] — 2026-10-19
 
 Ein Dashboard, in dem Eltern bestimmen und Kinder mitmachen: Neues eintragen

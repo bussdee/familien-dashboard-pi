@@ -73,6 +73,14 @@ func RealClientIP(stufen int) func(http.Handler) http.Handler {
 	}
 }
 
+// Client sagt, als welches Gerät der Server diese Anfrage sieht. Nur für
+// Administratoren, zum Nachprüfen von server.proxy_hops: Steht hier die
+// Adresse von Traefik oder nginx (172.x) statt der des eigenen Geräts, ist die
+// Zahl falsch, und alle Geräte teilen sich eine Sperre.
+func (s *Service) Client(w http.ResponseWriter, r *http.Request) {
+	writeJSON(w, map[string]string{"address": quelle(r)})
+}
+
 // quelle ist der Schlüssel, unter dem Fehlversuche eines Geräts gezählt
 // werden. Nach RealClientIP steht die Adresse des Geräts in RemoteAddr.
 func quelle(r *http.Request) string {
