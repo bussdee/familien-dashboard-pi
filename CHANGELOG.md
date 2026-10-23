@@ -68,6 +68,7 @@ du sie einrichtest.**
 
   Das Gerät erkennt das Backend an dem, was Traefik und nginx anhängen, nicht an
   einer Angabe des Absenders (`server.proxy_hops`, Voreinstellung 2).
+  `make pi-verify` zeigt, als welche Adresse der Server das Gerät sieht.
 
 - **Termine aus `.ics`-Dateien erscheinen bis zu 400 Tage im Voraus** (bisher
   60). Der Countdown fragt nach bis zu 400 Tagen, bekam aus `.ics`-Dateien
