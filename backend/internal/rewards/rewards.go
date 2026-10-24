@@ -19,6 +19,7 @@ import (
 	"unicode/utf8"
 
 	"family-dashboard/backend/internal/auth"
+	"family-dashboard/backend/internal/notify"
 	"family-dashboard/backend/internal/points"
 	"github.com/go-chi/chi/v5"
 	"github.com/rs/zerolog/log"
@@ -33,11 +34,19 @@ const (
 )
 
 type Service struct {
-	db *sql.DB
+	db       *sql.DB
+	notifier notify.Notifier
 }
 
 func NewService(db *sql.DB) *Service {
-	return &Service{db: db}
+	return &Service{db: db, notifier: notify.Aus{}}
+}
+
+// SetNotifier schaltet Benachrichtigungen auf die Eltern zu.
+func (s *Service) SetNotifier(n notify.Notifier) {
+	if n != nil {
+		s.notifier = n
+	}
 }
 
 type Reward struct {
@@ -345,6 +354,11 @@ func (s *Service) Redeem(w http.ResponseWriter, r *http.Request) {
 	}
 
 	newID, _ := res.LastInsertId()
+	s.notifier.Notify(notify.Message{
+		Title: "Einlösung wartet auf Entscheidung",
+		Body:  notify.Name(s.db, userID) + " möchte „" + rw.Title + "“ einlösen (" + strconv.Itoa(rw.Cost) + " Punkte)",
+		Tags:  []string{"gift"},
+	})
 	w.WriteHeader(http.StatusCreated)
 	auth.WriteJSON(w, map[string]any{
 		"id":      newID,

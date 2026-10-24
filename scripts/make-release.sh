@@ -27,6 +27,8 @@ mkdir -p "$STAGE"
 # Ausschlussliste: was neu dazukommt, landet nicht versehentlich im Release.
 INCLUDE=(
   backend/main.go
+  backend/main_test.go
+  backend/routes.go
   backend/go.mod
   backend/go.sum
   backend/config.yaml
@@ -36,6 +38,7 @@ INCLUDE=(
   backend/.dockerignore
   backend/internal
   frontend/src
+  frontend/scripts
   frontend/static
   frontend/package.json
   frontend/package-lock.json
@@ -133,7 +136,7 @@ MUSTER='\b(192\.168\.(?!1\.)[0-9]+\.[0-9]+|10\.[0-9]+\.[0-9]+\.[0-9]+)\b'
 # und das ist hier der gute Fall.
 LEAKS=""
 GREP_STATUS=0
-LEAKS="$(grep -rIn --exclude-dir=node_modules -P "$MUSTER" "$STAGE" 2>&1)" || GREP_STATUS=$?
+LEAKS="$(grep -rIn --exclude-dir=node_modules --exclude="*_test.go" -P "$MUSTER" "$STAGE" 2>&1)" || GREP_STATUS=$?
 if [ "$GREP_STATUS" -gt 1 ]; then
   echo "  ❌ Die Adressprüfung selbst ist fehlgeschlagen:"
   echo "$LEAKS" | head -3 | sed 's/^/     /'

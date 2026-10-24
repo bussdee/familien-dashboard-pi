@@ -22,6 +22,7 @@ type Config struct {
 	Files    Files    `mapstructure:"files"`
 	Music    Music    `mapstructure:"music"`
 	Devices  Devices  `mapstructure:"devices"`
+	Notify   Notify   `mapstructure:"notify"`
 }
 
 type Server struct {
@@ -32,6 +33,17 @@ type Server struct {
 	// AllowedOrigins is only consulted in dev, where Vite serves on another port.
 	AllowedOrigins []string `mapstructure:"allowed_origins"`
 	SecureCookies  bool     `mapstructure:"secure_cookies"`
+	// ProxyHops ist die Zahl der Zwischenstationen vor dem Backend, denen es
+	// glaubt (Traefik und nginx = 2). Daran erkennt es die Adresse eines
+	// Geräts, ohne sich auf Angaben des Absenders zu verlassen.
+	ProxyHops int `mapstructure:"proxy_hops"`
+}
+
+// Notify steuert die Benachrichtigungen über ntfy. Ohne Adresse ist sie aus.
+type Notify struct {
+	NtfyURL string `mapstructure:"ntfy_url"`
+	// NtfyToken kommt aus der Umgebung (NTFY_TOKEN), nie aus der YAML-Datei.
+	NtfyToken string `mapstructure:"ntfy_token"`
 }
 
 type Database struct {
@@ -51,6 +63,34 @@ type Weather struct {
 	Longitude float64       `mapstructure:"longitude"`
 	Timezone  string        `mapstructure:"timezone"`
 	CacheTTL  time.Duration `mapstructure:"cache_ttl"`
+	DryWindow DryWindow     `mapstructure:"dry_window"`
+}
+
+// DryWindow sind die Schwellen, nach denen das Dashboard Trockenfenster
+// sucht. Die Voreinstellung ist, womit es bisher gerechnet hat.
+type DryWindow struct {
+	// Ab wie viel Regen (mm pro Stunde) eine Stunde nass ist …
+	WetFromMM float64 `mapstructure:"wet_from_mm"`
+	// … und ab welcher Regenwahrscheinlichkeit (%). Eines von beiden genügt.
+	WetFromProbability int `mapstructure:"wet_from_probability"`
+	// Wie lang ein trockener Zeitraum mindestens sein muss (Stunden).
+	MinHours float64 `mapstructure:"min_hours"`
+	// Unter welcher Bewölkung (%) ein Fenster „sonnig" heißt.
+	SunnyBelowCloud int `mapstructure:"sunny_below_cloud"`
+}
+
+func (d DryWindow) validate() error {
+	switch {
+	case d.WetFromMM < 0.01 || d.WetFromMM > 5:
+		return fmt.Errorf("weather.dry_window.wet_from_mm %v ist ungültig (0,01 bis 5)", d.WetFromMM)
+	case d.WetFromProbability < 1 || d.WetFromProbability > 100:
+		return fmt.Errorf("weather.dry_window.wet_from_probability %d ist ungültig (1 bis 100)", d.WetFromProbability)
+	case d.MinHours < 0.5 || d.MinHours > 6:
+		return fmt.Errorf("weather.dry_window.min_hours %v ist ungültig (0,5 bis 6)", d.MinHours)
+	case d.SunnyBelowCloud < 1 || d.SunnyBelowCloud > 100:
+		return fmt.Errorf("weather.dry_window.sunny_below_cloud %d ist ungültig (1 bis 100)", d.SunnyBelowCloud)
+	}
+	return nil
 }
 
 type Calendar struct {
@@ -118,6 +158,7 @@ func Load(path string) (*Config, error) {
 	v.SetDefault("server.read_timeout", "15s")
 	v.SetDefault("server.write_timeout", "30s")
 	v.SetDefault("server.secure_cookies", false)
+	v.SetDefault("server.proxy_hops", 2)
 	v.SetDefault("database.path", "/app/data/db.sqlite")
 	v.SetDefault("database.backup_dir", "/app/data/backup")
 	v.SetDefault("database.backup_retention_days", 7)
@@ -127,14 +168,19 @@ func Load(path string) (*Config, error) {
 	v.SetDefault("weather.longitude", 16.3738)
 	v.SetDefault("weather.timezone", "Europe/Vienna")
 	v.SetDefault("weather.cache_ttl", "10m")
+	v.SetDefault("weather.dry_window.wet_from_mm", 0.1)
+	v.SetDefault("weather.dry_window.wet_from_probability", 55)
+	v.SetDefault("weather.dry_window.min_hours", 1.5)
+	v.SetDefault("weather.dry_window.sunny_below_cloud", 40)
 	v.SetDefault("calendar.ics_dir", "/app/data/ics")
 	v.SetDefault("calendar.watch", true)
-	v.SetDefault("calendar.lookahead_days", 60)
+	v.SetDefault("calendar.lookahead_days", 400)
 	v.SetDefault("notes.dir", "/app/data/notes")
 	v.SetDefault("notes.watch", true)
 	v.SetDefault("photos.dir", "/app/data/photos")
 	v.SetDefault("files.dir", "/app/data/files")
 	v.SetDefault("music.dir", "/app/audio")
+	v.SetDefault("notify.ntfy_url", "")
 	v.SetDefault("devices.check_interval", "30s")
 	v.SetDefault("devices.timeout", "5s")
 
@@ -152,6 +198,8 @@ func Load(path string) (*Config, error) {
 		"music.dir":             "MUSIC_DIR",
 		"server.port":           "SERVER_PORT",
 		"server.secure_cookies": "SECURE_COOKIES",
+		"notify.ntfy_url":       "NTFY_URL",
+		"notify.ntfy_token":     "NTFY_TOKEN",
 	} {
 		if err := v.BindEnv(key, env); err != nil {
 			return nil, err
@@ -180,8 +228,14 @@ func (c *Config) validate() error {
 	if c.Server.Port <= 0 || c.Server.Port > 65535 {
 		return fmt.Errorf("server.port %d ist ungültig", c.Server.Port)
 	}
+	if c.Server.ProxyHops < 0 || c.Server.ProxyHops > 5 {
+		return fmt.Errorf("server.proxy_hops %d ist ungültig (0 bis 5)", c.Server.ProxyHops)
+	}
 	if c.Weather.CacheTTL <= 0 {
 		return fmt.Errorf("weather.cache_ttl muss > 0 sein")
+	}
+	if err := c.Weather.DryWindow.validate(); err != nil {
+		return err
 	}
 	if c.Devices.CheckInterval <= 0 {
 		return fmt.Errorf("devices.check_interval muss > 0 sein")

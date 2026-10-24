@@ -21,24 +21,37 @@ import (
 //     aber nicht mit. Wer bei zwölf Grad und Wolken spazieren gehen will,
 //     soll das Fenster trotzdem sehen.
 
-const (
+// Schwellen sind die Zahlen, nach denen entschieden wird. Sie stehen in
+// config.yaml unter weather.dry_window; hier sind die Werte, mit denen das
+// Dashboard bisher gerechnet hat.
+type Schwellen struct {
 	// Ab wann eine Stunde als nass gilt. Beide Wege zählen, und das ist der
 	// Punkt: Bei „60 % Wahrscheinlichkeit, 0,05 mm" meldete das Dashboard
 	// früher trockenes Wetter — die Menge lag unter der Schwelle, die
 	// Wahrscheinlichkeit sprach eine andere Sprache.
-	nassAbMillimeter     = 0.1
-	nassAbWahrscheinlich = 55
+	NassAbMillimeter     float64
+	NassAbWahrscheinlich int
 
 	// Eine einzelne trockene Stunde zwischen zwei Schauern ist kein Fenster,
 	// sondern eine Lücke. Bis man Schuhe an hat und vor der Tür steht, ist sie
 	// vorbei. Anderthalb Stunden sind das Minimum, für das sich Aufbrechen
 	// lohnt.
-	fensterMindestStunden = 1.5
+	MindestStunden float64
 
 	// Ab wann ein Fenster als sonnig beschrieben wird. Beschreibt nur, es
 	// entscheidet nichts.
-	sonnigBisBewoelkung = 40
-)
+	SonnigBisBewoelkung int
+}
+
+// Standardschwellen sind die Werte bis 2.3.
+func Standardschwellen() Schwellen {
+	return Schwellen{
+		NassAbMillimeter:     0.1,
+		NassAbWahrscheinlich: 55,
+		MindestStunden:       1.5,
+		SonnigBisBewoelkung:  40,
+	}
+}
 
 // stunde ist ein Stundenwert, schon in Ortszeit gelesen. Die Rohdaten kommen
 // als sieben parallele Listen; einmal zusammengesetzt lässt sich damit
@@ -54,8 +67,8 @@ type stunde struct {
 	Code     int
 }
 
-func (s stunde) nass() bool {
-	return s.Precip >= nassAbMillimeter || s.Prob >= nassAbWahrscheinlich
+func (s stunde) nass(sw Schwellen) bool {
+	return s.Precip >= sw.NassAbMillimeter || s.Prob >= sw.NassAbWahrscheinlich
 }
 
 // stundenLesen setzt die parallelen Listen der Antwort zu Stundenwerten
@@ -93,7 +106,7 @@ func stundenLesen(api *apiResponse, tz string) []stunde {
 // kommenden: Ein Fenster, das um zehn Uhr war, hilft um sechs Uhr abends
 // nicht mehr — und ein laufendes Fenster fängt nicht um zehn an, sondern
 // jetzt.
-func fensterFuerTag(auf, unter time.Time, alle []stunde, jetzt time.Time) []Fenster {
+func fensterFuerTag(auf, unter time.Time, alle []stunde, jetzt time.Time, sw Schwellen) []Fenster {
 	if auf.IsZero() || unter.IsZero() || !unter.After(auf) {
 		return nil
 	}
@@ -119,14 +132,14 @@ func fensterFuerTag(auf, unter time.Time, alle []stunde, jetzt time.Time) []Fens
 		if len(lauf) == 0 {
 			return
 		}
-		if f, ok := fensterAus(lauf, auf, unter, jetzt); ok {
+		if f, ok := fensterAus(lauf, auf, unter, jetzt, sw); ok {
 			fenster = append(fenster, f)
 		}
 		lauf = nil
 	}
 
 	for _, st := range tagsueber {
-		if st.nass() {
+		if st.nass(sw) {
 			abschliessen()
 			continue
 		}
@@ -144,7 +157,7 @@ func fensterFuerTag(auf, unter time.Time, alle []stunde, jetzt time.Time) []Fens
 
 // fensterAus macht aus einem Lauf trockener Stunden ein Fenster — beschnitten
 // auf Tageslicht und, am heutigen Tag, auf „ab jetzt".
-func fensterAus(lauf []stunde, auf, unter, jetzt time.Time) (Fenster, bool) {
+func fensterAus(lauf []stunde, auf, unter, jetzt time.Time, sw Schwellen) (Fenster, bool) {
 	von := lauf[0].Zeit
 	bis := lauf[len(lauf)-1].Zeit.Add(time.Hour)
 
@@ -165,7 +178,7 @@ func fensterAus(lauf []stunde, auf, unter, jetzt time.Time) (Fenster, bool) {
 	}
 
 	stunden := bis.Sub(von).Hours()
-	if stunden < fensterMindestStunden {
+	if stunden < sw.MindestStunden {
 		return Fenster{}, false
 	}
 
@@ -188,7 +201,7 @@ func fensterAus(lauf []stunde, auf, unter, jetzt time.Time) (Fenster, bool) {
 		Bewoelkung:  wolken,
 		GefuehltAb:  math.Round(gefuehltMin*10) / 10,
 		GefuehltBis: math.Round(gefuehltMax*10) / 10,
-		Sonnig:      wolken < sonnigBisBewoelkung,
+		Sonnig:      wolken < sw.SonnigBisBewoelkung,
 		Jetzt:       laeuftGerade,
 	}, true
 }

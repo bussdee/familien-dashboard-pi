@@ -342,11 +342,110 @@ wird nur gelesen.
 
 ---
 
+## Kalender abonnieren
+
+Unter **Verwaltung → Kalender-Abos** trägt ein Administrator die Adresse eines
+Kalenders ein — den *Abonnieren*-Link, den Schulen, Abfallbetriebe oder Vereine
+anbieten (`https://…/kalender.ics`, auch `webcal://…`). Das Dashboard holt ihn
+beim Anlegen sofort und danach alle sechs Stunden. Die Termine erscheinen
+neben den eigenen, schreibgeschützt und in der Farbe des Abos.
+
+- Funktioniert eine Adresse nicht, kommt sie gar nicht erst in die Liste. Fällt
+  der Anbieter später aus, bleibt die zuletzt geholte Fassung stehen; der Fehler
+  steht in der Liste, und *Jetzt aktualisieren* versucht es von Hand.
+- **Aus Sicherheitsgründen nur öffentliche Adressen.** Das Dashboard ruft die
+  Adresse selbst auf; dürfte es auch Adressen im Heimnetz, ließe sich damit
+  Router, Plex oder der Pi selbst abklopfen. Gesperrt sind deshalb Adressen,
+  die auf das eigene Netz zeigen (`192.168.…`, `10.…`, `localhost`, auch
+  Tailscale-Adressen), Weiterleitungen dorthin, Zugangsdaten in der Adresse und
+  alles außer `http` und `https`. Die Prüfung gilt der Adresse, die beim Abruf
+  tatsächlich angewählt wird — ein Name, der erst später ins Heimnetz zeigt,
+  hilft nicht. Ein Kalender darf höchstens 5 MB groß sein; es sind bis zu 10
+  Abos möglich.
+- Ein Kalender im eigenen Netz (etwa Radicale oder Nextcloud auf einem anderen
+  Gerät) lässt sich so **nicht** abonnieren. Dafür die `.ics`-Datei in
+  `backend/data/ics/` legen.
+- Wer die Adresse kennt, kann den Kalender lesen. Private Kalender-Links
+  (Google, Apple) enthalten oft einen geheimen Teil; sie stehen in der
+  Verwaltung, sichtbar nur für Administratoren, und in der Sicherung der
+  Datenbank.
+
+## Einzelne Termine absagen
+
+Ein wiederkehrender Termin, der nur einmal ausfällt: Termin antippen →
+**Nur diesen Termin absagen**. Alle anderen bleiben. Zurücknehmen unter
+*Bearbeiten* → *Abgesagte Termine* → *Wieder aufnehmen*. Das gilt für eigene
+Termine; Termine aus `.ics`-Dateien und Abos gehören dem, der sie exportiert,
+und bleiben schreibgeschützt.
+
+---
+
+## Benachrichtigungen aufs Handy
+
+Standardmäßig **aus**. Das Dashboard kann den Eltern eine Nachricht schicken,
+wenn etwas auf sie wartet:
+
+- eine Aufgabe, die auf Bestätigung wartet,
+- ein neuer Wunsch eines Kindes,
+- eine Einlösung (Belohnung oder Wunsch), über die die Eltern entscheiden.
+
+Verschickt wird über [ntfy](https://ntfy.sh). **ntfy läuft nicht mit dem
+Dashboard** — es braucht einen eigenen Server (ein weiterer Container, den man
+selbst betreibt) und die ntfy-App auf dem Handy. Der Container dafür ist
+bewusst nicht Teil dieses Projekts.
+
+Einschalten: in `backend/config.yaml`
+
+```yaml
+notify:
+  ntfy_url: "https://ntfy.example.com/familie"   # Server + Thema
+```
+
+oder `NTFY_URL=…` in der `.env`. Verlangt der Server eine Anmeldung, kommt das
+Token **nur** in die `.env`: `NTFY_TOKEN=tk_…`. Danach `make up` (bzw. den
+Backend-Container neu starten). Unter **Verwaltung → Benachrichtigungen** zeigt
+das Dashboard, ob es an ist, und schickt eine Probenachricht.
+
+Gut zu wissen:
+
+- Die Nachrichten enthalten Namen und Titel (*„Mia: Zimmer aufräumen"*). Wer das
+  Thema kennt, kann mitlesen — bei einem öffentlichen Server wie ntfy.sh also
+  jeder, der es errät. Besser: eigener Server, nicht erratbares Thema und ein
+  Token.
+- Ist ntfy nicht erreichbar, geht eine Aufgabe trotzdem durch, eine Einlösung
+  wird trotzdem gebucht; die Nachricht geht nur verloren. Ein Fehler steht im
+  Log (`docker compose logs backend`).
+
+---
+
+## Trockenfenster einstellen
+
+Wann das Dashboard von einem Trockenfenster spricht, steht in
+`backend/config.yaml` unter `weather.dry_window`. Die Voreinstellung ist, womit
+es bisher gerechnet hat:
+
+```yaml
+weather:
+  dry_window:
+    wet_from_mm: 0.1            # ab so viel Regen (mm pro Stunde) ist eine Stunde nass
+    wet_from_probability: 55    # oder ab dieser Regenwahrscheinlichkeit (%)
+    min_hours: 1.5              # kürzere trockene Lücken zählen nicht
+    sunny_below_cloud: 40       # unter dieser Bewölkung (%) heißt ein Fenster sonnig
+```
+
+Schneidet die Schwelle im Herbst zu viele Fenster weg, hilft ein höherer Wert
+bei `wet_from_probability` (etwa 65). Ob 55 % für euch stimmt, zeigt sich im
+Alltag — nach ein paar Wochen nachsehen. Ungültige Werte hält der Start auf
+(mit Meldung im Log).
+
+---
+
 ## Sicherung
 
 Automatisch jede Nacht um 3 Uhr, sieben Tage Aufbewahrung, abgelegt unter
 `backend/data/backup/`. Gesichert werden die Datenbank sowie die Ordner
-`notes`, `ics`, `photos` und `files`.
+`notes`, `ics`, `ics-abo` (die zuletzt geholte Fassung abonnierter
+Kalender), `photos` und `files`.
 
 **Musik ist bewusst nicht dabei.** Sie liegt ausserhalb des Datenordners, wird
 nur schreibgeschützt eingehängt und kann Hunderte Gigabyte gross sein — die
@@ -451,6 +550,17 @@ offene Internet.
   PIN – das reicht gegen versehentliche Zugriffe in der Familie, nicht gegen
   jemanden, der es ernsthaft versucht.
 - Wer von unterwegs zugreifen will, nimmt ein VPN (WireGuard, Tailscale).
+- Fünf falsche PINs sperren die Anmeldung für fünf Minuten, und zwar **für das
+  Gerät, von dem sie kamen** (Papas Handy bleibt frei, wenn ein Kind an seinem
+  Tablet rät). Dafür erkennt das Backend das Gerät an dem, was Traefik und
+  nginx angehängt haben (`server.proxy_hops: 2` in der `config.yaml`) — nicht
+  an einer Angabe des Absenders. Wer Traefik oder nginx austauscht oder
+  zusätzlich davorsetzt, passt die Zahl an. Stimmt sie nicht, fällt die Sperre
+  auf „alle Geräte hinter demselben Proxy" zurück, was sicher, aber gröber ist.
+  Nachsehen, als wer der Server ein Gerät sieht: `make pi-verify` zeigt die
+  *erkannte Geräteadresse* (angemeldet als Administrator auch unter
+  `/api/admin/client`). Steht dort die Adresse von Traefik oder nginx (meist
+  `172.…`) statt der des Geräts, stimmt `server.proxy_hops` nicht.
 - Die `.env` bleibt geheim. Wer sie hat, kann Anmeldungen fälschen.
 - Sicherungen enthalten alle Notizen, Fotos und Familiendateien im Klartext.
 - Die Ablage *Dateien* nimmt jeden Dateityp an. Ausgeliefert wird sie

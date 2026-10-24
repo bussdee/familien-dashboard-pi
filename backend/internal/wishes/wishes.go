@@ -30,6 +30,7 @@ import (
 	"unicode/utf8"
 
 	"family-dashboard/backend/internal/auth"
+	"family-dashboard/backend/internal/notify"
 	"family-dashboard/backend/internal/points"
 	"github.com/go-chi/chi/v5"
 	"github.com/rs/zerolog/log"
@@ -50,11 +51,19 @@ const (
 )
 
 type Service struct {
-	db *sql.DB
+	db       *sql.DB
+	notifier notify.Notifier
 }
 
 func NewService(db *sql.DB) *Service {
-	return &Service{db: db}
+	return &Service{db: db, notifier: notify.Aus{}}
+}
+
+// SetNotifier schaltet Benachrichtigungen auf die Eltern zu.
+func (s *Service) SetNotifier(n notify.Notifier) {
+	if n != nil {
+		s.notifier = n
+	}
 }
 
 type Wish struct {
@@ -221,6 +230,15 @@ func (s *Service) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	id, _ := res.LastInsertId()
+	// Die Eltern sollen von einem neuen Wunsch erfahren, damit sie einen Preis
+	// festlegen können — nicht von dem, den sie selbst eintragen.
+	if !istElternteil(r) {
+		s.notifier.Notify(notify.Message{
+			Title: "Neuer Wunsch",
+			Body:  notify.Name(s.db, owner) + " wünscht sich: " + strings.TrimSpace(emoji+" "+title),
+			Tags:  []string{"star"},
+		})
+	}
 	w.WriteHeader(http.StatusCreated)
 	auth.WriteJSON(w, map[string]any{"id": id, "title": title, "emoji": emoji, "status": StatusOffen})
 }
@@ -453,6 +471,11 @@ func (s *Service) Redeem(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	s.notifier.Notify(notify.Message{
+		Title: "Einlösung wartet auf Entscheidung",
+		Body:  notify.Name(s.db, me) + " möchte „" + title + "“ einlösen (" + strconv.Itoa(preis) + " Punkte)",
+		Tags:  []string{"gift"},
+	})
 	w.WriteHeader(http.StatusCreated)
 	auth.WriteJSON(w, map[string]any{
 		"id":      redemptionID,

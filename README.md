@@ -67,7 +67,8 @@ solange es im eigenen, vertrauenswürdigen Netz bleibt.
 | 🎯 **Familienziel** | Etwas, worauf alle gemeinsam hinarbeiten: Pizza-Abend, Zoo, Kino. Jeder verdiente Punkt zählt dazu, der Balken zeigt, wer wie viel beigetragen hat. Abzüge zählen nicht dagegen. |
 | 🛒 **Einkaufsliste** | Gemeinsam und **in Echtzeit**: Was im Laden abgehakt wird, verschwindet sofort auf allen Geräten. **Häufig gekaufte Artikel** stehen als Vorschläge zum Antippen bereit, und im Laden gibt es eine eigene Ansicht — nach Abteilung sortiert, der Bildschirm bleibt an. Punkte gibt es auch dafür. |
 | 🍝 **Essensplan** | Was gibt's heute — und die ganze Woche. Mit Zutaten, die **mit einem Tipp auf die Einkaufsliste** wandern, ohne Doppelte. Gerichte der letzten Monate stehen zum Wiederverwenden bereit. |
-| 📅 **Kalender** | Termine direkt eintragen, einmalig oder wiederkehrend. Oder eine `.ics` aus Apple, Google oder Outlook ablegen. |
+| 📅 **Kalender** | Termine direkt eintragen, einmalig oder wiederkehrend — und **einen einzelnen Termin einer Wiederholung absagen**, ohne die Serie anzufassen (Klavier fällt nächsten Donnerstag aus). Oder eine `.ics` aus Apple, Google oder Outlook ablegen, oder einen Kalender **per Adresse abonnieren** (Schule, Müllabfuhr, Verein). |
+| 🔔 **Benachrichtigungen** | Optional und standardmäßig **aus**: Wartet eine Aufgabe auf Bestätigung, wünscht sich ein Kind etwas oder will etwas einlösen, meldet sich das Handy der Eltern — über euren eigenen [ntfy](https://ntfy.sh)-Server. Siehe [INSTALL.md](INSTALL.md#benachrichtigungen-aufs-handy). |
 | 📝 **Notizen** | Markdown, zweiseitig mit echten Dateien synchronisiert. Bleiben lesbar, auch ohne dieses Programm. |
 | 🔗 **Links** | Lesezeichen mit Kategorien, privat oder mit der Familie geteilt. Angepinnte erscheinen auf der Startseite. |
 | 🌧️ **Wetter mit Regenzeiten** | Nicht „98 % Regen", sondern **„Regen ab 18:30"**. Dazu der Temperaturverlauf der nächsten Stunden als Kurve. Wo Open-Meteo Viertelstundenwerte liefert (Mitteleuropa, DWD-Modell), wird es entsprechend genau. |
@@ -499,7 +500,10 @@ Damit du nicht enttäuscht wirst:
   (siehe [CONTRIBUTING.md](CONTRIBUTING.md#übersetzungen)); was ihr selbst
   eintragt, übersetzt niemand.
 - **Keine ernsthafte Zugangssicherung.** Vierstellige PIN, sonst nichts. Siehe
-  ganz oben.
+  ganz oben. Fünf falsche Versuche sperren die Anmeldung fünf Minuten — **für
+  das Gerät, von dem sie kamen**. Ein Kind, das Papas PIN rät, sperrt damit
+  sein eigenes Gerät und nicht Papas Anmeldung; über alle Geräte hinweg gilt
+  zusätzlich eine grobe Obergrenze je Person.
 - **Abhaken am Wandgerät braucht keine PIN.** Wer das Tablet im Flur in der
   Hand hält, kann Aufgaben für jedes Familienmitglied abhaken und damit Punkte
   buchen. Das ist Absicht: Ein Kind soll im Vorbeigehen abhaken können, ohne
@@ -592,7 +596,7 @@ Cross-Toolchain), SvelteKit-Frontend als Single-Page-App, Traefik als Reverse
 Proxy. **Drei Container, rund 150 MB Arbeitsspeicher im Betrieb.**
 
 Was trotz der Einfachheit sauber gemacht ist: PIN-Anmeldung mit **argon2id**,
-Sperre nach fünf Fehlversuchen, JWT im HttpOnly-Cookie, WebSocket nur vom
+Sperre nach fünf Fehlversuchen (je Gerät), JWT im HttpOnly-Cookie, WebSocket nur vom
 eigenen Origin, Container als non-root mit read-only Dateisystem, Traefik ohne
 Docker-Socket, Upload-Prüfung nach Dateiinhalt statt nach Endung, Notizen durch
 DOMPurify. Das Backend startet nicht ohne gesetztes `JWT_SECRET`.

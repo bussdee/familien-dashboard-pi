@@ -3,17 +3,17 @@
   import { onMount, untrack } from 'svelte';
   import { goto } from '$app/navigation';
   import {
-    Check, ChevronDown, ChevronUp, Database, Download, HardDriveDownload,
+    Bell, CalendarDays, Check, ChevronDown, ChevronUp, Database, Download, HardDriveDownload,
     ChevronRight, CornerLeftUp, Folder, MonitorSmartphone, Music, Plus, RefreshCw,
     Minus, RotateCcw, Shield, Sparkles, Trash2, TriangleAlert, Undo2, Users, X, Zap,
   } from 'lucide-svelte';
   import { formatDistanceToNow, parseISO } from 'date-fns';
-  import { ApiError, adminApi, authApi } from '$lib/api';
+  import { ApiError, adminApi, authApi, notifyApi, subscriptionsApi } from '$lib/api';
   import { session } from '$lib/stores';
   import { board, mitVorzeichen, quelle } from '$lib/stores/scores.svelte';
   import { punkte } from '$lib/stores/punkte.svelte';
   import type {
-    Activity, BackupFile, DeviceTarget, MusicDirListing, MusicStatus, User,
+    Activity, BackupFile, CalendarSubscription, DeviceTarget, MusicDirListing, MusicStatus, User,
   } from '$lib/types';
   import { confirmAction } from '$lib/stores/confirm.svelte';
 
@@ -130,6 +130,82 @@
       notice = t('{0} Einträge entfernt', [removed]);
     } catch (e) {
       pointsError = e instanceof ApiError ? e.message : t('Zurücksetzen fehlgeschlagen');
+    }
+  }
+
+  // ---- Benachrichtigungen ----
+  let benachrichtigung = $state<{ enabled: boolean; host: string } | null>(null);
+  let benachrichtigungFehler = $state('');
+  let benachrichtigungBusy = $state(false);
+
+  async function benachrichtigungTesten() {
+    benachrichtigungBusy = true;
+    benachrichtigungFehler = '';
+    try {
+      await notifyApi.test();
+      notice = t('Probenachricht gesendet');
+    } catch (e) {
+      benachrichtigungFehler = e instanceof ApiError ? e.message : t('Probenachricht konnte nicht gesendet werden');
+    } finally {
+      benachrichtigungBusy = false;
+    }
+  }
+
+  // ---- Kalender-Abos ----
+  let abos = $state<CalendarSubscription[]>([]);
+  let aboFormOffen = $state(false);
+  let aboFehler = $state('');
+  let aboBusy = $state(false);
+  let aboDraft = $state({ name: '', url: '', color: '#6366f1' });
+  const aboFarben = ['#6366f1', '#0ea5e9', '#10b981', '#f59e0b', '#ec4899', '#ef4444'];
+
+  async function aboAnlegen(event: SubmitEvent) {
+    event.preventDefault();
+    if (aboBusy) return;
+    aboBusy = true;
+    aboFehler = '';
+    try {
+      await subscriptionsApi.create(aboDraft);
+      abos = await subscriptionsApi.list();
+      aboFormOffen = false;
+      aboDraft = { name: '', url: '', color: '#6366f1' };
+      notice = t('Kalender abonniert');
+    } catch (e) {
+      aboFehler = e instanceof ApiError ? e.message : t('Kalender konnte nicht abonniert werden');
+    } finally {
+      aboBusy = false;
+    }
+  }
+
+  async function aboAktualisieren(abo: CalendarSubscription) {
+    aboBusy = true;
+    aboFehler = '';
+    try {
+      await subscriptionsApi.refresh(abo.id);
+    } catch (e) {
+      aboFehler = e instanceof ApiError ? e.message : t('Kalender konnte nicht aktualisiert werden');
+    } finally {
+      // Auch ein Fehlschlag steht danach in der Liste (last_error).
+      try {
+        abos = await subscriptionsApi.list();
+      } catch {
+        /* Liste bleibt, wie sie war */
+      }
+      aboBusy = false;
+    }
+  }
+
+  async function aboEntfernen(abo: CalendarSubscription) {
+    const ok = await confirmAction({
+      title: t('Abo „{0}“ entfernen?', [abo.name]),
+      message: t('Seine Termine verschwinden aus dem Kalender.'),
+    });
+    if (!ok) return;
+    try {
+      await subscriptionsApi.remove(abo.id);
+      abos = await subscriptionsApi.list();
+    } catch (e) {
+      aboFehler = e instanceof ApiError ? e.message : t('Löschen fehlgeschlagen');
     }
   }
 
@@ -294,6 +370,8 @@
       teil(t('Familienmitglieder'), () => adminApi.listUsers(), (v) => (users = v)),
       teil(t('Sicherungen'), () => adminApi.listBackups(), (v) => (backups = v)),
       teil(t('Geräte'), () => adminApi.listDevices(), (v) => (devices = v)),
+      teil(t('Benachrichtigungen'), () => notifyApi.status(), (v) => (benachrichtigung = v)),
+      teil(t('Kalender-Abos'), () => subscriptionsApi.list(), (v) => (abos = v)),
       teil(t('Punkteverlauf'), () => adminApi.pointHistory(), (v) => (history = v)),
       board.loaded ? Promise.resolve() : board.refresh().catch(() => fehlgeschlagen.push(t('Rangliste'))),
     ]);
@@ -1050,6 +1128,138 @@
           </button>
         </div>
       {/if}
+    {/if}
+  </section>
+
+  <section class="card mb-4 p-5">
+    <h2 class="mb-2 flex items-center gap-2 font-semibold">
+      <Bell class="h-5 w-5" /> {t('Benachrichtigungen')}
+    </h2>
+    {#if benachrichtigung?.enabled}
+      <p class="mb-3 text-sm text-muted-foreground">
+        {t('Eingeschaltet. Meldungen gehen an den ntfy-Server')} <strong>{benachrichtigung.host}</strong>{t(': wenn eine Aufgabe auf Bestätigung wartet, ein Kind sich etwas wünscht oder etwas einlösen möchte.')}
+      </p>
+      {#if benachrichtigungFehler}
+        <p class="mb-3 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          {tServer(benachrichtigungFehler)}
+        </p>
+      {/if}
+      <button class="btn-outline px-3 text-sm" onclick={benachrichtigungTesten} disabled={benachrichtigungBusy}>
+        <Bell class="h-4 w-4" /> {t('Probenachricht senden')}
+      </button>
+    {:else}
+      <p class="text-sm text-muted-foreground">
+        {t('Ausgeschaltet. Mit einem eigenen ntfy-Server melden sich Aufgaben, Wünsche und Einlösungen aufs Handy. Zum Einschalten die Adresse in der config.yaml eintragen — siehe INSTALL.md.')}
+      </p>
+    {/if}
+  </section>
+
+  <section class="card mb-4 p-5">
+    <header class="mb-4 flex items-center justify-between">
+      <h2 class="flex items-center gap-2 font-semibold">
+        <CalendarDays class="h-5 w-5" /> {t('Kalender-Abos')}
+      </h2>
+      <button
+        class="btn-primary px-3"
+        onclick={() => (aboFormOffen = !aboFormOffen)}
+        aria-label={t('Kalender abonnieren')}
+      >
+        {#if aboFormOffen}<X class="h-5 w-5" />{:else}<Plus class="h-5 w-5" />{/if}
+      </button>
+    </header>
+
+    <p class="mb-3 text-xs text-muted-foreground">
+      {t('Ein Kalender von einer Internetadresse — Schule, Müllabfuhr, Verein. Das Dashboard holt ihn alle 6 Stunden. Adressen im Heimnetz sind aus Sicherheitsgründen nicht möglich.')}
+    </p>
+
+    {#if aboFehler}
+      <p class="mb-3 rounded-lg bg-destructive/10 px-3 py-2 text-sm text-destructive">
+        {tServer(aboFehler)}
+      </p>
+    {/if}
+
+    {#if aboFormOffen}
+      <form class="mb-4 space-y-3 rounded-xl border border-border p-4" onsubmit={aboAnlegen}>
+        <label class="block text-sm">
+          {t('Name')}
+          <input class="input mt-1" bind:value={aboDraft.name} maxlength="60" required />
+        </label>
+        <label class="block text-sm">
+          {t('Adresse des Kalenders')}
+          <input
+            class="input mt-1"
+            type="url"
+            inputmode="url"
+            placeholder="https://…/kalender.ics"
+            bind:value={aboDraft.url}
+            required
+          />
+        </label>
+        <div class="text-xs text-muted-foreground">
+          {t('Farbe')}
+          <div class="mt-1 flex flex-wrap gap-2">
+            {#each aboFarben as farbe}
+              <button
+                type="button"
+                class="h-7 w-7 rounded-full transition-transform {aboDraft.color === farbe
+                  ? 'scale-110 ring-2 ring-offset-2 ring-offset-card'
+                  : ''}"
+                style="background-color: {farbe}; --tw-ring-color: {farbe}"
+                aria-label={t('Farbe {0}', [farbe])}
+                onclick={() => (aboDraft.color = farbe)}
+              ></button>
+            {/each}
+          </div>
+        </div>
+        <button class="btn-primary w-full" disabled={aboBusy || !aboDraft.name.trim() || !aboDraft.url.trim()}>
+          {aboBusy ? t('Wird geprüft …') : t('Abonnieren')}
+        </button>
+      </form>
+    {/if}
+
+    {#if abos.length === 0}
+      <p class="py-4 text-center text-sm text-muted-foreground">{t('Noch keine Kalender abonniert')}</p>
+    {:else}
+      <ul class="space-y-2">
+        {#each abos as abo (abo.id)}
+          <li class="rounded-lg bg-muted/30 px-3 py-2 text-sm">
+            <div class="flex items-center gap-2">
+              <span class="h-3 w-3 shrink-0 rounded-full" style="background-color: {abo.color}"></span>
+              <span class="min-w-0 flex-1 truncate font-medium">{abo.name}</span>
+              <button
+                class="btn-outline px-2 py-1 text-xs"
+                onclick={() => aboAktualisieren(abo)}
+                disabled={aboBusy}
+                aria-label={t('Jetzt aktualisieren')}
+                title={t('Jetzt aktualisieren')}
+              >
+                <RefreshCw class="h-4 w-4" />
+              </button>
+              <button
+                class="btn-outline px-2 py-1 text-xs text-destructive"
+                onclick={() => aboEntfernen(abo)}
+                aria-label={t('Entfernen')}
+                title={t('Entfernen')}
+              >
+                <Trash2 class="h-4 w-4" />
+              </button>
+            </div>
+            <p class="mt-1 truncate text-xs text-muted-foreground">{abo.url}</p>
+            {#if abo.last_error}
+              <p class="mt-1 text-xs text-destructive">
+                {tServer(abo.last_error)}
+                {#if abo.last_ok}
+                  · {t('Zuletzt geklappt')} {formatDistanceToNow(parseISO(abo.last_ok), { addSuffix: true, locale: dfLocale })}
+                {/if}
+              </p>
+            {:else if abo.last_ok}
+              <p class="mt-1 text-xs text-muted-foreground">
+                {t('Zuletzt aktualisiert')} {formatDistanceToNow(parseISO(abo.last_ok), { addSuffix: true, locale: dfLocale })}
+              </p>
+            {/if}
+          </li>
+        {/each}
+      </ul>
     {/if}
   </section>
 

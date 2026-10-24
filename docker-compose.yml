@@ -63,6 +63,9 @@ services:
       # Leer = Musik aus. /app/audio schaltet sie an; der Ordner dahinter
       # steht in MUSIC_HOST_DIR (siehe unten).
       MUSIC_DIR: ${MUSIC_DIR:-/app/audio}
+      # Benachrichtigungen über ntfy. Leer = aus (siehe INSTALL.md).
+      NTFY_URL: ${NTFY_URL:-}
+      NTFY_TOKEN: ${NTFY_TOKEN:-}
     volumes:
       - ./backend/config.yaml:/app/config.yaml:ro
       - ./backend/data:/app/data

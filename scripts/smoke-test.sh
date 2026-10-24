@@ -114,6 +114,14 @@ else
     fi
   done
 
+  # Woran der Server dieses Gerät erkennt (Sperre nach falschen PINs je
+  # Gerät). Nur zur Ansicht, kein Prüfpunkt: Im Docker-Netz auf demselben
+  # Rechner ist es legitim die Adresse des Docker-Gateways. Steht hier aber auf
+  # dem Pi die Adresse von Traefik oder nginx, obwohl du vom Laptop aus
+  # prüfst, stimmt server.proxy_hops in der config.yaml nicht.
+  GERAET="$(curl -s -b "$JAR" "$BASE/api/admin/client" | sed -n 's/.*"address":"\([^"]*\)".*/\1/p')"
+  printf '  \033[36mi\033[0m %-46s %s\n' "Erkannte Geräteadresse" "${GERAET:-unbekannt}"
+
   echo ""
   echo "Schreiben"
   CREATE="$(curl -s -b "$JAR" -X POST -H 'Content-Type: application/json' \
@@ -152,6 +160,34 @@ for item in json.load(sys.stdin):
     "$(code -b "$JAR" -X PUT -H 'Content-Type: application/json' \
       -d '{"title":"Smoke-Test","note":"","ingredients":[]}' "$BASE/api/meals/$TAG")"
   check "Gericht wieder entfernen"     204 "$(code -b "$JAR" -X DELETE "$BASE/api/meals/$TAG")"
+
+  echo ""
+  echo "Kalender"
+  # Ein täglicher Termin weit in der Zukunft: einen Tag absagen, die Absage
+  # zurücknehmen, den Termin wieder löschen. Er erscheint nie in der Ansicht
+  # der Familie.
+  TERMIN="$(curl -s -b "$JAR" -X POST -H 'Content-Type: application/json' \
+    -d '{"title":"Smoke-Test","date":"2099-12-30","start_time":"10:00","end_time":"11:00","repeat":"daily"}' \
+    "$BASE/api/calendar/events")"
+  TERMIN_ID="$(printf '%s' "$TERMIN" | sed -n 's/^{"id":\([0-9]*\).*/\1/p' | head -1)"
+  check "Wiederholenden Termin anlegen"  ja "$([ -n "$TERMIN_ID" ] && echo ja || echo nein)"
+  if [ -n "$TERMIN_ID" ]; then
+    check "Einen Tag absagen"            200 \
+      "$(code -b "$JAR" -X POST -H 'Content-Type: application/json' \
+         -d '{"date":"2099-12-31"}' "$BASE/api/calendar/events/$TERMIN_ID/skip")"
+    check "Absage mit kaputtem Datum"    400 \
+      "$(code -b "$JAR" -X POST -H 'Content-Type: application/json' \
+         -d '{"date":"morgen"}' "$BASE/api/calendar/events/$TERMIN_ID/skip")"
+    check "Absage zurücknehmen"          200 \
+      "$(code -b "$JAR" -X DELETE "$BASE/api/calendar/events/$TERMIN_ID/skip/2099-12-31")"
+    check "Termin wieder löschen"        204 \
+      "$(code -b "$JAR" -X DELETE "$BASE/api/calendar/events/$TERMIN_ID")"
+  fi
+  check "Kalender-Abos (Admin)"          200 "$(code -b "$JAR" "$BASE/api/admin/calendar/subscriptions")"
+  check "Abo im Heimnetz wird abgelehnt" 400 \
+    "$(code -b "$JAR" -X POST -H 'Content-Type: application/json' \
+       -d '{"name":"Smoke-Test","url":"http://127.0.0.1/kalender.ics"}' "$BASE/api/admin/calendar/subscriptions")"
+  check "Benachrichtigungen (Status)"    200 "$(code -b "$JAR" "$BASE/api/admin/notify")"
 
   echo ""
   echo "Aufgaben"
@@ -253,6 +289,11 @@ print(m[0] if m else "")' 2>/dev/null)"
     check "Punkte vergeben verboten"      403 \
       "$(code -b "$MJAR" -X POST -H 'Content-Type: application/json' \
          -d "{\"user_ids\":[$MEMBER_ID],\"points\":5}" "$BASE/api/admin/points")"
+    check "Kalender-Abo anlegen verboten" 403 \
+      "$(code -b "$MJAR" -X POST -H 'Content-Type: application/json' \
+         -d '{"name":"x","url":"https://example.com/k.ics"}' "$BASE/api/admin/calendar/subscriptions")"
+    check "Termin absagen verboten"       403 \
+      "$(code -b "$MJAR" -X POST -H 'Content-Type: application/json' -d '{"date":"2099-12-31"}' "$BASE/api/calendar/events/1/skip")"
     check "Wunsch eintragen erlaubt"      201 \
       "$(code -b "$MJAR" -X POST -H 'Content-Type: application/json' -d '{"title":"Smoke-Test"}' "$BASE/api/wishes")"
     # Aufräumen: den eben eingetragenen Wunsch wieder zurücknehmen.
