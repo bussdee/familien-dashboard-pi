@@ -152,6 +152,9 @@ func rezeptServer(t *testing.T) *httptest.Server {
 		w.Header().Set("Content-Type", "application/pdf")
 		_, _ = w.Write([]byte("%PDF"))
 	})
+	mux.HandleFunc("/gesperrt", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusForbidden)
+	})
 	mux.HandleFunc("/leer", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/html")
 		_, _ = w.Write([]byte("<html>kein Rezept</html>"))
@@ -232,6 +235,7 @@ func TestImportFehlerfaelle(t *testing.T) {
 	}{
 		"keine Seite mit Rezept": {`{"url":"` + srv.URL + `/leer"}`, http.StatusUnprocessableEntity},
 		"kein Text":              {`{"url":"` + srv.URL + `/pdf"}`, http.StatusBadGateway},
+		"Seite sperrt Roboter":   {`{"url":"` + srv.URL + `/gesperrt"}`, http.StatusBadGateway},
 		"file://":                {`{"url":"file:///etc/passwd"}`, http.StatusBadRequest},
 		"Zugangsdaten":           {`{"url":"https://u:p@example.com/"}`, http.StatusBadRequest},
 		"leer":                   {`{"url":""}`, http.StatusBadRequest},

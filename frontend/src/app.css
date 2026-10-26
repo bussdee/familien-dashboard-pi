@@ -367,6 +367,18 @@
     padding-right: 1.35rem;
   }
 
+  /* Das Wandgerät wird aus ein, zwei Metern gelesen. Alles in rem wächst mit:
+     Schrift, Abstände, Knöpfe. Auf dem Handy und am Rechner bleibt es, wie es
+     ist. */
+  html[data-familienmodus='ja'] {
+    font-size: 112.5%;
+  }
+  @media (min-width: 1600px) {
+    html[data-familienmodus='ja'] {
+      font-size: 125%;
+    }
+  }
+
   /* 44px is the smallest comfortable touch target on a phone or tablet. */
   .touch-target {
     @apply min-h-[44px] min-w-[44px] inline-flex items-center justify-center;

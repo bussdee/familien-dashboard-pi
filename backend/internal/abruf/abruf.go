@@ -44,6 +44,7 @@ var (
 	ErrWeiterleitung   = errors.New("Die Adresse leitet zu oft weiter")
 	ErrZuGross         = errors.New("Die Antwort ist zu groß")
 	ErrServerFehler    = errors.New("Die Seite antwortet mit einem Fehler")
+	ErrVerweigert      = errors.New("Die Seite lässt keinen automatischen Abruf zu")
 	ErrNichtErreichbar = errors.New("Die Seite ist nicht erreichbar")
 )
 
@@ -195,6 +196,13 @@ func Holen(ctx context.Context, client *http.Client, adresse, accept, agent stri
 
 	if resp.StatusCode != http.StatusOK {
 		log.Debug().Int("status", resp.StatusCode).Msg("Abruf: unerwarteter Status")
+		// Viele grosse Seiten halten Programme draussen (Anmeldung, Schutz vor
+		// Robotern). Das ist ihr gutes Recht — und eine andere Auskunft als
+		// ein Fehler: Hier hilft nur, das Rezept von Hand einzutragen.
+		switch resp.StatusCode {
+		case http.StatusUnauthorized, http.StatusForbidden, http.StatusTooManyRequests:
+			return Antwort{}, ErrVerweigert
+		}
 		return Antwort{}, ErrServerFehler
 	}
 

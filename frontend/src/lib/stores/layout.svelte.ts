@@ -26,6 +26,7 @@ export const WIDGETS: WidgetMeta[] = [
   { id: 'countdown', label: t('Countdowns'), emoji: '⏰', hint: t('Geburtstage und Ferien') },
   { id: 'times', label: t('Arbeit & Schule'), emoji: '🕗', hint: t('Wer wann weg ist') },
   { id: 'notes', label: t('Notizen'), emoji: '📝', hint: t('Markdown-Notizen') },
+  { id: 'timer', label: t('Timer'), emoji: '⏱️', hint: t('Zähneputzen, Nudeln, Hausaufgaben') },
   { id: 'music', label: t('Musik'), emoji: '🎵', hint: t('MP3s und Hörspiele') },
   { id: 'files', label: t('Dateien'), emoji: '📎', hint: t('Anleitungen und Formulare') },
   { id: 'devices', label: t('Geräte'), emoji: '📱', hint: t('Plex, Kavita und Co.') },

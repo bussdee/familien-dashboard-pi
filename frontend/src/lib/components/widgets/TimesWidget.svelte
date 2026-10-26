@@ -156,25 +156,29 @@
     {#if weitere.length > 0}
       <ul class="mt-3 space-y-1 border-t border-[color:var(--haarlinie)] pt-3">
         {#each weitere as tag (tag.date)}
+          <!-- Jede Person ein Stück für sich, das umbricht, statt mitten in der
+               Uhrzeit abgeschnitten zu werden: Wer wann weg ist, ist die
+               Antwort, die diese Kachel geben soll. -->
           <li class="flex items-baseline gap-2 text-xs">
             <span class="w-8 shrink-0 font-medium text-muted-foreground">{kurz(tag.date)}</span>
-            <span class="min-w-0 flex-1 truncate text-muted-foreground">
+            <span class="flex min-w-0 flex-1 flex-wrap gap-x-3 gap-y-0.5 text-muted-foreground">
               {#if unterwegs(tag).length === 0}
-                alle da
+                <span>{t('alle da')}</span>
               {:else}
-                {unterwegs(tag)
-                  .map((b) =>
-                    b.continues_tomorrow
-                      ? `${b.user_emoji} ab ${b.start_time}`
+                {#each unterwegs(tag) as b (b.user_id + b.start_time + b.kind)}
+                  <span class="whitespace-nowrap">
+                    {b.user_emoji}
+                    {b.continues_tomorrow
+                      ? `ab ${b.start_time}`
                       : b.from_yesterday
-                        ? `${b.user_emoji} bis ${b.end_time}`
-                        : `${b.user_emoji} ${b.start_time || ''}–${b.end_time || ''}`,
-                  )
-                  .join(' · ')}
+                        ? `bis ${b.end_time}`
+                        : `${b.start_time || ''}–${b.end_time || ''}`}
+                  </span>
+                {/each}
               {/if}
             </span>
             {#if tag.all_home_from}
-              <span class="shrink-0 tabular-nums text-muted-foreground">ab {tag.all_home_from}</span>
+              <span class="shrink-0 whitespace-nowrap tabular-nums text-muted-foreground">{t('ab {0}', [tag.all_home_from])}</span>
             {/if}
           </li>
         {/each}
