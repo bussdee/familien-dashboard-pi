@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/xml"
 	"errors"
+	"fmt"
 	"io"
 	"regexp"
 	"strings"
@@ -195,7 +196,7 @@ var latin1Namen = regexp.MustCompile(`(?i)^(iso-?8859-?1|latin-?1|windows-?1252|
 // Abhängigkeit geht es nicht genauer.
 func zeichensatz(name string, in io.Reader) (io.Reader, error) {
 	if !latin1Namen.MatchString(strings.TrimSpace(name)) {
-		return nil, errors.New("unbekannter Zeichensatz")
+		return nil, fmt.Errorf("charset %q", name)
 	}
 	raw, err := io.ReadAll(in)
 	if err != nil {

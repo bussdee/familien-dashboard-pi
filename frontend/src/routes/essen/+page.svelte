@@ -4,15 +4,16 @@
   import { page } from '$app/stores';
   import { replaceState } from '$app/navigation';
   import {
-    ChevronLeft, ChevronRight, Plus, ShoppingCart, Trash2, UtensilsCrossed,
+    BookOpen, ChevronLeft, ChevronRight, Plus, ShoppingCart, Trash2, UtensilsCrossed,
   } from 'lucide-svelte';
   import { addDays, addWeeks, format, isToday, parseISO, startOfWeek } from 'date-fns';
-  import { ApiError, mealsApi } from '$lib/api';
+  import { ApiError, mealsApi, rezepteApi } from '$lib/api';
+  import { einstellungen } from '$lib/stores/einstellungen.svelte';
   import { darfEintragen } from '$lib/stores';
   import { confirmAction } from '$lib/stores/confirm.svelte';
   import { toast } from '$lib/stores/toast.svelte';
   import Modal from '$lib/components/Modal.svelte';
-  import type { Meal, RecentMeal } from '$lib/types';
+  import type { Meal, RecentMeal, Rezept } from '$lib/types';
 
   /**
    * Der Essensplan einer Woche. Montag bis Sonntag, weil so eingekauft und
@@ -78,6 +79,42 @@
   // „Schon mal gekocht": ein Tipp übernimmt Name und Zutaten von damals.
   function uebernehmen(r: RecentMeal) {
     entwurf = { ...entwurf, title: r.title, zutaten: r.ingredients.join('\n') };
+  }
+
+  // „Aus dem Rezeptbuch": ein Tipp übernimmt Name, Zutaten und die Quelle.
+  let rezepte = $state<Rezept[]>([]);
+  let rezepteGeladen = $state(false);
+  let rezeptSuche = $state('');
+  let rezepteOffen = $state(false);
+
+  const rezeptTreffer = $derived(
+    rezepte
+      .filter((r) => !rezeptSuche.trim() || r.title.toLowerCase().includes(rezeptSuche.trim().toLowerCase()))
+      .slice(0, 8),
+  );
+
+  async function rezepteZeigen() {
+    rezepteOffen = !rezepteOffen;
+    if (rezepteOffen && !rezepteGeladen) {
+      try {
+        rezepte = await rezepteApi.list();
+      } catch {
+        rezepte = [];
+      } finally {
+        rezepteGeladen = true;
+      }
+    }
+  }
+
+  function ausRezept(r: Rezept) {
+    let quelle = '';
+    try {
+      quelle = r.source_url ? new URL(r.source_url).hostname.replace(/^www\./, '') : '';
+    } catch {
+      /* keine brauchbare Adresse */
+    }
+    entwurf = { ...entwurf, title: r.title, note: entwurf.note || quelle, zutaten: r.ingredients.join('\n') };
+    rezepteOffen = false;
   }
 
   const zutatenListe = () =>
@@ -256,6 +293,37 @@
 >
   <form class="space-y-3" onsubmit={(e) => speichern(e)}>
     <input class="input" placeholder={t('Was gibt es? z. B. Spaghetti')} bind:value={entwurf.title} maxlength="80" />
+
+    {#if einstellungen.rezepte}
+      <div>
+        <button type="button" class="chip" aria-expanded={rezepteOffen} onclick={rezepteZeigen}>
+          <BookOpen class="h-4 w-4" /> {t('Aus dem Rezeptbuch')}
+        </button>
+        {#if rezepteOffen}
+          <div class="mt-2 space-y-1.5 rounded-xl bg-muted/40 p-2">
+            <input class="input py-2" type="search" placeholder={t('Rezept suchen')} bind:value={rezeptSuche} aria-label={t('Rezept suchen')} />
+            {#if rezeptTreffer.length === 0}
+              <p class="px-2 py-1 text-sm text-muted-foreground">
+                {rezepteGeladen ? t('Nichts gefunden') : t('Lade…')}
+              </p>
+            {:else}
+              <ul>
+                {#each rezeptTreffer as r (r.id)}
+                  <li>
+                    <button type="button" class="w-full rounded-lg px-2 py-2 text-left text-sm hover:bg-accent" onclick={() => ausRezept(r)}>
+                      {r.title}
+                      {#if r.ingredients.length > 0}
+                        <span class="text-xs text-muted-foreground"> · {r.ingredients.length} {r.ingredients.length === 1 ? t('Zutat') : t('Zutaten')}</span>
+                      {/if}
+                    </button>
+                  </li>
+                {/each}
+              </ul>
+            {/if}
+          </div>
+        {/if}
+      </div>
+    {/if}
 
     {#if recent.length > 0}
       <div>

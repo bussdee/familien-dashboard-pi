@@ -12,6 +12,8 @@
   import { board } from '$lib/stores/scores.svelte';
   import { pwa } from '$lib/stores/pwa.svelte';
   import { toast } from '$lib/stores/toast.svelte';
+  import { einstellungen } from '$lib/stores/einstellungen.svelte';
+  import Schalter from '$lib/components/admin/Schalter.svelte';
 
   let currentPin = $state('');
   let newPin = $state('');
@@ -32,6 +34,20 @@
   ];
 
   const user = $derived($session.user);
+
+  // ---- Neuigkeiten ausblenden / zurückholen ----
+  let neuigkeitenBusy = $state(false);
+  async function neuigkeitenSetzen(sichtbar: boolean) {
+    if (neuigkeitenBusy) return;
+    neuigkeitenBusy = true;
+    try {
+      await einstellungen.setzeNeuigkeitenAus(!sichtbar);
+    } catch (e) {
+      toast(e instanceof ApiError ? e.message : t('Konnte nicht speichern'), { ton: 'fehler' });
+    } finally {
+      neuigkeitenBusy = false;
+    }
+  }
 
   // ---- App & Offline ----
   async function appInstallieren() {
@@ -377,6 +393,19 @@
       </button>
     </details>
   </section>
+
+  {#if einstellungen.neuigkeitenAn}
+    <section class="card mb-4 p-5">
+      <h2 class="mb-1 font-semibold">{t('Neuigkeiten')}</h2>
+      <Schalter
+        an={!einstellungen.neuigkeitenAus}
+        gesperrt={neuigkeitenBusy}
+        titel={t('Neuigkeiten anzeigen')}
+        hinweis={t('Wenn du sie ausschaltest, verschwinden sie aus deinem Menü. Für die anderen ändert sich nichts.')}
+        onUmschalten={neuigkeitenSetzen}
+      />
+    </section>
+  {/if}
 
   <section class="card p-5">
     <h2 class="mb-4 flex items-center gap-2 font-semibold">

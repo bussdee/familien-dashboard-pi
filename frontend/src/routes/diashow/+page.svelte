@@ -9,6 +9,7 @@
   import { calendarApi, choresApi, photosApi, shoppingApi, weatherApi } from '$lib/api';
   import { diashow } from '$lib/stores/diashow.svelte';
   import { vollbild } from '$lib/vollbild.svelte';
+  import { einstellungen } from '$lib/stores/einstellungen.svelte';
   import { fensterSatz, naechstesFenster, zeitpunkt } from '$lib/utils/trockenfenster';
   import type { CalendarEvent, Chore, Photo, WeatherData } from '$lib/types';
 
@@ -41,7 +42,30 @@
    */
   let vollbildHinweis = $state(false);
 
-  const aktuell = $derived(photos.length > 0 ? photos[index % photos.length] : null);
+  // Der Inhalt: ohne Fotos — oder wenn die Eltern „Uhr" gewählt haben und der
+  // Bildschirmschoner von selbst gestartet ist — zeigt die Seite nur Uhr und Wetter.
+  const nurUhr = $derived(
+    photos.length === 0 ||
+      (diashow.automatisch && einstellungen.werte?.['schoner.inhalt'] === 'uhr'),
+  );
+  const aktuell = $derived(!nurUhr && photos.length > 0 ? photos[index % photos.length] : null);
+
+  /** Nachts abgedunkelt: ein schwarzer Schleier, damit der Flur dunkel bleibt. */
+  const nachtDunkel = $derived.by(() => {
+    const w = einstellungen.werte;
+    if (!w) return 0;
+    const staerke = Number.parseInt(w['schoner.nacht_dunkel'], 10) || 0;
+    if (staerke <= 0) return 0;
+    const min = (hhmm: string) => {
+      const [h, m] = hhmm.split(':').map((x) => Number.parseInt(x, 10));
+      return h * 60 + m;
+    };
+    const von = min(w['schoner.nacht_von']);
+    const bis = min(w['schoner.nacht_bis']);
+    const jetztMin = jetzt.getHours() * 60 + jetzt.getMinutes();
+    const nacht = von <= bis ? jetztMin >= von && jetztMin < bis : jetztMin >= von || jetztMin < bis;
+    return nacht ? staerke / 100 : 0;
+  });
   const offeneAufgaben = $derived(chores.filter((c) => c.is_due).length);
 
   const heute = $derived(
@@ -121,7 +145,8 @@
     // Das Vollbild gehört zur Diashow und hört mit ihr auf — sonst stünde
     // das Dashboard danach ohne Leisten da, mit denen man weiterkommt.
     void vollbild.aus();
-    goto('/');
+    // Hat der Bildschirmschoner gestartet, geht es dorthin zurück, wo man war.
+    goto(diashow.automatisch && diashow.vorher ? diashow.vorher : '/');
   }
 
   // ---------------------------------------------------------- Wachschutz
@@ -216,6 +241,12 @@
   class="fixed inset-0 z-[80] overflow-hidden bg-black text-white"
   onpointermove={zeigeBedienung}
   onpointerdown={() => {
+    // Vom Bildschirmschoner geöffnet: Ein Tipp weckt das Tablet, ohne Umweg
+    // über Knöpfe. Von Hand gestartet, zeigt der Tipp die Bedienung.
+    if (diashow.automatisch) {
+      beenden();
+      return;
+    }
     zeigeBedienung();
     void ersteBeruehrung();
   }}
@@ -249,23 +280,36 @@
       class="absolute inset-0"
       style="background: linear-gradient(180deg, rgba(0,0,0,.55) 0%, rgba(0,0,0,.05) 30%, rgba(0,0,0,.06) 55%, rgba(0,0,0,.72) 100%)"
     ></div>
-  {:else}
+  {:else if photos.length === 0 && !diashow.automatisch}
     <div class="absolute inset-0 flex flex-col items-center justify-center gap-3 text-white/50">
       <Images class="h-12 w-12" />
       <p class="text-sm">{t('Noch keine Fotos im Rahmen')}</p>
-      <a href="/" class="mt-2 text-sm text-primary hover:underline">{t('Zurück zur Übersicht')}</a>
+      <a href="/fotos" class="mt-2 text-sm text-primary hover:underline">{t('Fotos hinzufügen')}</a>
+      <a href="/" class="text-sm text-primary hover:underline">{t('Zurück zur Übersicht')}</a>
     </div>
   {/if}
 
-  <!-- Uhrzeit gehört auf ein Wandtablet, auch wenn niemand hinsieht -->
-  <div class="absolute left-8 top-7 sm:left-11 sm:top-9">
-    <div class="font-display text-6xl font-light leading-none tracking-tight sm:text-7xl">
-      {format(jetzt, 'HH:mm')}
+  <!-- Uhrzeit gehört auf ein Wandtablet, auch wenn niemand hinsieht. Ohne
+       Fotos steht sie gross in der Mitte, sonst klein oben links. -->
+  {#if nurUhr}
+    <div class="absolute inset-x-0 top-1/2 -translate-y-1/2 text-center">
+      <div class="font-display text-[clamp(5rem,22vw,16rem)] font-extralight leading-none tracking-tight">
+        {format(jetzt, 'HH:mm')}
+      </div>
+      <div class="mt-3 text-base font-light text-white/70 sm:text-xl">
+        {format(jetzt, t('EEEE, d. MMMM'), { locale: dfLocale })}
+      </div>
     </div>
-    <div class="mt-2 text-sm font-light text-white/70">
-      {format(jetzt, t('EEEE, d. MMMM'), { locale: dfLocale })}
+  {:else}
+    <div class="absolute left-8 top-7 sm:left-11 sm:top-9">
+      <div class="font-display text-6xl font-light leading-none tracking-tight sm:text-7xl">
+        {format(jetzt, 'HH:mm')}
+      </div>
+      <div class="mt-2 text-sm font-light text-white/70">
+        {format(jetzt, t('EEEE, d. MMMM'), { locale: dfLocale })}
+      </div>
     </div>
-  </div>
+  {/if}
 
   {#if weather}
     <div class="absolute right-8 top-7 text-right sm:right-11 sm:top-9">
@@ -387,7 +431,11 @@
     </div>
   {/if}
 
-  {#if photos.length > 1}
+  {#if nachtDunkel > 0}
+    <div class="pointer-events-none absolute inset-0 bg-black" style="opacity: {nachtDunkel}"></div>
+  {/if}
+
+  {#if photos.length > 1 && !nurUhr}
     <div class="absolute inset-x-0 bottom-0 h-0.5 bg-white/15">
       <div
         class="h-full bg-gradient-to-r from-primary to-amber-300 transition-[width] duration-500"

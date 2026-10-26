@@ -296,6 +296,8 @@ export interface Score {
   /** Punkte minus Einlösungen — was man für Belohnungen ausgeben kann. */
   balance: number;
   spent: number;
+  /** Über die Wunschbörse bekommen: erhöht das Guthaben, nie Level oder Rang. */
+  received: number;
 
   streak_days: number;
   last_active?: string;
@@ -599,7 +601,23 @@ export interface RewardOverview {
 }
 
 /** offen: wartet auf einen Preis · bepreist: Preis steht · angefragt: eingelöst, wartet auf die Eltern */
-export type WishStatus = 'offen' | 'bepreist' | 'angefragt' | 'erfuellt' | 'abgelehnt';
+export type WishStatus = 'offen' | 'bepreist' | 'angefragt' | 'vergeben' | 'erfuellt' | 'abgelehnt';
+
+export type OfferStatus = 'offen' | 'angenommen' | 'gemeldet' | 'erledigt' | 'abgelehnt' | 'zurueckgezogen';
+
+/** Ein Angebot, einen Wunsch zu erfüllen — gegen Punkte vom Wünschenden. */
+export interface WishOffer {
+  id: number;
+  wish_id: number;
+  offerer_id: number;
+  offerer_name: string;
+  offerer_emoji: string;
+  points: number;
+  note: string;
+  status: OfferStatus;
+  created_at: string;
+  decided_at?: string;
+}
 
 export interface Wish {
   id: number;
@@ -614,6 +632,13 @@ export interface Wish {
   note: string;
   created_at: string;
   decided_at?: string;
+  /** true: Das ist mein eigener Wunsch. */
+  mine: boolean;
+  fulfilled_by?: number;
+  fulfilled_by_name?: string;
+  /** Wie viele offene Angebote es gibt; die Angebote selbst sehen nur Beteiligte. */
+  offer_count: number;
+  offers: WishOffer[];
 }
 
 export interface ShoppingSuggestion {
@@ -646,4 +671,76 @@ export interface GoalOverview {
   progress: number;
   contributions: GoalContribution[];
   reached: FamilyGoal[];
+}
+
+// ---------------------------------------------------------------- Einstellungen
+
+/** Die Schalter der Familie (Verwaltung → Bereiche, Bildschirm). */
+export interface Einstellungen {
+  'modul.neuigkeiten': '0' | '1';
+  'modul.neuigkeiten_persoenlich': '0' | '1';
+  'modul.rezepte': '0' | '1';
+  'schoner.modus': 'aus' | 'wandgeraet' | 'alle';
+  'schoner.inhalt': 'diashow' | 'uhr';
+  'schoner.leerlauf_min': string;
+  'schoner.nacht_von': string;
+  'schoner.nacht_bis': string;
+  'schoner.nacht_dunkel': string;
+}
+
+// ------------------------------------------------------------------- Rezepte
+
+export interface Rezept {
+  id: number;
+  title: string;
+  source_url: string;
+  has_image: boolean;
+  servings: string;
+  prep_min: number;
+  cook_min: number;
+  total_min: number;
+  category: string;
+  note: string;
+  ingredients: string[];
+  /** In der Liste leer; erst das einzelne Rezept bringt die Schritte mit. */
+  steps: string[];
+  created_at: string;
+}
+
+export interface RezeptEntwurf {
+  title: string;
+  servings: string;
+  prep_min: number;
+  cook_min: number;
+  total_min: number;
+  category: string;
+  note: string;
+  source_url: string;
+  ingredients: string[];
+  steps: string[];
+}
+
+// -------------------------------------------------------------- Neuigkeiten
+
+export interface NewsFeed {
+  id: number;
+  title: string;
+  url: string;
+  scope: 'familie' | 'persoenlich';
+  owner_id: number | null;
+  last_ok: string | null;
+  last_error: string;
+  count: number;
+  editable: boolean;
+}
+
+export interface NewsItem {
+  id: number;
+  feed_id: number;
+  feed_title: string;
+  scope: 'familie' | 'persoenlich';
+  title: string;
+  link: string;
+  summary: string;
+  published: string;
 }

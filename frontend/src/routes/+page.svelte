@@ -1,7 +1,6 @@
 <script lang="ts">
   import { t, intlLocale } from '$lib/i18n';
   import { onMount } from 'svelte';
-  import { goto } from '$app/navigation';
   import { RefreshCw, TriangleAlert } from 'lucide-svelte';
   import {
     adminApi, calendarApi, choresApi, connectShoppingSocket,
@@ -22,7 +21,6 @@
   import NotesWidget from '$lib/components/widgets/NotesWidget.svelte';
   import DevicesWidget from '$lib/components/widgets/DevicesWidget.svelte';
   import CountdownWidget from '$lib/components/widgets/CountdownWidget.svelte';
-  import PhotoWidget from '$lib/components/widgets/PhotoWidget.svelte';
   import FilesWidget from '$lib/components/widgets/FilesWidget.svelte';
   import MusicWidget from '$lib/components/widgets/MusicWidget.svelte';
   import TimesWidget from '$lib/components/widgets/TimesWidget.svelte';
@@ -114,24 +112,9 @@
     devices = await devicesApi.list();
   }
 
-  /**
-   * Ein Wandgerät soll nicht stundenlang eine Aufgabenliste anstarren. Nach
-   * einer Weile ohne Berührung wird daraus ein Bilderrahmen; eine Berührung
-   * dort führt zurück in den Familien-Modus, nie in ein fremdes Konto.
-   */
-  const RUHE_MS = 5 * 60_000;
-  let ruheTimer: ReturnType<typeof setTimeout> | null = null;
-
-  function ruheNeuStarten() {
-    if (ruheTimer) clearTimeout(ruheTimer);
-    if (!$session.device) return;
-    ruheTimer = setTimeout(() => void goto('/diashow'), RUHE_MS);
-  }
-
   onMount(() => {
     void loadAll();
     if (!layout.loaded) void layout.load();
-    ruheNeuStarten();
 
     if ($session.user?.role === 'admin') {
       adminApi.listUsers().then((list) => (users = list)).catch(() => {});
@@ -161,7 +144,6 @@
     return () => {
       disconnect();
       clearInterval(timer);
-      if (ruheTimer) clearTimeout(ruheTimer);
       connection.setLive(false);
     };
   });
@@ -169,9 +151,6 @@
 </script>
 
 <svelte:head><title>{t('Familien Dashboard')}</title></svelte:head>
-
-<!-- Jede Berührung schiebt den Ruhezustand nach hinten. -->
-<svelte:window onpointerdown={ruheNeuStarten} onkeydown={ruheNeuStarten} />
 
 <!-- Volle Breite: auf einem großen Monitor bleibt sonst links und rechts
      Rand stehen, und der Flurbildschirm verschenkt die Hälfte der Fläche. -->
@@ -292,8 +271,6 @@
             <TimesWidget />
           {:else if widget.id === 'notes'}
             <NotesWidget bind:notes />
-          {:else if widget.id === 'photos'}
-            <PhotoWidget />
           {:else if widget.id === 'music'}
             <MusicWidget />
           {:else if widget.id === 'files'}

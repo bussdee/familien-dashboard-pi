@@ -6,13 +6,15 @@
   import { AKZENTE, akzent, connection, session, theme, type Theme } from '$lib/stores';
   import { board } from '$lib/stores/scores.svelte';
   import {
-    LogOut, Menu, Monitor, Moon, Shield, Sparkles, Sun, WifiOff, X, UserRound,
+    ChevronDown, LogOut, Menu, Monitor, Moon, Palette, Search, Shield, Sparkles, Sun, WifiOff, X,
+    UserRound,
   } from 'lucide-svelte';
   import { punkte } from '$lib/stores/punkte.svelte';
   import { eltern } from '$lib/stores/eltern.svelte';
   import { pwa } from '$lib/stores/pwa.svelte';
   import { LockKeyholeOpen } from 'lucide-svelte';
-  import { aktiv, menu, zieleFuer } from '$lib/stores/navigation.svelte';
+  import { aktiv, menu, nachGruppen, zieleFuer } from '$lib/stores/navigation.svelte';
+  import { einstellungen } from '$lib/stores/einstellungen.svelte';
 
   const themes: { value: Theme; label: string; icon: typeof Sun }[] = [
     { value: 'light', label: t('Hell'), icon: Sun },
@@ -29,8 +31,27 @@
   // Im Familien-Modus verschwindet alles, was einer Person gehört: Links,
   // eigene Ansicht, Einstellungen — und die Rangliste, die im Flur niemanden
   // etwas angeht.
-  const nav = $derived(zieleFuer(geraet, user?.role === 'admin'));
+  //
+  // Die Einstellungen der Familie (Rezepte, Neuigkeiten) hängen mit im
+  // Ausdruck, damit das Menü mitwächst, sobald sie geladen sind.
+  const nav = $derived.by(() => {
+    void einstellungen.werte;
+    void einstellungen.neuigkeitenAus;
+    return zieleFuer(geraet, user?.role === 'admin');
+  });
   const leiste = $derived(nav.filter((z) => z.leiste));
+
+  // Das Menü ist nach Gruppen geordnet; ab ein paar Einträgen gibt es eine
+  // Suche, damit man auf dem Handy nicht scrollen muss.
+  let suche = $state('');
+  const gefiltert = $derived.by(() => {
+    const q = suche.trim().toLowerCase();
+    const treffer = q
+      ? nav.filter((z) => z.label.toLowerCase().includes(q) || z.hinweis.toLowerCase().includes(q))
+      : nav;
+    return nachGruppen(treffer);
+  });
+  const mitSuche = $derived(nav.length > 8);
 
   // Only the top three ranks get a medal; below that the number carries it.
   const medals = ['🥇', '🥈', '🥉'];
@@ -42,6 +63,7 @@
   $effect(() => {
     void path;
     menu.offen = false;
+    suche = '';
   });
 
   async function signOut() {
@@ -215,7 +237,10 @@
   ></div>
 
   <div
-    class="fixed inset-y-0 left-0 z-50 flex w-[min(20rem,85vw)] animate-slide-in flex-col border-r border-border bg-card shadow-2xl"
+    role="dialog"
+    aria-modal="true"
+    aria-label={t('Menü')}
+    class="fixed inset-y-0 left-0 z-50 flex w-[min(22rem,88vw)] animate-slide-in flex-col border-r border-border bg-card shadow-2xl"
   >
     <div class="flex items-center justify-between border-b border-border p-4">
       <span class="flex items-center gap-2 font-semibold">
@@ -250,64 +275,102 @@
       </a>
     {/if}
 
-    <nav class="flex-1 overflow-y-auto p-2">
-      {#each nav as item (item.href)}
-        <a
-          href={item.href}
-          class="flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium transition-colors
-            {aktiv(path, item.href) ? 'bg-primary/15 text-primary' : 'hover:bg-accent'}"
-          aria-current={aktiv(path, item.href) ? 'page' : undefined}
-        >
-          <item.icon class="h-5 w-5 shrink-0" />
-          {item.label}
-        </a>
+    {#if mitSuche}
+      <div class="relative border-b border-border px-3 py-2">
+        <Search class="pointer-events-none absolute left-6 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <input
+          class="input py-2 pl-9"
+          type="search"
+          placeholder={t('Menü durchsuchen')}
+          aria-label={t('Menü durchsuchen')}
+          bind:value={suche}
+        />
+      </div>
+    {/if}
+
+    <nav class="flex-1 overflow-y-auto p-2" aria-label={t('Menü')}>
+      {#each gefiltert as g (g.gruppe.id)}
+        <p class="px-3 pb-1 pt-3 text-[11px] font-medium uppercase tracking-wider text-muted-foreground first:pt-1">
+          {g.gruppe.label}
+        </p>
+        {#each g.ziele as item (item.href)}
+          {@const an = aktiv(path, item.href)}
+          <a
+            href={item.href}
+            class="flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors
+              {an ? 'bg-primary/15 text-primary' : 'hover:bg-accent'}"
+            aria-current={an ? 'page' : undefined}
+          >
+            <span
+              class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl {an ? 'bg-primary/15' : 'bg-muted/60'}"
+            >
+              <item.icon class="h-[18px] w-[18px]" />
+            </span>
+            <span class="min-w-0 flex-1">
+              <span class="block truncate text-sm font-medium">{item.label}</span>
+              <span class="block truncate text-xs {an ? 'text-primary/70' : 'text-muted-foreground'}">{item.hinweis}</span>
+            </span>
+          </a>
+        {/each}
       {/each}
+      {#if gefiltert.length === 0}
+        <p class="px-3 py-6 text-center text-sm text-muted-foreground">{t('Nichts gefunden')}</p>
+      {/if}
 
-      <p class="px-3 pb-1 pt-4 text-[11px] uppercase tracking-wider text-muted-foreground">
-        {t('Design')}
-      </p>
-      <div class="flex gap-1 px-1">
-        {#each themes as thema (thema.value)}
-          <button
-            class="flex flex-1 flex-col items-center gap-1 rounded-xl py-2.5 text-xs transition-colors
-              {$theme === thema.value ? 'bg-accent font-medium' : 'hover:bg-accent'}"
-            onclick={() => theme.set(thema.value)}
-          >
-            <thema.icon class="h-5 w-5" />
-            {thema.label}
-          </button>
-        {/each}
-      </div>
-      <!-- Die Akzentfarbe gleich daneben: ausprobieren, ohne die Seite zu wechseln. -->
-      <div class="mt-2 flex justify-between gap-1 px-2" role="group" aria-label={t('Akzentfarbe')}>
-        {#each AKZENTE as a (a.value)}
-          <button
-            class="h-8 w-8 rounded-full transition-transform
-              {$akzent === a.value ? 'scale-110 ring-2 ring-offset-2 ring-offset-card' : 'hover:scale-105'}"
-            style="background-color: {a.farbe}; --tw-ring-color: {a.farbe}"
-            onclick={() => akzent.set(a.value)}
-            aria-label={t('Akzentfarbe {0}', [a.label])}
-            aria-pressed={$akzent === a.value}
-            title={a.label}
-          ></button>
-        {/each}
-      </div>
-
-      <!-- Die Sprache steht hier und nicht nur in den Einstellungen: Das
-           Wandgerät hat keine Einstellungsseite. -->
-      <div class="mt-3 flex gap-1 px-1" role="group" aria-label={t('Sprache')}>
-        {#each SPRACHEN as s (s.value)}
-          <button
-            class="flex-1 rounded-xl py-2 text-xs transition-colors
-              {sprache === s.value ? 'bg-accent font-medium' : 'hover:bg-accent'}"
-            onclick={() => setzeSprache(s.value)}
-            aria-pressed={sprache === s.value}
-            lang={s.value}
-          >
-            {s.label}
-          </button>
-        {/each}
-      </div>
+      <!-- Darstellung steht zugeklappt am Ende: Man braucht sie selten, und
+           aufgeklappt nahm sie dem Menü die Hälfte des Platzes. -->
+      <details class="group mt-3 rounded-xl border border-border">
+        <summary
+          class="flex cursor-pointer list-none items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium hover:bg-accent [&::-webkit-details-marker]:hidden"
+        >
+          <Palette class="h-4 w-4 text-muted-foreground" />
+          <span class="flex-1">{t('Darstellung')}</span>
+          <ChevronDown class="h-4 w-4 text-muted-foreground transition-transform group-open:rotate-180" />
+        </summary>
+        <div class="px-2 pb-3">
+          <div class="flex gap-1">
+            {#each themes as thema (thema.value)}
+              <button
+                class="flex flex-1 flex-col items-center gap-1 rounded-xl py-2.5 text-xs transition-colors
+                  {$theme === thema.value ? 'bg-accent font-medium' : 'hover:bg-accent'}"
+                onclick={() => theme.set(thema.value)}
+              >
+                <thema.icon class="h-5 w-5" />
+                {thema.label}
+              </button>
+            {/each}
+          </div>
+          <!-- Die Akzentfarbe gleich daneben: ausprobieren, ohne die Seite zu wechseln. -->
+          <div class="mt-2 flex justify-between gap-1 px-2" role="group" aria-label={t('Akzentfarbe')}>
+            {#each AKZENTE as a (a.value)}
+              <button
+                class="h-8 w-8 rounded-full transition-transform
+                  {$akzent === a.value ? 'scale-110 ring-2 ring-offset-2 ring-offset-card' : 'hover:scale-105'}"
+                style="background-color: {a.farbe}; --tw-ring-color: {a.farbe}"
+                onclick={() => akzent.set(a.value)}
+                aria-label={t('Akzentfarbe {0}', [a.label])}
+                aria-pressed={$akzent === a.value}
+                title={a.label}
+              ></button>
+            {/each}
+          </div>
+          <!-- Die Sprache steht hier und nicht nur in den Einstellungen: Das
+               Wandgerät hat keine Einstellungsseite. -->
+          <div class="mt-3 flex gap-1" role="group" aria-label={t('Sprache')}>
+            {#each SPRACHEN as sp (sp.value)}
+              <button
+                class="flex-1 rounded-xl py-2 text-xs transition-colors
+                  {sprache === sp.value ? 'bg-accent font-medium' : 'hover:bg-accent'}"
+                onclick={() => setzeSprache(sp.value)}
+                aria-pressed={sprache === sp.value}
+                lang={sp.value}
+              >
+                {sp.label}
+              </button>
+            {/each}
+          </div>
+        </div>
+      </details>
     </nav>
 
     <div class="safe-bottom border-t border-border p-2">

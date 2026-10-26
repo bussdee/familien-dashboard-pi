@@ -11,6 +11,14 @@ class DiashowStore {
   aktiv = $state(false);
   /** true, während die Bedienelemente eingeblendet sind. */
   wach = $state(false);
+  /**
+   * true, wenn der Bildschirmschoner die Diashow geöffnet hat und nicht eine
+   * Person. Dann reicht ein Tipp, um zurückzukehren — niemand soll sich erst
+   * durch Knöpfe tasten, nur weil das Tablet eingeschlafen ist.
+   */
+  automatisch = $state(false);
+  /** Die Seite, auf der der Bildschirmschoner gestartet ist. */
+  vorher = $state('');
 
   /**
    * Beim Betreten ist alles verborgen — genau wie die Knöpfe der Diashow
@@ -26,6 +34,14 @@ class DiashowStore {
   verlassen() {
     this.aktiv = false;
     this.wach = false;
+    this.automatisch = false;
+    this.vorher = '';
+  }
+
+  /** Der Bildschirmschoner startet: merkt sich, wohin es zurückgeht. */
+  starten(vorher: string) {
+    this.automatisch = true;
+    this.vorher = vorher;
   }
 }
 

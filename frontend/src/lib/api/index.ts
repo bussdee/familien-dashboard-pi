@@ -8,7 +8,7 @@ import type {
   PhotoUploadResult, Score, ShoppingEvent, ShoppingItem, TimeOverview, Track,
   User, WeatherData, WeatherLocation, WeeklyTime, Meal, RecentMeal, Reward,
   RewardOverview, ShoppingSuggestion, RedemptionStatus, PendingCompletion, GoalOverview,
-  Wish,
+  Wish, Einstellungen, Rezept, RezeptEntwurf, NewsFeed, NewsItem,
 } from '$lib/types';
 
 const BASE = '/api';
@@ -360,6 +360,65 @@ export const wishesApi = {
     data: { cost?: number; note?: string; reject?: boolean; title?: string; emoji?: string },
   ) => request<void>(`/admin/wishes/${id}`, { method: 'PUT', ...json(data) }),
   remove: (id: number) => request<void>(`/admin/wishes/${id}`, { method: 'DELETE' }),
+
+  // ---- Die Wunschbörse: jede Person erfüllt, jede zahlt mit Punkten ----
+  /** Ein Angebot für einen fremden Wunsch (oder das bestehende ändern). */
+  offer: (id: number, data: { points: number; note?: string }) =>
+    request<{ wish_id: number; points: number }>(`/wishes/${id}/offers`, { method: 'POST', ...json(data) }),
+  withdrawOffer: (id: number, offerId: number) =>
+    request<void>(`/wishes/${id}/offers/${offerId}`, { method: 'DELETE' }),
+  /** Der Wünschende nimmt an: die Punkte werden zurückgelegt. */
+  accept: (id: number, offerId: number) =>
+    request<void>(`/wishes/${id}/offers/${offerId}/accept`, { method: 'POST' }),
+  decline: (id: number, offerId: number) =>
+    request<void>(`/wishes/${id}/offers/${offerId}/decline`, { method: 'POST' }),
+  /** Der Anbieter meldet: erledigt. */
+  done: (id: number, offerId: number) =>
+    request<void>(`/wishes/${id}/offers/${offerId}/done`, { method: 'POST' }),
+  /** Der Wünschende bestätigt und zahlt an den Anbieter. */
+  confirm: (id: number, offerId: number) =>
+    request<void>(`/wishes/${id}/offers/${offerId}/confirm`, { method: 'POST' }),
+};
+
+/** Die Schalter der Familie. Lesen darf jeder, ändern nur ein Administrator. */
+export const einstellungenApi = {
+  get: () => request<Einstellungen>('/settings'),
+  put: (data: Partial<Einstellungen>) =>
+    request<Einstellungen>('/admin/settings', { method: 'PUT', ...json(data) }),
+};
+
+export const rezepteApi = {
+  list: (q = '') => request<Rezept[]>(`/recipes${q ? `?q=${encodeURIComponent(q)}` : ''}`),
+  get: (id: number) => request<Rezept>(`/recipes/${id}`),
+  imageUrl: (id: number) => `${BASE}/recipes/${id}/image`,
+  create: (data: Partial<RezeptEntwurf>) =>
+    request<Rezept>('/recipes', { method: 'POST', ...json(data) }),
+  /** Holt ein Rezept von einer Adresse ins Rezeptbuch. */
+  importieren: (url: string) =>
+    request<Rezept>('/recipes/import', { method: 'POST', ...json({ url }) }),
+  update: (id: number, data: Partial<RezeptEntwurf>) =>
+    request<Rezept>(`/recipes/${id}`, { method: 'PUT', ...json(data) }),
+  remove: (id: number) => request<void>(`/recipes/${id}`, { method: 'DELETE' }),
+  /** Setzt die Zutaten auf die Einkaufsliste; Doppeltes bleibt draussen. */
+  toShopping: (id: number) =>
+    request<{ added: number; total: number }>(`/recipes/${id}/shopping`, { method: 'POST' }),
+};
+
+export const neuigkeitenApi = {
+  feeds: () => request<NewsFeed[]>('/rss/feeds'),
+  items: (limit = 40, feed?: number) =>
+    request<NewsItem[]>(`/rss/items?limit=${limit}${feed ? `&feed=${feed}` : ''}`),
+  /** Persönlicher Feed (jede Person) oder Familien-Feed (Eltern). */
+  create: (data: { url: string; title?: string }, familie: boolean) =>
+    request<NewsFeed[]>(familie ? '/admin/rss/feeds' : '/rss/feeds', { method: 'POST', ...json(data) }),
+  remove: (id: number, familie: boolean) =>
+    request<void>(familie ? `/admin/rss/feeds/${id}` : `/rss/feeds/${id}`, { method: 'DELETE' }),
+  refresh: () => request<NewsFeed[]>('/admin/rss/refresh', { method: 'POST' }),
+  /** Ob jemand die Neuigkeiten für sich ausgeblendet hat. */
+  ausgeblendet: () =>
+    request<{ key: string; value: string | boolean | null }>('/preferences/neuigkeiten.aus'),
+  ausblenden: (aus: boolean) =>
+    request<void>('/preferences/neuigkeiten.aus', { method: 'PUT', ...json({ value: aus ? '1' : '0' }) }),
 };
 
 export const notesApi = {

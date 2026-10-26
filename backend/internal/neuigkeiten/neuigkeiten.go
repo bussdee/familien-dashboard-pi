@@ -403,7 +403,7 @@ func (s *Service) anlegen(w http.ResponseWriter, r *http.Request, owner *int) {
 	}
 	var anzahl int
 	if err := s.db.QueryRow(`SELECT COUNT(*) FROM rss_feeds WHERE `+wo, args...).Scan(&anzahl); err == nil && anzahl >= grenze {
-		auth.HTTPError(w, http.StatusBadRequest, "Es sind nicht mehr Feeds möglich")
+		auth.HTTPError(w, http.StatusBadRequest, "Weitere Feeds sind nicht möglich")
 		return
 	}
 
