@@ -123,7 +123,7 @@ func (s *Service) archiveData(target string) error {
 	// Wird hier ein Ordner vergessen, fehlt er im Backup, ohne dass irgendwo
 	// etwas rot wird. "files" ist beim Anlegen des Moduls genau deshalb sofort
 	// mit eingetragen worden.
-	for _, sub := range []string{"notes", "ics", "ics-abo", "photos", "files"} {
+	for _, sub := range []string{"notes", "ics", "ics-abo", "photos", "files", "recipes"} {
 		root := filepath.Join(s.dataDir, sub)
 		if _, err := os.Stat(root); os.IsNotExist(err) {
 			continue

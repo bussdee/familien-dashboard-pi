@@ -424,6 +424,52 @@ func (s *Store) Migrate() error {
 			last_error TEXT NOT NULL DEFAULT '',
 			created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 		)`,
+		// Das Rezeptbuch. Zutaten und Schritte sind Zeilen, wie beim Essensplan:
+		// Sie wandern mit einem Tipp auf die Einkaufsliste. image ist der Name
+		// einer Datei im Rezeptordner (leer = kein Bild).
+		`CREATE TABLE IF NOT EXISTS recipes (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			title TEXT NOT NULL,
+			source_url TEXT NOT NULL DEFAULT '',
+			image TEXT NOT NULL DEFAULT '',
+			servings TEXT NOT NULL DEFAULT '',
+			prep_min INTEGER NOT NULL DEFAULT 0,
+			cook_min INTEGER NOT NULL DEFAULT 0,
+			total_min INTEGER NOT NULL DEFAULT 0,
+			category TEXT NOT NULL DEFAULT '',
+			note TEXT NOT NULL DEFAULT '',
+			ingredients TEXT NOT NULL DEFAULT '',
+			steps TEXT NOT NULL DEFAULT '',
+			created_by INTEGER,
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
+		)`,
+		// Neuigkeiten: Feeds und ihre letzten Meldungen. owner_id NULL heißt
+		// Familien-Feed, sonst gehört er der Person. Die Meldungen sind schon
+		// bereinigter Text (siehe Paket neuigkeiten).
+		`CREATE TABLE IF NOT EXISTS rss_feeds (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			title TEXT NOT NULL DEFAULT '',
+			url TEXT NOT NULL,
+			owner_id INTEGER,
+			last_ok DATETIME,
+			last_error TEXT NOT NULL DEFAULT '',
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE CASCADE
+		)`,
+		`CREATE TABLE IF NOT EXISTS rss_items (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			feed_id INTEGER NOT NULL,
+			guid TEXT NOT NULL,
+			title TEXT NOT NULL,
+			link TEXT NOT NULL DEFAULT '',
+			summary TEXT NOT NULL DEFAULT '',
+			published DATETIME NOT NULL,
+			UNIQUE (feed_id, guid),
+			FOREIGN KEY (feed_id) REFERENCES rss_feeds(id) ON DELETE CASCADE
+		)`,
+		`CREATE INDEX IF NOT EXISTS idx_rss_items_published ON rss_items(published DESC)`,
 		`CREATE INDEX IF NOT EXISTS idx_shopping_checked ON shopping_items(checked, created_at)`,
 		`CREATE INDEX IF NOT EXISTS idx_notes_owner ON notes(owner_id)`,
 		`CREATE UNIQUE INDEX IF NOT EXISTS idx_notes_source_file ON notes(source_file) WHERE source_file IS NOT NULL`,

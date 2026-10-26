@@ -1160,7 +1160,7 @@ export const en: Record<string, string> = {
   "Die Adresse muss mit http:// oder https:// beginnen": "The address must start with http:// or https://",
   "Zugangsdaten gehören nicht in die Adresse": "Credentials do not belong in the address",
   "Die Adresse zeigt ins Heimnetz oder ist nicht öffentlich": "The address points into the home network or is not public",
-  "Der Kalender leitet zu oft weiter": "The calendar redirects too often",
+  "Die Adresse leitet zu oft weiter": "The address redirects too often",
   "Der Kalender ist größer als 5 MB": "The calendar is larger than 5 MB",
   "Die Adresse liefert keinen Kalender": "The address does not deliver a calendar",
   "Der Kalender antwortet mit einem Fehler": "The calendar responds with an error",

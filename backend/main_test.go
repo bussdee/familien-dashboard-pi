@@ -15,16 +15,19 @@ import (
 	"family-dashboard/backend/internal/chores"
 	"family-dashboard/backend/internal/config"
 	"family-dashboard/backend/internal/devices"
+	"family-dashboard/backend/internal/einstellungen"
 	"family-dashboard/backend/internal/files"
 	"family-dashboard/backend/internal/goals"
 	"family-dashboard/backend/internal/links"
 	"family-dashboard/backend/internal/meals"
 	"family-dashboard/backend/internal/music"
+	"family-dashboard/backend/internal/neuigkeiten"
 	"family-dashboard/backend/internal/notes"
 	"family-dashboard/backend/internal/notify"
 	"family-dashboard/backend/internal/photos"
 	"family-dashboard/backend/internal/points"
 	"family-dashboard/backend/internal/rewards"
+	"family-dashboard/backend/internal/rezepte"
 	"family-dashboard/backend/internal/shopping"
 	"family-dashboard/backend/internal/store"
 	"family-dashboard/backend/internal/times"
@@ -87,6 +90,8 @@ var schreibwege = map[string]stufe{
 	"POST /api/wishes":                     person,
 	"DELETE /api/wishes/{id}":              person,
 	"POST /api/wishes/{id}/redeem":         person,
+	"POST /api/rss/feeds":                  person,
+	"DELETE /api/rss/feeds/{id}":           person,
 
 	// eltern: eintragen, ändern, löschen, bestätigen
 	"POST /api/auth/eltern":                        eltern,
@@ -123,11 +128,20 @@ var schreibwege = map[string]stufe{
 	"POST /api/links/{id}/pin":                     eltern,
 	"DELETE /api/links/{id}":                       eltern,
 	"POST /api/links/reorder":                      eltern,
+	"POST /api/recipes":                            eltern,
+	"POST /api/recipes/import":                     eltern,
+	"PUT /api/recipes/{id}":                        eltern,
+	"DELETE /api/recipes/{id}":                     eltern,
+	"POST /api/recipes/{id}/shopping":              eltern,
+	"POST /api/admin/rss/feeds":                    eltern,
+	"DELETE /api/admin/rss/feeds/{id}":             eltern,
+	"POST /api/admin/rss/refresh":                  eltern,
 	"PUT /api/admin/wishes/{id}":                   eltern,
 	"DELETE /api/admin/wishes/{id}":                eltern,
 
 	// admin
 	"POST /api/auth/device":                               admin,
+	"PUT /api/admin/settings":                             admin,
 	"POST /api/admin/users":                               admin,
 	"PUT /api/admin/users/{id}":                           admin,
 	"DELETE /api/admin/users/{id}":                        admin,
@@ -237,6 +251,7 @@ func testRouter(t *testing.T) http.Handler {
 	}
 	sql := db.DB()
 	shop := shopping.NewService(sql, nil)
+	einst := einstellungen.NewService(db)
 	ns, _ := notify.Neu("", "")
 	return newRouter(&config.Config{Server: config.Server{ProxyHops: 2}}, dienste{
 		authSvc:     auth.NewService(sql, db, "0123456789012345678901234567890123456789", time.Hour, false),
@@ -256,6 +271,9 @@ func testRouter(t *testing.T) http.Handler {
 		rewardsSvc:  rewards.NewService(sql),
 		goalsSvc:    goals.NewService(sql),
 		wishesSvc:   wishes.NewService(sql),
+		einstSvc:    einst,
+		rezepteSvc:  rezepte.NewService(sql, filepath.Join(dir, "recipes"), shop, einst),
+		newsSvc:     neuigkeiten.NewService(sql, einst),
 		backupSvc: backup.NewService(sql, filepath.Join(dir, "db.sqlite"), filepath.Join(dir, "backup"),
 			dir, 7, "0 3 * * *"),
 		notifySvc: ns,

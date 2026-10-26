@@ -20,6 +20,7 @@ type Config struct {
 	Notes    Notes    `mapstructure:"notes"`
 	Photos   Photos   `mapstructure:"photos"`
 	Files    Files    `mapstructure:"files"`
+	Recipes  Recipes  `mapstructure:"recipes"`
 	Music    Music    `mapstructure:"music"`
 	Devices  Devices  `mapstructure:"devices"`
 	Notify   Notify   `mapstructure:"notify"`
@@ -114,6 +115,11 @@ type Files struct {
 	Dir string `mapstructure:"dir"`
 }
 
+// Recipes ist die Ablage für die Bilder importierter Rezepte.
+type Recipes struct {
+	Dir string `mapstructure:"dir"`
+}
+
 // Music ist der schreibgeschützt eingehängte Ordner mit den Audiodateien. Ein
 // leerer Pfad schaltet das Modul ab.
 type Music struct {
@@ -179,6 +185,7 @@ func Load(path string) (*Config, error) {
 	v.SetDefault("notes.watch", true)
 	v.SetDefault("photos.dir", "/app/data/photos")
 	v.SetDefault("files.dir", "/app/data/files")
+	v.SetDefault("recipes.dir", "/app/data/recipes")
 	v.SetDefault("music.dir", "/app/audio")
 	v.SetDefault("notify.ntfy_url", "")
 	v.SetDefault("devices.check_interval", "30s")

@@ -10,16 +10,19 @@ import (
 	"family-dashboard/backend/internal/chores"
 	"family-dashboard/backend/internal/config"
 	"family-dashboard/backend/internal/devices"
+	"family-dashboard/backend/internal/einstellungen"
 	"family-dashboard/backend/internal/files"
 	"family-dashboard/backend/internal/goals"
 	"family-dashboard/backend/internal/links"
 	"family-dashboard/backend/internal/meals"
 	"family-dashboard/backend/internal/music"
+	"family-dashboard/backend/internal/neuigkeiten"
 	"family-dashboard/backend/internal/notes"
 	"family-dashboard/backend/internal/notify"
 	"family-dashboard/backend/internal/photos"
 	"family-dashboard/backend/internal/points"
 	"family-dashboard/backend/internal/rewards"
+	"family-dashboard/backend/internal/rezepte"
 	"family-dashboard/backend/internal/shopping"
 	"family-dashboard/backend/internal/times"
 	"family-dashboard/backend/internal/weather"
@@ -38,16 +41,19 @@ type dienste struct {
 	calendarSvc *calendar.Service
 	choresSvc   *chores.Service
 	devicesSvc  *devices.Service
+	einstSvc    *einstellungen.Service
 	filesSvc    *files.Service
 	goalsSvc    *goals.Service
 	linksSvc    *links.Service
 	mealsSvc    *meals.Service
 	musicSvc    *music.Service
+	newsSvc     *neuigkeiten.Service
 	notesSvc    *notes.Service
 	notifySvc   *notify.Service
 	photosSvc   *photos.Service
 	pointsSvc   *points.Service
 	rewardsSvc  *rewards.Service
+	rezepteSvc  *rezepte.Service
 	shoppingSvc *shopping.Service
 	timesSvc    *times.Service
 	weatherSvc  *weather.Service
@@ -125,7 +131,22 @@ func newRouter(cfg *config.Config, d dienste) http.Handler {
 				r.Post("/wishes", d.wishesSvc.Create)
 				r.Delete("/wishes/{id}", d.wishesSvc.Withdraw)
 				r.Post("/wishes/{id}/redeem", d.wishesSvc.Redeem)
+
+				// Persönliche Feeds gehören einer Person.
+				r.Post("/rss/feeds", d.newsSvc.CreatePersonal)
+				r.Delete("/rss/feeds/{id}", d.newsSvc.DeletePersonal)
 			})
+
+			// Die Schalter der Familie: Lesen darf jeder, auch das Wandgerät —
+			// Menü und Bildschirmschoner richten sich danach.
+			r.Get("/settings", d.einstSvc.Get)
+
+			// Neuigkeiten und Rezeptbuch: Lesen darf jeder.
+			r.Get("/rss/feeds", d.newsSvc.ListFeeds)
+			r.Get("/rss/items", d.newsSvc.Items)
+			r.Get("/recipes", d.rezepteSvc.List)
+			r.Get("/recipes/{id}", d.rezepteSvc.Get)
+			r.Get("/recipes/{id}/image", d.rezepteSvc.Image)
 
 			r.Get("/weather", d.weatherSvc.GetWeather)
 			r.Get("/weather/location", d.weatherSvc.GetLocation)
@@ -220,6 +241,17 @@ func newRouter(cfg *config.Config, d dienste) http.Handler {
 				r.Post("/links/reorder", d.linksSvc.Reorder)
 
 				// Die Preise der Wunschliste legen die Eltern fest.
+				// Das Rezeptbuch und die Familien-Feeds pflegen die Eltern. Der
+				// Link-Import ruft eine fremde Adresse auf (Paket abruf).
+				r.Post("/recipes", d.rezepteSvc.Create)
+				r.Post("/recipes/import", d.rezepteSvc.Import)
+				r.Put("/recipes/{id}", d.rezepteSvc.Update)
+				r.Delete("/recipes/{id}", d.rezepteSvc.Delete)
+				r.Post("/recipes/{id}/shopping", d.rezepteSvc.ToShopping)
+				r.Post("/admin/rss/feeds", d.newsSvc.CreateFamily)
+				r.Delete("/admin/rss/feeds/{id}", d.newsSvc.DeleteFamily)
+				r.Post("/admin/rss/refresh", d.newsSvc.Refresh)
+
 				r.Put("/admin/wishes/{id}", d.wishesSvc.Decide)
 				r.Delete("/admin/wishes/{id}", d.wishesSvc.Remove)
 			})
@@ -260,6 +292,7 @@ func newRouter(cfg *config.Config, d dienste) http.Handler {
 			r.Group(func(r chi.Router) {
 				r.Use(d.authSvc.AdminMiddleware)
 				r.Post("/auth/device", d.authSvc.EnableDevice)
+				r.Put("/admin/settings", d.einstSvc.Put)
 				r.Get("/admin/users", d.authSvc.ListUsers)
 				r.Post("/admin/users", d.authSvc.CreateUser)
 				r.Put("/admin/users/{id}", d.authSvc.UpdateUser)

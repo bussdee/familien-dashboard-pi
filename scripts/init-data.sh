@@ -6,14 +6,14 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DATA="$ROOT/backend/data"
 
-mkdir -p "$DATA"/{notes,ics,photos,files,music,backup}
+mkdir -p "$DATA"/{notes,ics,photos,files,recipes,music,backup}
 # Muss existieren, bevor Docker ihn beim Einhängen selbst anlegt — sonst
 # gehört er root und das Zertifikatsskript kann nichts hineinschreiben.
 mkdir -p "$ROOT/traefik/certs"
 
 # Der Backend-Container läuft als UID 1000. Statt 777 wird nur so weit
 # geöffnet, wie es dafür nötig ist.
-chmod 755 "$DATA" "$DATA"/{notes,ics,photos,files,music,backup} 2>/dev/null || true
+chmod 755 "$DATA" "$DATA"/{notes,ics,photos,files,recipes,music,backup} 2>/dev/null || true
 
 created=0
 
