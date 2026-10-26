@@ -376,7 +376,7 @@ func (s *Store) Migrate() error {
 			title TEXT NOT NULL,
 			emoji TEXT NOT NULL DEFAULT '⭐',
 			cost INTEGER,
-			-- offen | bepreist | angefragt | erfuellt | abgelehnt
+			-- offen | bepreist | angefragt | vergeben | erfuellt | abgelehnt
 			status TEXT NOT NULL DEFAULT 'offen',
 			note TEXT NOT NULL DEFAULT '',
 			redemption_id INTEGER,
@@ -384,6 +384,39 @@ func (s *Store) Migrate() error {
 			decided_at DATETIME,
 			FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 		)`,
+		// Die Wunschbörse: Jede Person kann einem Wunsch ein Angebot in Punkten
+		// machen. Nimmt der Wünschende es an und bestätigt später die Erfüllung,
+		// gehen die Punkte an den, der erfüllt hat (point_transfers). Eine
+		// Übertragung ändert Guthaben, aber nie Level, Rangliste oder
+		// Familienziel — sonst ließe sich die Rangliste zwischen Geschwistern
+		// verschieben.
+		`CREATE TABLE IF NOT EXISTS wish_offers (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			wish_id INTEGER NOT NULL,
+			offerer_id INTEGER NOT NULL,
+			points INTEGER NOT NULL CHECK (points >= 0),
+			note TEXT NOT NULL DEFAULT '',
+			-- offen | angenommen | gemeldet | erledigt | abgelehnt | zurueckgezogen
+			status TEXT NOT NULL DEFAULT 'offen',
+			created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			decided_at DATETIME,
+			FOREIGN KEY (wish_id) REFERENCES wishes(id) ON DELETE CASCADE,
+			FOREIGN KEY (offerer_id) REFERENCES users(id) ON DELETE CASCADE
+		)`,
+		`CREATE INDEX IF NOT EXISTS idx_wish_offers_wish ON wish_offers(wish_id, status)`,
+		`CREATE TABLE IF NOT EXISTS point_transfers (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			from_user INTEGER NOT NULL,
+			to_user INTEGER NOT NULL,
+			points INTEGER NOT NULL CHECK (points >= 0),
+			wish_id INTEGER,
+			offer_id INTEGER,
+			created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			FOREIGN KEY (from_user) REFERENCES users(id) ON DELETE CASCADE,
+			FOREIGN KEY (to_user) REFERENCES users(id) ON DELETE CASCADE
+		)`,
+		`CREATE INDEX IF NOT EXISTS idx_transfers_from ON point_transfers(from_user)`,
+		`CREATE INDEX IF NOT EXISTS idx_transfers_to ON point_transfers(to_user)`,
 		`CREATE INDEX IF NOT EXISTS idx_wishes_user ON wishes(user_id, status)`,
 		`CREATE TABLE IF NOT EXISTS login_attempts (
 			user_id INTEGER PRIMARY KEY,
@@ -537,6 +570,11 @@ func (s *Store) Migrate() error {
 	// Verweis führt zurück: Entscheiden die Eltern über die Einlösung,
 	// bekommt der Wunsch seinen neuen Stand.
 	if err := s.addColumn("reward_redemptions", "wish_id", "INTEGER"); err != nil {
+		return err
+	}
+
+	// Wer einen Wunsch über die Wunschbörse erfüllt hat.
+	if err := s.addColumn("wishes", "fulfilled_by", "INTEGER"); err != nil {
 		return err
 	}
 

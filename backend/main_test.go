@@ -82,16 +82,22 @@ var schreibwege = map[string]stufe{
 	"POST /api/shopping/clear-checked": alle,
 
 	// person: gehört einer Person
-	"PUT /api/auth/profile":                person,
-	"POST /api/auth/pin":                   person,
-	"PUT /api/preferences/{key}":           person,
-	"POST /api/rewards/{id}/redeem":        person,
-	"DELETE /api/rewards/redemptions/{id}": person,
-	"POST /api/wishes":                     person,
-	"DELETE /api/wishes/{id}":              person,
-	"POST /api/wishes/{id}/redeem":         person,
-	"POST /api/rss/feeds":                  person,
-	"DELETE /api/rss/feeds/{id}":           person,
+	"PUT /api/auth/profile":                      person,
+	"POST /api/auth/pin":                         person,
+	"PUT /api/preferences/{key}":                 person,
+	"POST /api/rewards/{id}/redeem":              person,
+	"DELETE /api/rewards/redemptions/{id}":       person,
+	"POST /api/wishes":                           person,
+	"DELETE /api/wishes/{id}":                    person,
+	"POST /api/wishes/{id}/redeem":               person,
+	"POST /api/rss/feeds":                        person,
+	"POST /api/wishes/{id}/offers":               person,
+	"DELETE /api/wishes/{id}/offers/{oid}":       person,
+	"POST /api/wishes/{id}/offers/{oid}/accept":  person,
+	"POST /api/wishes/{id}/offers/{oid}/decline": person,
+	"POST /api/wishes/{id}/offers/{oid}/done":    person,
+	"POST /api/wishes/{id}/offers/{oid}/confirm": person,
+	"DELETE /api/rss/feeds/{id}":                 person,
 
 	// eltern: eintragen, ändern, löschen, bestätigen
 	"POST /api/auth/eltern":                        eltern,
@@ -191,7 +197,7 @@ var lesewege = map[string]stufe{
 // es nicht: Die Wege laufen ins Leere, statt Testdaten zu zerstören.
 var platzhalter = strings.NewReplacer(
 	"{id}", "999999", "{name}", "x.txt", "{day}", "2026-01-01",
-	"{key}", "dashboard.layout", "{date}", "2026-01-01",
+	"{key}", "dashboard.layout", "{date}", "2026-01-01", "{oid}", "999999",
 )
 
 type gegenueber struct {

@@ -15,8 +15,17 @@
 //	  │                 ▲                            │
 //	  └──Eltern: nein──▶ abgelehnt                   └──abgelehnt/zurückgezogen──▶ bepreist
 //
-// Wünsche gehören dem Kind: Es sieht nur seine eigenen, die Eltern sehen alle,
-// das Wandgerät keinen — ein Geburtstagswunsch gehört nicht in den Flur.
+// Seit 2.5 ist daraus eine Börse geworden (boerse.go): Jede Person kann sich
+// etwas wünschen — auch die Eltern —, und jede andere Person kann den Wunsch
+// erfüllen, indem sie ein Angebot in Punkten macht. Nimmt der Wünschende es an
+// und bestätigt später die Erfüllung, zahlt er mit seinen Punkten an den, der
+// erfüllt hat. Der Weg über die Eltern (Preis festlegen, Kind löst ein) bleibt
+// daneben bestehen.
+//
+// Wer was sieht: Offene Wünsche sehen alle Personen, damit andere sie erfüllen
+// können; alles Weitere (Preis, Anfrage, vergebene Wünsche) nur die Beteiligten
+// und die Eltern. Das Wandgerät sieht keinen — ein Geburtstagswunsch gehört
+// nicht in den Flur.
 package wishes
 
 import (
@@ -40,6 +49,7 @@ const (
 	StatusOffen     = "offen"
 	StatusBepreist  = "bepreist"
 	StatusAngefragt = "angefragt"
+	StatusVergeben  = "vergeben"
 	StatusErfuellt  = "erfuellt"
 	StatusAbgelehnt = "abgelehnt"
 
@@ -78,6 +88,13 @@ type Wish struct {
 	Note      string     `json:"note"`
 	CreatedAt time.Time  `json:"created_at"`
 	DecidedAt *time.Time `json:"decided_at,omitempty"`
+
+	// Die Börse.
+	Mine            bool    `json:"mine"`
+	FulfilledBy     *int    `json:"fulfilled_by,omitempty"`
+	FulfilledByName string  `json:"fulfilled_by_name,omitempty"`
+	OfferCount      int     `json:"offer_count"`
+	Offers          []Offer `json:"offers"`
 }
 
 // istElternteil: Ein angemeldeter Administrator. Das Wandgerät zählt nicht —
@@ -99,18 +116,26 @@ func (s *Service) List(w http.ResponseWriter, r *http.Request) {
 
 	query := `
 		SELECT w.id, w.user_id, COALESCE(u.name, ''), COALESCE(u.avatar_emoji, ''),
-		       w.title, w.emoji, w.cost, w.status, w.note, w.created_at, w.decided_at
-		FROM wishes w LEFT JOIN users u ON u.id = w.user_id`
+		       w.title, w.emoji, w.cost, w.status, w.note, w.created_at, w.decided_at,
+		       w.fulfilled_by, COALESCE(f.name, ''),
+		       (SELECT COUNT(*) FROM wish_offers o WHERE o.wish_id = w.id AND o.status = 'offen')
+		FROM wishes w
+		LEFT JOIN users u ON u.id = w.user_id
+		LEFT JOIN users f ON f.id = w.fulfilled_by`
 	var args []any
 	if !istElternteil(r) {
-		query += ` WHERE w.user_id = ?`
-		args = append(args, userID)
+		// Die eigenen, die offenen der anderen (zum Erfüllen) und alles, woran
+		// man mit einem Angebot beteiligt ist.
+		query += `
+		WHERE w.user_id = ? OR w.status = 'offen'
+		   OR EXISTS (SELECT 1 FROM wish_offers o WHERE o.wish_id = w.id AND o.offerer_id = ?)`
+		args = append(args, userID, userID)
 	}
-	// Was auf die Eltern wartet, steht oben, dann das Neueste.
+	// Was auf eine Entscheidung wartet, steht oben, dann das Neueste.
 	query += `
 		ORDER BY CASE w.status
-			WHEN 'offen' THEN 0 WHEN 'angefragt' THEN 1 WHEN 'bepreist' THEN 2
-			WHEN 'abgelehnt' THEN 3 ELSE 4 END,
+			WHEN 'offen' THEN 0 WHEN 'angefragt' THEN 1 WHEN 'vergeben' THEN 2
+			WHEN 'bepreist' THEN 3 WHEN 'abgelehnt' THEN 4 ELSE 5 END,
 			w.created_at DESC, w.id DESC
 		LIMIT 200`
 
@@ -127,8 +152,10 @@ func (s *Service) List(w http.ResponseWriter, r *http.Request) {
 		var wi Wish
 		var cost sql.NullInt64
 		var decided sql.NullTime
+		var erfuellt sql.NullInt64
 		if err := rows.Scan(&wi.ID, &wi.UserID, &wi.UserName, &wi.UserEmoji, &wi.Title, &wi.Emoji,
-			&cost, &wi.Status, &wi.Note, &wi.CreatedAt, &decided); err != nil {
+			&cost, &wi.Status, &wi.Note, &wi.CreatedAt, &decided,
+			&erfuellt, &wi.FulfilledByName, &wi.OfferCount); err != nil {
 			auth.HTTPError(w, http.StatusInternalServerError, "Server-Fehler")
 			return
 		}
@@ -140,12 +167,19 @@ func (s *Service) List(w http.ResponseWriter, r *http.Request) {
 			t := decided.Time
 			wi.DecidedAt = &t
 		}
+		if erfuellt.Valid {
+			f := int(erfuellt.Int64)
+			wi.FulfilledBy = &f
+		}
+		wi.Mine = wi.UserID == userID
+		wi.Offers = []Offer{}
 		out = append(out, wi)
 	}
 	if err := rows.Err(); err != nil {
 		auth.HTTPError(w, http.StatusInternalServerError, "Server-Fehler")
 		return
 	}
+	s.angebotenZuordnen(out, userID, istElternteil(r))
 	auth.WriteJSON(w, out)
 }
 
@@ -257,7 +291,7 @@ func (s *Service) Withdraw(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	res, err := s.db.Exec(
-		`DELETE FROM wishes WHERE id = ? AND user_id = ? AND status != 'angefragt'`, id, me)
+		`DELETE FROM wishes WHERE id = ? AND user_id = ? AND status NOT IN ('angefragt', 'vergeben')`, id, me)
 	if err != nil {
 		auth.HTTPError(w, http.StatusInternalServerError, "Server-Fehler")
 		return
@@ -314,7 +348,7 @@ func (s *Service) Decide(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// Ab der Anfrage steht der Preis fest: Das Guthaben ist schon abgebucht.
-	if status == StatusAngefragt || status == StatusErfuellt {
+	if status == StatusAngefragt || status == StatusErfuellt || status == StatusVergeben {
 		auth.HTTPError(w, http.StatusConflict, "Dieser Wunsch ist schon eingelöst oder angefragt")
 		return
 	}

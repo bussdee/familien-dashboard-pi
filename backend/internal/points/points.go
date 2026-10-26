@@ -95,6 +95,9 @@ type Score struct {
 	// Level kosten.
 	Balance int `json:"balance"`
 	Spent   int `json:"spent"`
+	// Received sind Punkte, die jemand über die Wunschbörse bekommen hat. Sie
+	// erhöhen das Guthaben, nie Level oder Rangliste.
+	Received int `json:"received"`
 
 	StreakDays int     `json:"streak_days"`
 	LastActive string  `json:"last_active,omitempty"`
@@ -142,7 +145,14 @@ func (s *Service) Leaderboard() ([]Score, error) {
 			COALESCE(SUM(CASE WHEN p.source = 'shopping' THEN 1 ELSE 0 END), 0)   AS shops,
 			MAX(p.created_at)                                                     AS last_active,
 			(SELECT COALESCE(SUM(r.cost), 0) FROM reward_redemptions r
-			  WHERE r.user_id = u.id AND r.status != 'abgelehnt')                 AS spent
+			  WHERE r.user_id = u.id AND r.status != 'abgelehnt')
+			+ (SELECT COALESCE(SUM(t.points), 0) FROM point_transfers t
+			    WHERE t.from_user = u.id)
+			+ (SELECT COALESCE(SUM(o.points), 0) FROM wish_offers o
+			    JOIN wishes w ON w.id = o.wish_id
+			    WHERE w.user_id = u.id AND o.status IN ('angenommen', 'gemeldet'))   AS spent,
+			(SELECT COALESCE(SUM(t.points), 0) FROM point_transfers t
+			  WHERE t.to_user = u.id)                                             AS received
 		FROM users u
 		LEFT JOIN point_events p ON p.user_id = u.id
 		GROUP BY u.id
@@ -158,11 +168,11 @@ func (s *Service) Leaderboard() ([]Score, error) {
 		var lastActive sql.NullString
 		if err := rows.Scan(&sc.ID, &sc.Name, &sc.Color, &sc.AvatarEmoji,
 			&sc.TotalPoints, &sc.ThisWeek, &sc.Today, &sc.Activities,
-			&sc.ChoreCount, &sc.ShopCount, &lastActive, &sc.Spent); err != nil {
+			&sc.ChoreCount, &sc.ShopCount, &lastActive, &sc.Spent, &sc.Received); err != nil {
 			return nil, err
 		}
 		sc.LastActive = lastActive.String
-		sc.Balance = balanceOf(sc.TotalPoints, sc.Spent)
+		sc.Balance = balanceOf(sc.TotalPoints+sc.Received, sc.Spent)
 		sc.Level, sc.LevelProgress, sc.PointsToNext = deriveLevel(sc.TotalPoints)
 		sc.LevelName = levelName(sc.Level)
 		scores = append(scores, sc)
@@ -210,15 +220,22 @@ func balanceOf(total, spent int) int {
 	return 0
 }
 
-// Balance liefert das Guthaben einer Person. Innerhalb einer Transaktion
+// Balance liefert das Guthaben einer Person: verdiente Punkte plus das, was
+// ihr über die Wunschbörse gezahlt wurde, minus Einlösungen, Zahlungen und das,
+// was für angenommene Angebote zurückgelegt ist. Innerhalb einer Transaktion
 // gelesen, damit zwei gleichzeitige Einlösungen nicht beide durchkommen.
 func Balance(q interface {
 	QueryRow(query string, args ...any) *sql.Row
 }, userID int) (int, error) {
-	var total, spent int
+	var total, received, spent, paid, reserved int
 	if err := q.QueryRow(
 		`SELECT COALESCE(SUM(points), 0) FROM point_events WHERE user_id = ?`, userID,
 	).Scan(&total); err != nil {
+		return 0, err
+	}
+	if err := q.QueryRow(
+		`SELECT COALESCE(SUM(points), 0) FROM point_transfers WHERE to_user = ?`, userID,
+	).Scan(&received); err != nil {
 		return 0, err
 	}
 	if err := q.QueryRow(
@@ -227,7 +244,19 @@ func Balance(q interface {
 	).Scan(&spent); err != nil {
 		return 0, err
 	}
-	return balanceOf(total, spent), nil
+	if err := q.QueryRow(
+		`SELECT COALESCE(SUM(points), 0) FROM point_transfers WHERE from_user = ?`, userID,
+	).Scan(&paid); err != nil {
+		return 0, err
+	}
+	if err := q.QueryRow(
+		`SELECT COALESCE(SUM(o.points), 0) FROM wish_offers o
+		   JOIN wishes w ON w.id = o.wish_id
+		  WHERE w.user_id = ? AND o.status IN ('angenommen', 'gemeldet')`, userID,
+	).Scan(&reserved); err != nil {
+		return 0, err
+	}
+	return balanceOf(total+received, spent+paid+reserved), nil
 }
 
 func assignRanks(scores []Score, value func(Score) int, set func(*Score, int)) {

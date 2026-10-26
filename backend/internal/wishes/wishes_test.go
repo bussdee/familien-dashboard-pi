@@ -132,24 +132,36 @@ func TestPreisMussPositivSein(t *testing.T) {
 	}
 }
 
-func TestKindSiehtNurEigeneWuenscheElternAlleWandgeraetKeine(t *testing.T) {
+// Seit der Wunschbörse sieht jede Person die offenen Wünsche der anderen —
+// sonst könnte sie keinen erfüllen. Was darüber hinaus geschieht (Preis,
+// Anfrage, vergebene Wünsche), bleibt bei den Beteiligten und den Eltern; das
+// Wandgerät sieht keinen.
+func TestSichtbarkeitDerWuensche(t *testing.T) {
 	db := testDB(t)
 	s := NewService(db)
-	// Ein zweites Kind.
 	if _, err := db.Exec(`INSERT INTO users (id, name, color, pin_hash, role, avatar_emoji) VALUES (4, 'Zweit', '#fff', 'x', 'member', '🙂')`); err != nil {
 		t.Fatal(err)
 	}
-	wunschAnlegen(t, s, kind, "member", `{"title":"A"}`)
+	a := wunschAnlegen(t, s, kind, "member", `{"title":"A"}`)
 	wunschAnlegen(t, s, 4, "member", `{"title":"B"}`)
 
-	if n := len(liste(t, s, kind, "member", false)); n != 1 {
-		t.Errorf("Kind sieht %d Wünsche, erwartet 1", n)
+	if n := len(liste(t, s, kind, "member", false)); n != 2 {
+		t.Errorf("Kind sieht %d Wünsche, erwartet 2 (der eigene und der offene des anderen)", n)
 	}
 	if n := len(liste(t, s, papa, "admin", false)); n != 2 {
 		t.Errorf("Eltern sehen %d Wünsche, erwartet 2", n)
 	}
 	if n := len(liste(t, s, 0, "", true)); n != 0 {
 		t.Errorf("Wandgerät sieht %d Wünsche, erwartet 0", n)
+	}
+
+	// Sobald die Eltern einen Preis gesetzt haben, ist der Wunsch nicht mehr
+	// offen für andere: Er bleibt beim Kind und den Eltern.
+	if rec := aufruf(s.Decide, papa, "admin", false, `{"cost":50}`, strconv.Itoa(a)); rec.Code != http.StatusNoContent {
+		t.Fatal(rec.Code)
+	}
+	if n := len(liste(t, s, 4, "member", false)); n != 1 {
+		t.Errorf("das andere Kind sieht %d Wünsche, erwartet 1 (nur den eigenen)", n)
 	}
 }
 

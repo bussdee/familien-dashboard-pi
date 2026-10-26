@@ -132,6 +132,15 @@ func newRouter(cfg *config.Config, d dienste) http.Handler {
 				r.Delete("/wishes/{id}", d.wishesSvc.Withdraw)
 				r.Post("/wishes/{id}/redeem", d.wishesSvc.Redeem)
 
+				// Die Wunschbörse: erfüllen darf jede Person, die den Wunsch
+				// nicht selbst geäußert hat.
+				r.Post("/wishes/{id}/offers", d.wishesSvc.Offer)
+				r.Delete("/wishes/{id}/offers/{oid}", d.wishesSvc.WithdrawOffer)
+				r.Post("/wishes/{id}/offers/{oid}/accept", d.wishesSvc.Accept)
+				r.Post("/wishes/{id}/offers/{oid}/decline", d.wishesSvc.Decline)
+				r.Post("/wishes/{id}/offers/{oid}/done", d.wishesSvc.Done)
+				r.Post("/wishes/{id}/offers/{oid}/confirm", d.wishesSvc.Confirm)
+
 				// Persönliche Feeds gehören einer Person.
 				r.Post("/rss/feeds", d.newsSvc.CreatePersonal)
 				r.Delete("/rss/feeds/{id}", d.newsSvc.DeletePersonal)
