@@ -376,7 +376,7 @@ func (s *Store) Migrate() error {
 			title TEXT NOT NULL,
 			emoji TEXT NOT NULL DEFAULT '⭐',
 			cost INTEGER,
-			-- offen | bepreist | angefragt | erfuellt | abgelehnt
+			-- offen | bepreist | angefragt | vergeben | erfuellt | abgelehnt
 			status TEXT NOT NULL DEFAULT 'offen',
 			note TEXT NOT NULL DEFAULT '',
 			redemption_id INTEGER,
@@ -384,6 +384,39 @@ func (s *Store) Migrate() error {
 			decided_at DATETIME,
 			FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 		)`,
+		// Die Wunschbörse: Jede Person kann einem Wunsch ein Angebot in Punkten
+		// machen. Nimmt der Wünschende es an und bestätigt später die Erfüllung,
+		// gehen die Punkte an den, der erfüllt hat (point_transfers). Eine
+		// Übertragung ändert Guthaben, aber nie Level, Rangliste oder
+		// Familienziel — sonst ließe sich die Rangliste zwischen Geschwistern
+		// verschieben.
+		`CREATE TABLE IF NOT EXISTS wish_offers (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			wish_id INTEGER NOT NULL,
+			offerer_id INTEGER NOT NULL,
+			points INTEGER NOT NULL CHECK (points >= 0),
+			note TEXT NOT NULL DEFAULT '',
+			-- offen | angenommen | gemeldet | erledigt | abgelehnt | zurueckgezogen
+			status TEXT NOT NULL DEFAULT 'offen',
+			created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			decided_at DATETIME,
+			FOREIGN KEY (wish_id) REFERENCES wishes(id) ON DELETE CASCADE,
+			FOREIGN KEY (offerer_id) REFERENCES users(id) ON DELETE CASCADE
+		)`,
+		`CREATE INDEX IF NOT EXISTS idx_wish_offers_wish ON wish_offers(wish_id, status)`,
+		`CREATE TABLE IF NOT EXISTS point_transfers (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			from_user INTEGER NOT NULL,
+			to_user INTEGER NOT NULL,
+			points INTEGER NOT NULL CHECK (points >= 0),
+			wish_id INTEGER,
+			offer_id INTEGER,
+			created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			FOREIGN KEY (from_user) REFERENCES users(id) ON DELETE CASCADE,
+			FOREIGN KEY (to_user) REFERENCES users(id) ON DELETE CASCADE
+		)`,
+		`CREATE INDEX IF NOT EXISTS idx_transfers_from ON point_transfers(from_user)`,
+		`CREATE INDEX IF NOT EXISTS idx_transfers_to ON point_transfers(to_user)`,
 		`CREATE INDEX IF NOT EXISTS idx_wishes_user ON wishes(user_id, status)`,
 		`CREATE TABLE IF NOT EXISTS login_attempts (
 			user_id INTEGER PRIMARY KEY,
@@ -424,6 +457,52 @@ func (s *Store) Migrate() error {
 			last_error TEXT NOT NULL DEFAULT '',
 			created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 		)`,
+		// Das Rezeptbuch. Zutaten und Schritte sind Zeilen, wie beim Essensplan:
+		// Sie wandern mit einem Tipp auf die Einkaufsliste. image ist der Name
+		// einer Datei im Rezeptordner (leer = kein Bild).
+		`CREATE TABLE IF NOT EXISTS recipes (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			title TEXT NOT NULL,
+			source_url TEXT NOT NULL DEFAULT '',
+			image TEXT NOT NULL DEFAULT '',
+			servings TEXT NOT NULL DEFAULT '',
+			prep_min INTEGER NOT NULL DEFAULT 0,
+			cook_min INTEGER NOT NULL DEFAULT 0,
+			total_min INTEGER NOT NULL DEFAULT 0,
+			category TEXT NOT NULL DEFAULT '',
+			note TEXT NOT NULL DEFAULT '',
+			ingredients TEXT NOT NULL DEFAULT '',
+			steps TEXT NOT NULL DEFAULT '',
+			created_by INTEGER,
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL
+		)`,
+		// Neuigkeiten: Feeds und ihre letzten Meldungen. owner_id NULL heißt
+		// Familien-Feed, sonst gehört er der Person. Die Meldungen sind schon
+		// bereinigter Text (siehe Paket neuigkeiten).
+		`CREATE TABLE IF NOT EXISTS rss_feeds (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			title TEXT NOT NULL DEFAULT '',
+			url TEXT NOT NULL,
+			owner_id INTEGER,
+			last_ok DATETIME,
+			last_error TEXT NOT NULL DEFAULT '',
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE CASCADE
+		)`,
+		`CREATE TABLE IF NOT EXISTS rss_items (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			feed_id INTEGER NOT NULL,
+			guid TEXT NOT NULL,
+			title TEXT NOT NULL,
+			link TEXT NOT NULL DEFAULT '',
+			summary TEXT NOT NULL DEFAULT '',
+			published DATETIME NOT NULL,
+			UNIQUE (feed_id, guid),
+			FOREIGN KEY (feed_id) REFERENCES rss_feeds(id) ON DELETE CASCADE
+		)`,
+		`CREATE INDEX IF NOT EXISTS idx_rss_items_published ON rss_items(published DESC)`,
 		`CREATE INDEX IF NOT EXISTS idx_shopping_checked ON shopping_items(checked, created_at)`,
 		`CREATE INDEX IF NOT EXISTS idx_notes_owner ON notes(owner_id)`,
 		`CREATE UNIQUE INDEX IF NOT EXISTS idx_notes_source_file ON notes(source_file) WHERE source_file IS NOT NULL`,
@@ -491,6 +570,11 @@ func (s *Store) Migrate() error {
 	// Verweis führt zurück: Entscheiden die Eltern über die Einlösung,
 	// bekommt der Wunsch seinen neuen Stand.
 	if err := s.addColumn("reward_redemptions", "wish_id", "INTEGER"); err != nil {
+		return err
+	}
+
+	// Wer einen Wunsch über die Wunschbörse erfüllt hat.
+	if err := s.addColumn("wishes", "fulfilled_by", "INTEGER"); err != nil {
 		return err
 	}
 

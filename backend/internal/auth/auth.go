@@ -447,7 +447,8 @@ func (s *Service) SetPreference(w http.ResponseWriter, r *http.Request) {
 // arbitrary per-user key/value store reachable from the browser.
 func allowedPreference(key string) bool {
 	switch key {
-	case "dashboard.layout":
+	// neuigkeiten.aus: wer die Neuigkeiten für sich ausblendet ("1").
+	case "dashboard.layout", "neuigkeiten.aus":
 		return true
 	}
 	return false

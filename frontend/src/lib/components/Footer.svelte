@@ -1,6 +1,7 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
   import { Heart } from 'lucide-svelte';
+  import { session } from '$lib/stores';
 </script>
 
 <!--
@@ -10,6 +11,9 @@
 <footer class="mt-8 border-t border-border/60 px-4 py-5 text-center">
   <p class="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
     <span>{t('Familien Dashboard')}</span>
+    <!-- Am Wandgerät steht nur der Name: Links nach draussen gehören nicht in
+         den Flur, wo Kinder davorstehen. -->
+    {#if !$session.device}
     <span aria-hidden="true">·</span>
     <a
       href="https://familienfabrik.at"
@@ -29,5 +33,6 @@
       <Heart class="h-3 w-3" />
       {t('Spenden')}
     </a>
+    {/if}
   </p>
 </footer>

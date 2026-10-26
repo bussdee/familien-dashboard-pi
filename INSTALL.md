@@ -440,12 +440,29 @@ Alltag — nach ein paar Wochen nachsehen. Ungültige Werte hält der Start auf
 
 ---
 
+## Rezeptbuch, Neuigkeiten und Bildschirmschoner einrichten
+
+Alles geschieht in der Weboberfläche unter *Verwaltung → Bereiche* und
+*→ Bildschirm*; eine Datei muss dafür niemand anfassen.
+
+- **Rezeptbuch**: standardmäßig an. Ein Rezept holt der Server beim Eintragen
+  einmal von der Adresse; das Bild liegt danach unter `backend/data/recipes/`.
+- **Neuigkeiten**: standardmäßig **aus**, weil der Server dann regelmäßig
+  fremde Adressen abruft. Einschalten, danach Familien-Feeds unter
+  *Neuigkeiten → Quellen* eintragen; persönliche Listen sind ein zweiter
+  Schalter.
+- **Bildschirmschoner**: Vorgabe ist das Wandgerät nach fünf Minuten. Wo, wie
+  lange und wie dunkel es nachts wird, steht unter *Verwaltung → Bildschirm*.
+
+Der Abruf fremder Adressen (Kalender-Abos, Rezepte, Neuigkeiten) ruft nie
+Adressen im Heimnetz auf, auch nicht über eine Weiterleitung.
+
 ## Sicherung
 
 Automatisch jede Nacht um 3 Uhr, sieben Tage Aufbewahrung, abgelegt unter
 `backend/data/backup/`. Gesichert werden die Datenbank sowie die Ordner
 `notes`, `ics`, `ics-abo` (die zuletzt geholte Fassung abonnierter
-Kalender), `photos` und `files`.
+Kalender), `photos`, `files` und `recipes` (die Bilder des Rezeptbuchs).
 
 **Musik ist bewusst nicht dabei.** Sie liegt ausserhalb des Datenordners, wird
 nur schreibgeschützt eingehängt und kann Hunderte Gigabyte gross sein — die

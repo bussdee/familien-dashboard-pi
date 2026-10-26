@@ -17,16 +17,19 @@ import (
 	"family-dashboard/backend/internal/chores"
 	"family-dashboard/backend/internal/config"
 	"family-dashboard/backend/internal/devices"
+	"family-dashboard/backend/internal/einstellungen"
 	"family-dashboard/backend/internal/files"
 	"family-dashboard/backend/internal/goals"
 	"family-dashboard/backend/internal/links"
 	"family-dashboard/backend/internal/meals"
 	"family-dashboard/backend/internal/music"
+	"family-dashboard/backend/internal/neuigkeiten"
 	"family-dashboard/backend/internal/notes"
 	"family-dashboard/backend/internal/notify"
 	"family-dashboard/backend/internal/photos"
 	"family-dashboard/backend/internal/points"
 	"family-dashboard/backend/internal/rewards"
+	"family-dashboard/backend/internal/rezepte"
 	"family-dashboard/backend/internal/shopping"
 	"family-dashboard/backend/internal/store"
 	"family-dashboard/backend/internal/times"
@@ -90,6 +93,9 @@ func main() {
 	timesSvc := times.NewService(sql)
 	mealsSvc := meals.NewService(sql, shoppingSvc)
 	rewardsSvc := rewards.NewService(sql)
+	einstSvc := einstellungen.NewService(db)
+	rezepteSvc := rezepte.NewService(sql, cfg.Recipes.Dir, shoppingSvc, einstSvc)
+	newsSvc := neuigkeiten.NewService(sql, einstSvc)
 	goalsSvc := goals.NewService(sql)
 	wishesSvc := wishes.NewService(sql)
 	backupSvc := backup.NewService(sql, cfg.Database.Path, cfg.Database.BackupDir,
@@ -116,6 +122,7 @@ func main() {
 	go devicesSvc.Start(ctx)
 	go backupSvc.Start(ctx)
 	go musicSvc.Start(ctx)
+	go newsSvc.Start(ctx)
 
 	r := newRouter(cfg, dienste{
 		authSvc:     authSvc,
@@ -123,16 +130,19 @@ func main() {
 		calendarSvc: calendarSvc,
 		choresSvc:   choresSvc,
 		devicesSvc:  devicesSvc,
+		einstSvc:    einstSvc,
 		filesSvc:    filesSvc,
 		goalsSvc:    goalsSvc,
 		linksSvc:    linksSvc,
 		mealsSvc:    mealsSvc,
 		musicSvc:    musicSvc,
+		newsSvc:     newsSvc,
 		notesSvc:    notesSvc,
 		notifySvc:   notifySvc,
 		photosSvc:   photosSvc,
 		pointsSvc:   pointsSvc,
 		rewardsSvc:  rewardsSvc,
+		rezepteSvc:  rezepteSvc,
 		shoppingSvc: shoppingSvc,
 		timesSvc:    timesSvc,
 		weatherSvc:  weatherSvc,

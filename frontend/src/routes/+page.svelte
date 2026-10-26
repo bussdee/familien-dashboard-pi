@@ -1,7 +1,6 @@
 <script lang="ts">
   import { t, intlLocale } from '$lib/i18n';
   import { onMount } from 'svelte';
-  import { goto } from '$app/navigation';
   import { RefreshCw, TriangleAlert } from 'lucide-svelte';
   import {
     adminApi, calendarApi, choresApi, connectShoppingSocket,
@@ -22,12 +21,12 @@
   import NotesWidget from '$lib/components/widgets/NotesWidget.svelte';
   import DevicesWidget from '$lib/components/widgets/DevicesWidget.svelte';
   import CountdownWidget from '$lib/components/widgets/CountdownWidget.svelte';
-  import PhotoWidget from '$lib/components/widgets/PhotoWidget.svelte';
   import FilesWidget from '$lib/components/widgets/FilesWidget.svelte';
   import MusicWidget from '$lib/components/widgets/MusicWidget.svelte';
   import TimesWidget from '$lib/components/widgets/TimesWidget.svelte';
   import LinksWidget from '$lib/components/widgets/LinksWidget.svelte';
-  import { LayoutGrid } from 'lucide-svelte';
+  import { ChevronDown, LayoutGrid } from 'lucide-svelte';
+  import TimerWidget from '$lib/components/widgets/TimerWidget.svelte';
   import type {
     CalendarEvent, Chore, DeviceStatus, Meal, Note, ShoppingItem, TimeDay, User, WeatherData,
   } from '$lib/types';
@@ -59,6 +58,16 @@
   );
 
   const me = $derived(board.for($session.user?.id));
+
+  // Am Wandgerät vorn, was man im Vorbeigehen braucht; der Rest liegt
+  // eingeklappt dahinter.
+  const WAND_NEBEN = ['notes', 'files', 'devices', 'links', 'music'];
+  const hauptFenster = $derived(
+    layout.visible.filter((w) => !($session.device && WAND_NEBEN.includes(w.id))),
+  );
+  const nebenFenster = $derived(
+    layout.visible.filter((w) => $session.device && WAND_NEBEN.includes(w.id)),
+  );
 
   /**
    * Every widget loads independently — one failing endpoint (no internet for
@@ -114,24 +123,9 @@
     devices = await devicesApi.list();
   }
 
-  /**
-   * Ein Wandgerät soll nicht stundenlang eine Aufgabenliste anstarren. Nach
-   * einer Weile ohne Berührung wird daraus ein Bilderrahmen; eine Berührung
-   * dort führt zurück in den Familien-Modus, nie in ein fremdes Konto.
-   */
-  const RUHE_MS = 5 * 60_000;
-  let ruheTimer: ReturnType<typeof setTimeout> | null = null;
-
-  function ruheNeuStarten() {
-    if (ruheTimer) clearTimeout(ruheTimer);
-    if (!$session.device) return;
-    ruheTimer = setTimeout(() => void goto('/diashow'), RUHE_MS);
-  }
-
   onMount(() => {
     void loadAll();
     if (!layout.loaded) void layout.load();
-    ruheNeuStarten();
 
     if ($session.user?.role === 'admin') {
       adminApi.listUsers().then((list) => (users = list)).catch(() => {});
@@ -161,7 +155,6 @@
     return () => {
       disconnect();
       clearInterval(timer);
-      if (ruheTimer) clearTimeout(ruheTimer);
       connection.setLive(false);
     };
   });
@@ -169,9 +162,6 @@
 </script>
 
 <svelte:head><title>{t('Familien Dashboard')}</title></svelte:head>
-
-<!-- Jede Berührung schiebt den Ruhezustand nach hinten. -->
-<svelte:window onpointerdown={ruheNeuStarten} onkeydown={ruheNeuStarten} />
 
 <!-- Volle Breite: auf einem großen Monitor bleibt sonst links und rechts
      Rand stehen, und der Flurbildschirm verschenkt die Hälfte der Fläche. -->
@@ -268,42 +258,67 @@
       Order and visibility come from the person's own layout preference; the
       default puts the two lists people act on first.
     -->
+    {#snippet fenster(widget: { id: string })}
+      <div id={widget.id} class="scroll-mt-20">
+        {#if widget.id === 'chores'}
+          <ChoresWidget bind:chores {users} onRefresh={reloadChores} />
+        {:else if widget.id === 'shopping'}
+          <ShoppingWidget bind:items={shopping} />
+        {:else if widget.id === 'calendar'}
+          <!-- Die Namensliste kommt aus der Rangliste: Sie steht jedem
+               offen, die Benutzerverwaltung nur Administratoren — und
+               eintragen darf hier jeder. -->
+          <CalendarWidget {events} users={board.scores} onRefresh={reloadCalendar} />
+        {:else if widget.id === 'goal'}
+          <GoalWidget />
+        {:else if widget.id === 'meals'}
+          <MealsWidget bind:meals />
+        {:else if widget.id === 'links'}
+          <LinksWidget />
+        {:else if widget.id === 'countdown'}
+          <CountdownWidget {events} onRefresh={reloadCalendar} />
+        {:else if widget.id === 'times'}
+          <TimesWidget />
+        {:else if widget.id === 'notes'}
+          <NotesWidget bind:notes />
+        {:else if widget.id === 'timer'}
+          <TimerWidget />
+        {:else if widget.id === 'music'}
+          <MusicWidget />
+        {:else if widget.id === 'files'}
+          <FilesWidget />
+        {:else if widget.id === 'devices'}
+          <DevicesWidget {devices} onRefresh={reloadDevices} />
+        {/if}
+      </div>
+    {/snippet}
+
+    <!--
+      Order and visibility come from the person's own layout preference; the
+      default puts the two lists people act on first.
+
+      Am Wandgerät stehen die Fenster, die man im Vorbeigehen braucht, vorn und
+      gross; Notizen, Dateien, Geräte und Links liegen eingeklappt dahinter.
+    -->
     <div class="widget-raster mt-2">
-      {#each layout.visible as widget (widget.id)}
-        <div id={widget.id} class="scroll-mt-20">
-          {#if widget.id === 'chores'}
-            <ChoresWidget bind:chores {users} onRefresh={reloadChores} />
-          {:else if widget.id === 'shopping'}
-            <ShoppingWidget bind:items={shopping} />
-          {:else if widget.id === 'calendar'}
-            <!-- Die Namensliste kommt aus der Rangliste: Sie steht jedem
-                 offen, die Benutzerverwaltung nur Administratoren — und
-                 eintragen darf hier jeder. -->
-            <CalendarWidget {events} users={board.scores} onRefresh={reloadCalendar} />
-          {:else if widget.id === 'goal'}
-            <GoalWidget />
-          {:else if widget.id === 'meals'}
-            <MealsWidget bind:meals />
-          {:else if widget.id === 'links'}
-            <LinksWidget />
-          {:else if widget.id === 'countdown'}
-            <CountdownWidget {events} onRefresh={reloadCalendar} />
-          {:else if widget.id === 'times'}
-            <TimesWidget />
-          {:else if widget.id === 'notes'}
-            <NotesWidget bind:notes />
-          {:else if widget.id === 'photos'}
-            <PhotoWidget />
-          {:else if widget.id === 'music'}
-            <MusicWidget />
-          {:else if widget.id === 'files'}
-            <FilesWidget />
-          {:else if widget.id === 'devices'}
-            <DevicesWidget {devices} onRefresh={reloadDevices} />
-          {/if}
-        </div>
+      {#each hauptFenster as widget (widget.id)}
+        {@render fenster(widget)}
       {/each}
     </div>
+
+    {#if nebenFenster.length > 0}
+      <details class="mt-4 rounded-2xl border border-[color:var(--haarlinie)] px-4 py-3 [&[open]>summary_.pfeil]:rotate-180">
+        <summary class="flex cursor-pointer list-none items-center gap-2 text-sm font-medium text-muted-foreground [&::-webkit-details-marker]:hidden">
+          <ChevronDown class="pfeil h-4 w-4 transition-transform" />
+          {t('Weitere Fenster ({0})', [nebenFenster.length])}
+        </summary>
+        <div class="widget-raster mt-4">
+          {#each nebenFenster as widget (widget.id)}
+            {@render fenster(widget)}
+          {/each}
+        </div>
+      </details>
+    {/if}
 
     {#if layout.visible.length === 0}
       <section class="card p-8 text-center">

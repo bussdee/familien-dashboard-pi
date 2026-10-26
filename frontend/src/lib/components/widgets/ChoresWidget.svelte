@@ -59,6 +59,13 @@
   // tatsächlich geschafft wurde.
   const abgehakt = $derived(chores.filter((c) => c.done));
   const mine = $derived(chores.filter((c) => c.assignee_id === $session.user?.id));
+  // Wer angemeldet ist, sieht die eigenen Aufgaben zuerst — die Reihenfolge
+  // sonst bleibt, wie sie war (sort ist stabil).
+  const meineZuerst = (liste: Chore[]) => {
+    const ich = $session.user?.id;
+    if (!ich) return liste;
+    return [...liste].sort((a, b) => Number(b.assignee_id === ich) - Number(a.assignee_id === ich));
+  };
 
   // ---- Zu bestätigen ----
   /**
@@ -460,7 +467,7 @@
     />
   {:else}
     <ul class="scrollbar-thin md:max-h-[320px] md:overflow-y-auto pr-1">
-      {#each [...overdue, ...dueToday, ...later, ...abgehakt] as chore (chore.id)}
+      {#each [...meineZuerst(overdue), ...meineZuerst(dueToday), ...later, ...abgehakt] as chore (chore.id)}
         <li
           class="group flex items-center gap-3 rounded-lg px-1 py-2.5 transition-colors
                  [&+li]:border-t [&+li]:border-[color:var(--haarlinie)] hover:bg-muted/25"

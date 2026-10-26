@@ -1,7 +1,7 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
   import '../app.css';
-  import { onMount } from 'svelte';
+  import { onMount, untrack } from 'svelte';
   import { RefreshCw, WifiOff } from 'lucide-svelte';
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
@@ -11,6 +11,7 @@
   import { layout } from '$lib/stores/layout.svelte';
   import { player } from '$lib/stores/player.svelte';
   import { diashow } from '$lib/stores/diashow.svelte';
+  import { einstellungen } from '$lib/stores/einstellungen.svelte';
   import { board } from '$lib/stores/scores.svelte';
   import Header from '$lib/components/Header.svelte';
   import Footer from '$lib/components/Footer.svelte';
@@ -23,6 +24,7 @@
   import BottomNav from '$lib/components/BottomNav.svelte';
   import QuickAdd from '$lib/components/QuickAdd.svelte';
   import Toasts from '$lib/components/Toasts.svelte';
+  import Bildschirmschoner from '$lib/components/Bildschirmschoner.svelte';
   import PunkteBuchen from '$lib/components/PunkteBuchen.svelte';
   import ElternPin from '$lib/components/ElternPin.svelte';
 
@@ -69,6 +71,15 @@
   $effect(() => {
     if (inDiashow) diashow.betreten();
     else diashow.verlassen();
+  });
+
+  // Die Schalter der Familie bestimmen Menü und Bildschirmschoner. Sie werden
+  // geholt, sobald klar ist, wer da ist — auch nach einer Anmeldung auf der
+  // Anmeldeseite, nicht nur beim Start.
+  $effect(() => {
+    const wer = $session.user?.id ?? ($session.device ? -1 : 0);
+    if (!$session.ready || wer === 0) return;
+    untrack(() => void einstellungen.load(wer > 0));
   });
 
   /**
@@ -208,6 +219,11 @@
   {/if}
 
   <Toasts />
+
+  <!-- Nach einer Weile ohne Berührung: Diashow oder Uhr. -->
+  {#if !isLogin}
+    <Bildschirmschoner />
+  {/if}
 
   <!-- Punkte vergeben ist Elternsache. Am Wandgerät geht es mit der PIN
        eines Elternteils, die ElternPin dort abfragt. -->

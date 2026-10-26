@@ -2,10 +2,12 @@
   import { t, dfLocale, intlLocale, tServer } from '$lib/i18n';
   import { onMount, untrack } from 'svelte';
   import { goto } from '$app/navigation';
+  import { page } from '$app/stores';
   import {
     Bell, CalendarDays, Check, ChevronDown, ChevronUp, Database, Download, HardDriveDownload,
     ChevronRight, CornerLeftUp, Folder, MonitorSmartphone, Music, Plus, RefreshCw,
     Minus, RotateCcw, Shield, Sparkles, Trash2, TriangleAlert, Undo2, Users, X, Zap,
+    LayoutGrid, MonitorPlay, Server,
   } from 'lucide-svelte';
   import { formatDistanceToNow, parseISO } from 'date-fns';
   import { ApiError, adminApi, authApi, notifyApi, subscriptionsApi } from '$lib/api';
@@ -16,6 +18,29 @@
     Activity, BackupFile, CalendarSubscription, DeviceTarget, MusicDirListing, MusicStatus, User,
   } from '$lib/types';
   import { confirmAction } from '$lib/stores/confirm.svelte';
+  import AdminBereiche from '$lib/components/admin/AdminBereiche.svelte';
+  import AdminSchoner from '$lib/components/admin/AdminSchoner.svelte';
+
+  // ---- Die Bereiche der Verwaltung ----
+  // Früher eine einzige lange Seite mit acht Kästen untereinander. Jetzt vier
+  // Bereiche, die man oben wählt; der gewählte steht in der Adresse
+  // (?bereich=…), damit „zurück" und ein Lesezeichen dorthin führen.
+  type Bereich = 'familie' | 'bereiche' | 'bildschirm' | 'system';
+  const BEREICHE: { id: Bereich; label: string; icon: typeof Users }[] = [
+    { id: 'familie', label: t('Familie'), icon: Users },
+    { id: 'bereiche', label: t('Bereiche'), icon: LayoutGrid },
+    { id: 'bildschirm', label: t('Bildschirm'), icon: MonitorPlay },
+    { id: 'system', label: t('System'), icon: Server },
+  ];
+  const bereich = $derived.by<Bereich>(() => {
+    const b = $page.url.searchParams.get('bereich');
+    return BEREICHE.some((x) => x.id === b) ? (b as Bereich) : 'familie';
+  });
+  function waehleBereich(id: Bereich) {
+    const url = new URL($page.url);
+    url.searchParams.set('bereich', id);
+    void goto(url, { replaceState: true, noScroll: true, keepFocus: true });
+  }
 
   // ---- Wandgerät ----
   let istWandgeraet = $state(false);
@@ -54,6 +79,13 @@
 
   let users = $state<User[]>([]);
   let backups = $state<BackupFile[]>([]);
+
+  // Wie alt ist die letzte Sicherung? Eine Sicherung, die seit Tagen fehlt, ist
+  // die Art Fehler, die man erst am Tag bemerkt, an dem man sie braucht.
+  const letzteSicherung = $derived(
+    backups.length > 0 ? backups.map((b) => parseISO(b.modified).getTime()).reduce((a, b) => Math.max(a, b), 0) : null,
+  );
+  const sicherungAlt = $derived(letzteSicherung !== null && Date.now() - letzteSicherung > 36 * 3_600_000);
   let error = $state('');
   let notice = $state('');
   let loading = $state(true);
@@ -557,6 +589,21 @@
     <Shield class="h-6 w-6" /> {t('Verwaltung')}
   </h1>
 
+  <nav
+    class="scrollbar-thin -mx-4 mb-5 flex gap-1.5 overflow-x-auto px-4 pb-1 sm:mx-0 sm:px-0"
+    aria-label={t('Bereiche der Verwaltung')}
+  >
+    {#each BEREICHE as b (b.id)}
+      <button
+        class="chip shrink-0 !min-h-[40px] px-4 font-medium"
+        aria-pressed={bereich === b.id}
+        onclick={() => waehleBereich(b.id)}
+      >
+        <b.icon class="h-4 w-4" /> {b.label}
+      </button>
+    {/each}
+  </nav>
+
   {#if error}
     <p class="mb-4 rounded-lg bg-destructive/10 px-4 py-2 text-sm text-destructive">{error}</p>
   {/if}
@@ -567,6 +614,7 @@
     </p>
   {/if}
 
+  {#if bereich === 'familie'}
   <section class="card mb-4 p-5">
     <header class="mb-4 flex items-center justify-between">
       <h2 class="flex items-center gap-2 font-semibold">
@@ -690,7 +738,9 @@
       </ul>
     {/if}
   </section>
+  {/if}
 
+  {#if bereich === 'familie'}
   <section class="card mb-4 p-5">
     <header class="mb-4">
       <h2 class="flex items-center gap-2 font-semibold">
@@ -801,7 +851,9 @@
       </ul>
     {/if}
   </section>
+  {/if}
 
+  {#if bereich === 'system'}
   <section class="card mb-4 p-5">
     <header class="mb-4 flex items-center justify-between">
       <h2 class="flex items-center gap-2 font-semibold">
@@ -981,7 +1033,12 @@
       </ul>
     {/if}
   </section>
+  {/if}
 
+  {#if bereich === 'bereiche'}
+  <AdminBereiche />
+  {/if}
+  {#if bereich === 'bereiche'}
   <section class="card mb-4 p-5">
     <header class="mb-4 flex items-center justify-between">
       <h2 class="flex items-center gap-2 font-semibold">
@@ -1130,7 +1187,9 @@
       {/if}
     {/if}
   </section>
+  {/if}
 
+  {#if bereich === 'system'}
   <section class="card mb-4 p-5">
     <h2 class="mb-2 flex items-center gap-2 font-semibold">
       <Bell class="h-5 w-5" /> {t('Benachrichtigungen')}
@@ -1153,7 +1212,9 @@
       </p>
     {/if}
   </section>
+  {/if}
 
+  {#if bereich === 'bereiche'}
   <section class="card mb-4 p-5">
     <header class="mb-4 flex items-center justify-between">
       <h2 class="flex items-center gap-2 font-semibold">
@@ -1262,7 +1323,9 @@
       </ul>
     {/if}
   </section>
+  {/if}
 
+  {#if bereich === 'system'}
   <section class="card p-5">
     <header class="mb-4 flex items-center justify-between">
       <h2 class="flex items-center gap-2 font-semibold">
@@ -1280,6 +1343,16 @@
       </div>
     </header>
 
+    {#if sicherungAlt && letzteSicherung !== null}
+      <p class="mb-3 flex items-start gap-2 rounded-lg bg-amber-500/10 px-3 py-2 text-sm text-amber-700 dark:text-amber-400">
+        <TriangleAlert class="mt-0.5 h-4 w-4 shrink-0" />
+        {t('Die letzte Sicherung ist {0} alt. Prüfe, ob die nächtliche Sicherung läuft.', [formatDistanceToNow(letzteSicherung, { locale: dfLocale })])}
+      </p>
+    {:else if letzteSicherung !== null}
+      <p class="mb-3 flex items-center gap-2 text-sm text-success">
+        <Check class="h-4 w-4" /> {t('Letzte Sicherung vor {0}', [formatDistanceToNow(letzteSicherung, { locale: dfLocale })])}
+      </p>
+    {/if}
     <p class="mb-3 text-xs text-muted-foreground">
       {t('Automatisch jede Nacht um 3 Uhr, 7 Tage Aufbewahrung. Gespeichert unter')}
       <code>backend/data/backup/</code>.
@@ -1298,7 +1371,12 @@
       </ul>
     {/if}
   </section>
+  {/if}
 
+  {#if bereich === 'bildschirm'}
+  <AdminSchoner />
+  {/if}
+  {#if bereich === 'bildschirm'}
   <section class="card mt-4 p-5">
     <h2 class="mb-2 flex items-center gap-2 font-semibold">
       <MonitorSmartphone class="h-5 w-5" /> {t('Wandgerät')}
@@ -1331,4 +1409,5 @@
       </button>
     {/if}
   </section>
+  {/if}
 </div>

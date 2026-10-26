@@ -69,6 +69,10 @@ photos:
 files:
   dir: "/app/data/files"
 
+# Bilder der Rezepte, die per Link ins Rezeptbuch übernommen werden.
+recipes:
+  dir: "/app/data/recipes"
+
 # Musik. Der Ordner wird in docker-compose.yml schreibgeschützt eingehängt;
 # WO er auf dem Rechner liegt, steht in der .env unter MUSIC_HOST_DIR.
 #

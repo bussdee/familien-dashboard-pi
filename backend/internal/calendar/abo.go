@@ -8,18 +8,16 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"net"
 	"net/http"
 	"net/netip"
-	"net/url"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
-	"syscall"
 	"time"
 
+	"family-dashboard/backend/internal/abruf"
 	"family-dashboard/backend/internal/auth"
 	"github.com/emersion/go-ical"
 	"github.com/go-chi/chi/v5"
@@ -50,14 +48,16 @@ const (
 
 // Meldungen, die bei der Person ankommen. Bewusst feste Texte: Sie lassen sich
 // übersetzen, und die Einzelheiten stehen im Log, nicht in der Oberfläche.
+// Die Fehler rund um die Adresse und die Sperre teilt sich der Kalender mit
+// allen anderen Abrufen (Paket abruf).
 var (
-	errAdresseFehlt     = errors.New("Adresse fehlt")
-	errAdresseUngueltig = errors.New("Die Adresse ist ungültig")
-	errAdresseZuLang    = errors.New("Die Adresse ist zu lang")
-	errAdresseSchema    = errors.New("Die Adresse muss mit http:// oder https:// beginnen")
-	errAdresseZugang    = errors.New("Zugangsdaten gehören nicht in die Adresse")
-	errGesperrt         = errors.New("Die Adresse zeigt ins Heimnetz oder ist nicht öffentlich")
-	errWeiterleitung    = errors.New("Der Kalender leitet zu oft weiter")
+	errAdresseFehlt     = abruf.ErrFehlt
+	errAdresseUngueltig = abruf.ErrUngueltig
+	errAdresseZuLang    = abruf.ErrZuLang
+	errAdresseSchema    = abruf.ErrSchema
+	errAdresseZugang    = abruf.ErrZugang
+	errGesperrt         = abruf.ErrGesperrt
+	errWeiterleitung    = abruf.ErrWeiterleitung
 	errZuGross          = errors.New("Der Kalender ist größer als 5 MB")
 	errKeinKalender     = errors.New("Die Adresse liefert keinen Kalender")
 	errServerFehler     = errors.New("Der Kalender antwortet mit einem Fehler")
@@ -70,13 +70,6 @@ var (
 // aufrufen darf. webcal:// ist die Schreibweise der Kalender-Apps für https.
 func adresseBereinigen(roh string) (string, error) {
 	roh = strings.TrimSpace(roh)
-	if roh == "" {
-		return "", errAdresseFehlt
-	}
-	if len(roh) > 2000 {
-		return "", errAdresseZuLang
-	}
-
 	kleinbuchstaben := strings.ToLower(roh)
 	switch {
 	case strings.HasPrefix(kleinbuchstaben, "webcals://"):
@@ -84,115 +77,14 @@ func adresseBereinigen(roh string) (string, error) {
 	case strings.HasPrefix(kleinbuchstaben, "webcal://"):
 		roh = "https://" + roh[len("webcal://"):]
 	}
-
-	u, err := url.Parse(roh)
-	if err != nil {
-		return "", errAdresseUngueltig
-	}
-	if u.Scheme != "http" && u.Scheme != "https" {
-		return "", errAdresseSchema
-	}
-	if u.User != nil {
-		return "", errAdresseZugang
-	}
-	if u.Hostname() == "" {
-		return "", errAdresseUngueltig
-	}
-	u.Fragment = ""
-	return u.String(), nil
+	return abruf.Bereinigen(roh)
 }
 
-// ------------------------------------------------------------- Sperrliste
+// erlaubteAdresse und sichererClient liegen im Paket abruf, damit Rezepte und
+// Neuigkeiten dieselbe Sperre benutzen.
+func erlaubteAdresse(ip netip.Addr) bool { return abruf.ErlaubteAdresse(ip) }
 
-var gesperrteBereiche = mustPrefixe(
-	// IPv4
-	"0.0.0.0/8",       // „dieses Netz"
-	"100.64.0.0/10",   // CGNAT, auch Tailscale
-	"192.0.0.0/24",    // IETF-Protokollzuweisungen
-	"192.0.2.0/24",    // Dokumentation
-	"192.88.99.0/24",  // 6to4-Relay
-	"198.18.0.0/15",   // Messnetze
-	"198.51.100.0/24", // Dokumentation
-	"203.0.113.0/24",  // Dokumentation
-	"240.0.0.0/4",     // reserviert, samt Broadcast
-	// IPv6
-	"64:ff9b::/96",   // NAT64: steckt eine IPv4-Adresse, auch eine private
-	"64:ff9b:1::/48", // NAT64, lokal
-	"100::/64",       // verwerfen
-	"2001::/32",      // Teredo
-	"2001:db8::/32",  // Dokumentation
-	"2002::/16",      // 6to4: steckt eine IPv4-Adresse
-)
-
-func mustPrefixe(liste ...string) []netip.Prefix {
-	out := make([]netip.Prefix, 0, len(liste))
-	for _, s := range liste {
-		out = append(out, netip.MustParsePrefix(s))
-	}
-	return out
-}
-
-// erlaubteAdresse sagt, ob der Server diese IP anwählen darf: nur öffentliche
-// Adressen. Eine als IPv6 verpackte IPv4-Adresse (::ffff:127.0.0.1) wird als
-// das behandelt, was sie ist.
-func erlaubteAdresse(ip netip.Addr) bool {
-	ip = ip.Unmap()
-	if !ip.IsValid() {
-		return false
-	}
-	if ip.IsLoopback() || ip.IsPrivate() || ip.IsUnspecified() ||
-		ip.IsLinkLocalUnicast() || ip.IsLinkLocalMulticast() ||
-		ip.IsInterfaceLocalMulticast() || ip.IsMulticast() {
-		return false
-	}
-	for _, p := range gesperrteBereiche {
-		if p.Contains(ip) {
-			return false
-		}
-	}
-	return true
-}
-
-// sichererClient liefert einen HTTP-Client, der nur öffentliche Adressen
-// anwählt. Die Prüfung sitzt im Dialer, nach der Namensauflösung und vor dem
-// Verbindungsaufbau: Sie sieht die IP, die wirklich benutzt wird, und gilt
-// damit auch für jede Weiterleitung. Eine Umgebungsvariable wie HTTP_PROXY
-// wird nicht beachtet.
-func sichererClient() *http.Client {
-	dialer := &net.Dialer{
-		Timeout: 10 * time.Second,
-		Control: func(_, address string, _ syscall.RawConn) error {
-			ap, err := netip.ParseAddrPort(address)
-			if err != nil || !erlaubteAdresse(ap.Addr()) {
-				return errGesperrt
-			}
-			return nil
-		},
-	}
-	return &http.Client{
-		Timeout: aboZeitlimit,
-		Transport: &http.Transport{
-			Proxy:                  nil,
-			DialContext:            dialer.DialContext,
-			TLSHandshakeTimeout:    10 * time.Second,
-			ResponseHeaderTimeout:  aboZeitlimit,
-			DisableKeepAlives:      true,
-			MaxResponseHeaderBytes: 64 << 10,
-		},
-		CheckRedirect: func(req *http.Request, via []*http.Request) error {
-			if len(via) > aboMaxWeiterleitung {
-				return errWeiterleitung
-			}
-			if req.URL.Scheme != "http" && req.URL.Scheme != "https" {
-				return errAdresseSchema
-			}
-			if req.URL.User != nil {
-				return errAdresseZugang
-			}
-			return nil
-		},
-	}
-}
+func sichererClient() *http.Client { return abruf.NeuerClient(aboZeitlimit) }
 
 // -------------------------------------------------------------- Abrufen
 
@@ -210,15 +102,9 @@ func kalenderHolen(ctx context.Context, client *http.Client, adresse string) ([]
 
 	resp, err := client.Do(req)
 	if err != nil {
-		switch {
-		case errors.Is(err, errGesperrt):
-			return nil, errGesperrt
-		case errors.Is(err, errWeiterleitung):
-			return nil, errWeiterleitung
-		case errors.Is(err, errAdresseSchema), errors.Is(err, errAdresseZugang):
-			return nil, errAdresseUngueltig
+		if fehler := abruf.Uebersetzen(err); !errors.Is(fehler, abruf.ErrNichtErreichbar) {
+			return nil, fehler
 		}
-		log.Debug().Err(err).Msg("Calendar subscription fetch failed")
 		return nil, errNichtErreichbar
 	}
 	defer resp.Body.Close()
