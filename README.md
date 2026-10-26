@@ -63,16 +63,19 @@ solange es im eigenen, vertrauenswürdigen Netz bleibt.
 | ⭐ **Aufgaben** | Müll, Geschirrspüler, Katzenklo. Jede Aufgabe hat ein Intervall und einen Punktwert. Zuständig ist wahlweise *reihum*, eine feste Person, *alle* oder *wer mag*. Einmal erledigt ist erledigt — ein zweites Abhaken am selben Tag gibt es nicht. Auf Wunsch **bestätigt ein Elternteil**, bevor es Punkte gibt — *Zimmer aufräumen* heisst dann auch aufgeräumt. |
 | 🏆 **Punkte & Level** | Wer abhakt, bekommt Punkte. Level von *Neuling* bis *Legende*, Serien, elf Abzeichen, Siegertreppchen. Verklickt? Ein Elternteil nimmt es zurück — die Aufgabe wird dabei wieder fällig. Eltern vergeben und ziehen Punkte auch von Hand ab, für eine Person oder mehrere auf einmal, mit Grund — am Handy oder am Wandtablet mit der **Eltern-PIN**. |
 | 🎁 **Belohnungen** | Wofür die Punkte da sind: Die Eltern legen fest, was es gibt — Bildschirmzeit, ein Eis, den Film am Familienabend. Ein Kind löst ein, ein Elternteil bestätigt. Ausgegeben wird ein **Guthaben**; Level und Rangliste bleiben unberührt. |
-| ✨ **Wunschliste** | Ein Kind trägt einen Wunsch ein — *Ins Kino gehen* —, die Eltern legen fest, wie viele Punkte er kostet. Reicht das Guthaben, löst das Kind ihn ein. Ein Wunsch gehört dem Kind; am Wandgerät gibt es die Liste nicht. |
+| ✨ **Wunschbörse** | **Alle wünschen, alle erfüllen.** Jede Person trägt einen Wunsch ein — auch die Eltern: *Frühstück ans Bett*. Jede andere macht ein Angebot in Punkten (oder schenkt es). Der Wünschende nimmt eines an und zahlt, wenn es erfüllt ist, **an den, der erfüllt hat**. Level und Rangliste bleiben unberührt. Daneben gibt es den Weg der Eltern: Preis festlegen, das Kind löst ein. Am Wandgerät gibt es die Liste nicht. |
 | 🎯 **Familienziel** | Etwas, worauf alle gemeinsam hinarbeiten: Pizza-Abend, Zoo, Kino. Jeder verdiente Punkt zählt dazu, der Balken zeigt, wer wie viel beigetragen hat. Abzüge zählen nicht dagegen. |
 | 🛒 **Einkaufsliste** | Gemeinsam und **in Echtzeit**: Was im Laden abgehakt wird, verschwindet sofort auf allen Geräten. **Häufig gekaufte Artikel** stehen als Vorschläge zum Antippen bereit, und im Laden gibt es eine eigene Ansicht — nach Abteilung sortiert, der Bildschirm bleibt an. Punkte gibt es auch dafür. |
 | 🍝 **Essensplan** | Was gibt's heute — und die ganze Woche. Mit Zutaten, die **mit einem Tipp auf die Einkaufsliste** wandern, ohne Doppelte. Gerichte der letzten Monate stehen zum Wiederverwenden bereit. |
 | 📅 **Kalender** | Termine direkt eintragen, einmalig oder wiederkehrend — und **einen einzelnen Termin einer Wiederholung absagen**, ohne die Serie anzufassen (Klavier fällt nächsten Donnerstag aus). Oder eine `.ics` aus Apple, Google oder Outlook ablegen, oder einen Kalender **per Adresse abonnieren** (Schule, Müllabfuhr, Verein). |
 | 🔔 **Benachrichtigungen** | Optional und standardmäßig **aus**: Wartet eine Aufgabe auf Bestätigung, wünscht sich ein Kind etwas oder will etwas einlösen, meldet sich das Handy der Eltern — über euren eigenen [ntfy](https://ntfy.sh)-Server. Siehe [INSTALL.md](INSTALL.md#benachrichtigungen-aufs-handy). |
+| 📖 **Rezeptbuch** | **Ein Link genügt**: Das Dashboard liest Zutaten, Schritte, Zeiten und Bild aus der Rezeptseite und legt das Rezept im Buch ab — oder ihr tragt es von Hand ein. Zutaten wandern mit einem Tipp auf die Einkaufsliste, das Gericht in den Essensplan; der **Kochmodus** hält den Bildschirm wach. Manche große Seiten sperren Programme aus, dann bleibt die Eingabe von Hand. |
+| 📰 **Neuigkeiten** | Feeds (RSS, Atom) von Zeitungen, Blogs, Schule — für die Familie, und auf Wunsch persönliche Listen. Standardmäßig **aus**; die Eltern schalten sie in der Verwaltung ein, und jede Person kann sie für sich ausblenden. |
+| ⏱️ **Timer** | Nudeln, Zähneputzen, Hausaufgaben. Läuft auf dem Gerät. |
 | 📝 **Notizen** | Markdown, zweiseitig mit echten Dateien synchronisiert. Bleiben lesbar, auch ohne dieses Programm. |
 | 🔗 **Links** | Lesezeichen mit Kategorien, privat oder mit der Familie geteilt. Angepinnte erscheinen auf der Startseite. |
 | 🌧️ **Wetter mit Regenzeiten** | Nicht „98 % Regen", sondern **„Regen ab 18:30"**. Dazu der Temperaturverlauf der nächsten Stunden als Kurve. Wo Open-Meteo Viertelstundenwerte liefert (Mitteleuropa, DWD-Modell), wird es entsprechend genau. |
-| 🖼️ **Foto-Rahmen & Diashow** | Bilder hochladen, wechseln automatisch. Ein Knopf schaltet auf **Vollbild**: nur Foto, Uhrzeit, Wetter und was heute noch ansteht. |
+| 🖼️ **Fotos & Bildschirmschoner** | Bilder hochladen unter *Fotos*. Nach einer Weile ohne Berührung wird der Bildschirm zur **Diashow** mit Uhrzeit, Wetter und dem, was heute noch ansteht — oder zu einer Uhr; nachts dunkler. Wo, wann und wie, stellen die Eltern ein. Ein Tipp bringt zurück. |
 | 🎵 **Musik & Hörspiele** | Ein eigener Ordner voller MP3s — vom Pi, vom NAS oder von einer angesteckten Platte. Geblättert wird nach Ordnern, sortiert nach Dateiname: Ein Hörspiel läuft von Teil 1 bis Teil 12. Die Leiste unten bleibt beim Seitenwechsel stehen, die Musik läuft weiter. Titel und Knöpfe erscheinen auch auf dem Sperrbildschirm des Handys. |
 | 📎 **Dateien** | Bedienungsanleitung, Elternbrief, Formular fürs Ferienlager. Ein Elternteil legt ab, alle laden herunter — auch am Wandgerät. |
 | 🕗 **Arbeit & Schule** | Wer wann weg ist — und daraus: **ab wann sind alle da**. Das Kind trägt seinen Stundenplan als festen Wochenplan ein, die Eltern ihre Schichten als Kalenderblatt für vier Wochen. Ein eingetragener Tag sticht den Wochenplan, ein Feiertag hebt ihn also auf, ohne ihn zu löschen. |
@@ -85,6 +88,14 @@ solange es im eigenen, vertrauenswürdigen Netz bleibt.
 | 📲 **Wie eine App** | Zum Startbildschirm hinzufügen: eigenes Symbol, keine Browserleiste, Offline-Ansicht. |
 
 ---
+
+## Neu in 2.5
+
+- **Rezeptbuch** aus einem Link, mit Kochmodus, Einkaufsliste und Essensplan
+- **Neuigkeiten** aus Feeds, für die Familie und persönlich — abschaltbar
+- **Wunschbörse**: alle wünschen, alle erfüllen, bezahlt wird mit Punkten
+- **Bildschirmschoner** statt Foto-Kachel, einstellbar, mit Nachtabdunkelung
+- **Menü in Gruppen**, **Verwaltung in vier Bereichen**, **Timer**, größerer Wandmodus
 
 ## Neu in 2.3
 

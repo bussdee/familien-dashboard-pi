@@ -12,6 +12,91 @@ Deshalb gibt es hier **keine 1.4.5**. Sie stand eine Weile in dieser Datei,
 wurde aber nie veröffentlicht: Auf GitHub steht v1.4.4, und der Pi läuft
 darauf. Was unter 1.4.5 gesammelt war, ist in 1.5.0 aufgegangen.
 
+## [2.5.0] — 2026-10-26
+
+Ein Rezeptbuch, das aus einem Link entsteht, Neuigkeiten aus Feeds, eine
+Wunschbörse, auf der alle wünschen und alle erfüllen, ein Bildschirmschoner
+mit Einstellungen — und ein Menü und eine Verwaltung, die man wiederfindet.
+
+Bestehende Installationen übernehmen alles ohne Zutun: Die neuen Tabellen legt
+das Backend beim ersten Start selbst an, vorhandene Daten bleiben unberührt.
+**Die Neuigkeiten sind aus, bis die Eltern sie in der Verwaltung einschalten.**
+Eine Sache fällt auf: Die Foto-Kachel ist von der Übersicht verschwunden — die
+Fotos liegen jetzt unter *Fotos* im Menü.
+
+### Hinzugefügt
+
+- **Rezeptbuch.** Ein Link zu einem Rezept genügt: Das Dashboard liest Titel,
+  Zutaten, Schritte, Zeiten, Portionen und Bild aus der Seite (die meisten
+  Rezeptseiten tragen sie maschinenlesbar als schema.org/Recipe) und legt das
+  Rezept im Buch ab. Das Bild wird gespeichert, damit später kein Gerät der
+  Familie bei der fremden Seite anfragt. Außerdem: von Hand eintragen, suchen
+  (Name, Zutat, Kategorie), **Zutaten mit einem Tipp auf die Einkaufsliste**,
+  **in den Essensplan** übernehmen, ein **Kochmodus** mit großer Schrift und
+  wachem Bildschirm. Im Essensplan gibt es *Aus dem Rezeptbuch*.
+  Manche große Seiten halten Programme draußen; dann meldet das Dashboard das
+  und bietet die Eingabe von Hand an. Eintragen und löschen ist Elternsache,
+  lesen darf jeder, auch das Wandgerät.
+
+- **Neuigkeiten (RSS und Atom).** Familien-Feeds, die die Eltern pflegen, und
+  persönliche Listen, die nur ihrer Person gehören. Auch die Adresse einer
+  Webseite genügt, wenn sie einen Feed anbietet. Alles ist abschaltbar:
+  die Neuigkeiten insgesamt und die persönlichen Listen in der Verwaltung,
+  außerdem blendet jede Person sie für sich aus (Einstellungen). Meldungen
+  werden als reiner Text gespeichert, Links nur mit http und https.
+
+- **Wunschbörse.** Jede Person kann sich etwas wünschen, auch die Eltern, und
+  jede andere Person kann den Wunsch erfüllen, indem sie ein Angebot in Punkten
+  macht (0 heißt: geschenkt). Der Wünschende nimmt ein Angebot an, die Punkte
+  werden zurückgelegt; wenn er die Erfüllung bestätigt, zahlt er an den, der
+  erfüllt hat. Die Übertragung ändert das Guthaben, **nie Level, Rangliste
+  oder Familienziel**. Der Weg über die Eltern (Preis festlegen, Kind löst
+  ein) bleibt.
+
+- **Bildschirmschoner.** Nach einer Weile ohne Berührung zeigt der Bildschirm
+  die Diashow oder, ohne Fotos oder nach Wahl, eine große Uhr mit Wetter. Wo
+  (nur das Wandgerät oder jedes Gerät), nach wie vielen Minuten und wie dunkel
+  es nachts wird, stellen die Eltern unter *Verwaltung → Bildschirm* ein. Ein
+  Tipp bringt die Seite zurück, auf der man war. Vorgabe wie bisher: das
+  Wandgerät nach fünf Minuten.
+
+- **Fotos** als eigene Seite im Menü: ansehen, hochladen, löschen, Diashow von
+  Hand starten.
+
+- **Timer** als Fenster der Übersicht: Nudeln, Zähneputzen, Hausaufgaben. Er
+  läuft auf dem Gerät und übersteht ein Neuladen.
+
+- **Hinweis bei alter Sicherung** in der Verwaltung.
+
+### Geändert
+
+- **Das Menü ist nach Gruppen geordnet** (Alltag, Familie, Ich, Verwaltung),
+  durchsuchbar, mit einem Satz unter jedem Ziel. Die Darstellung (Design,
+  Farbe, Sprache) steht eingeklappt am Ende. Die Kopfleiste zeigt weniger.
+- **Die Verwaltung hat vier Bereiche** statt einer langen Seite: Familie,
+  Bereiche, Bildschirm, System. Der gewählte steht in der Adresse.
+- **Der Foto-Rahmen ist keine Kachel mehr**; der Bildschirmschoner löst ihn ab.
+  Ein vorhandenes Layout verliert die Kachel von selbst.
+- **Am Wandgerät** ist die Schrift größer, Notizen, Dateien, Geräte, Links und
+  Musik liegen eingeklappt hinter *Weitere Fenster*, und die Fußzeile trägt
+  keine Links nach draußen.
+- **Wünsche sehen jetzt alle Personen**, solange sie offen sind — sonst könnte
+  sie niemand erfüllen. Preis, Anfrage und vergebene Wünsche bleiben bei den
+  Beteiligten und den Eltern.
+- Die **Zeiten** der nächsten Tage brechen um, statt abgeschnitten zu werden.
+- Die **eigenen Aufgaben** stehen oben.
+- Der Abruf fremder Adressen (Kalender-Abos, Rezepte, Neuigkeiten) liegt in
+  einem gemeinsamen Paket mit denselben Sperren fürs Heimnetz.
+
+### Intern
+
+- Neue Tabellen: `recipes`, `rss_feeds`, `rss_items`, `wish_offers`,
+  `point_transfers`; neue Spalte `wishes.fulfilled_by`. Die Sicherung enthält
+  den Ordner `recipes`.
+- Die Rechtematrix kennt alle neuen Wege. Tests für Rezeptlesen und -import
+  (auch gegen das Heimnetz), Feeds (RSS, Atom, Latin-1, Rechte), die Börse
+  (Zahlung, Rücklage, Sichtbarkeit) und die Schalter.
+
 ## [2.4.0] — 2026-10-23
 
 Ein Termin, der nur einmal ausfällt, ein Schulkalender, der sich von selbst
