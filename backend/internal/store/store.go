@@ -514,6 +514,31 @@ func (s *Store) Migrate() error {
 			PRIMARY KEY (user_id, day),
 			FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 		)`,
+		// Die Tagesaufgabe: ein Eintrag je Kind und Tag, sobald sie geschafft ist.
+		`CREATE TABLE IF NOT EXISTS daily_quest (
+			user_id INTEGER NOT NULL,
+			day TEXT NOT NULL,
+			quest TEXT NOT NULL,
+			points INTEGER NOT NULL,
+			done_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			PRIMARY KEY (user_id, day),
+			FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+		)`,
+		// Post von Mama und Papa: eine Nachricht, die beim nächsten Öffnen
+		// aufgeht, auf Wunsch mit ein paar Punkten (bonus, gutgeschrieben beim
+		// Öffnen).
+		`CREATE TABLE IF NOT EXISTS family_mail (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			to_user INTEGER NOT NULL,
+			from_user INTEGER,
+			text TEXT NOT NULL,
+			bonus INTEGER NOT NULL DEFAULT 0 CHECK (bonus >= 0),
+			created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			opened_at DATETIME,
+			FOREIGN KEY (to_user) REFERENCES users(id) ON DELETE CASCADE,
+			FOREIGN KEY (from_user) REFERENCES users(id) ON DELETE SET NULL
+		)`,
+		`CREATE INDEX IF NOT EXISTS idx_family_mail_to ON family_mail(to_user, opened_at)`,
 		`CREATE INDEX IF NOT EXISTS idx_shopping_checked ON shopping_items(checked, created_at)`,
 		`CREATE INDEX IF NOT EXISTS idx_notes_owner ON notes(owner_id)`,
 		`CREATE UNIQUE INDEX IF NOT EXISTS idx_notes_source_file ON notes(source_file) WHERE source_file IS NOT NULL`,
@@ -586,6 +611,15 @@ func (s *Store) Migrate() error {
 
 	// Wer einen Wunsch über die Wunschbörse erfüllt hat.
 	if err := s.addColumn("wishes", "fulfilled_by", "INTEGER"); err != nil {
+		return err
+	}
+
+	// Tagesbonus: ein Tag, den der Serienschutz gerettet hat (joker), und die
+	// Stunde der Abholung in Ortszeit (für das Abzeichen „Frühaufsteher").
+	if err := s.addColumn("daily_bonus", "joker", "BOOLEAN NOT NULL DEFAULT 0"); err != nil {
+		return err
+	}
+	if err := s.addColumn("daily_bonus", "hour", "INTEGER NOT NULL DEFAULT -1"); err != nil {
 		return err
 	}
 

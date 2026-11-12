@@ -11,6 +11,7 @@ import (
 	"family-dashboard/backend/internal/config"
 	"family-dashboard/backend/internal/devices"
 	"family-dashboard/backend/internal/einstellungen"
+	"family-dashboard/backend/internal/familienpost"
 	"family-dashboard/backend/internal/files"
 	"family-dashboard/backend/internal/goals"
 	"family-dashboard/backend/internal/links"
@@ -43,6 +44,7 @@ type dienste struct {
 	choresSvc   *chores.Service
 	devicesSvc  *devices.Service
 	einstSvc    *einstellungen.Service
+	postSvc     *familienpost.Service
 	filesSvc    *files.Service
 	goalsSvc    *goals.Service
 	linksSvc    *links.Service
@@ -147,6 +149,15 @@ func newRouter(cfg *config.Config, d dienste) http.Handler {
 				// eine Serie haben könnte.
 				r.Get("/bonus", d.bonusSvc.Get)
 				r.Post("/bonus/heute", d.bonusSvc.Claim)
+				r.Get("/bonus/kalender", d.bonusSvc.Kalender)
+				r.Get("/bonus/aufgabe", d.bonusSvc.Aufgabe)
+
+				// Post von Mama und Papa: schreiben Eltern, öffnen nur, wer sie
+				// bekommt — beides persönlich, nicht am Wandgerät.
+				r.Get("/post", d.postSvc.List)
+				r.Post("/post", d.postSvc.Create)
+				r.Post("/post/{id}/open", d.postSvc.Open)
+				r.Delete("/post/{id}", d.postSvc.Delete)
 
 				// Persönliche Feeds gehören einer Person.
 				r.Post("/rss/feeds", d.newsSvc.CreatePersonal)
@@ -279,6 +290,8 @@ func newRouter(cfg *config.Config, d dienste) http.Handler {
 			// Die Monatsranglisten. Sie bleiben stehen, wenn die einmaligen
 			// Aufgaben des Monats längst gelöscht sind.
 			r.Get("/scoreboard/months", d.pointsSvc.Months)
+			// Das Sammelalbum: alle Abzeichen, geheime bleiben geheim.
+			r.Get("/badges", d.pointsSvc.Album)
 			r.Get("/chores/stats", d.pointsSvc.Scoreboard)
 
 			r.Get("/devices", d.devicesSvc.GetStatus)

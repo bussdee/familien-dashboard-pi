@@ -18,6 +18,7 @@ import (
 	"family-dashboard/backend/internal/config"
 	"family-dashboard/backend/internal/devices"
 	"family-dashboard/backend/internal/einstellungen"
+	"family-dashboard/backend/internal/familienpost"
 	"family-dashboard/backend/internal/files"
 	"family-dashboard/backend/internal/goals"
 	"family-dashboard/backend/internal/links"
@@ -98,6 +99,7 @@ func main() {
 	rezepteSvc := rezepte.NewService(sql, cfg.Recipes.Dir, shoppingSvc, einstSvc)
 	newsSvc := neuigkeiten.NewService(sql, einstSvc)
 	bonusSvc := tagesbonus.NewService(sql, einstSvc)
+	postSvc := familienpost.NewService(sql)
 	goalsSvc := goals.NewService(sql)
 	wishesSvc := wishes.NewService(sql)
 	backupSvc := backup.NewService(sql, cfg.Database.Path, cfg.Database.BackupDir,
@@ -133,6 +135,7 @@ func main() {
 		choresSvc:   choresSvc,
 		devicesSvc:  devicesSvc,
 		einstSvc:    einstSvc,
+		postSvc:     postSvc,
 		filesSvc:    filesSvc,
 		goalsSvc:    goalsSvc,
 		linksSvc:    linksSvc,
