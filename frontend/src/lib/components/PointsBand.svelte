@@ -54,7 +54,8 @@
     {#if tagesbonus.stand?.eligible && tagesbonus.stand.claimed_today}
       <span
         class="flex shrink-0 items-center gap-1.5 rounded-full bg-amber-500/15 px-2.5 py-1 text-xs font-medium text-amber-600 dark:text-amber-400"
-        title={t('Tagesbonus: {0} Tage in Folge, morgen gibt es {1} Punkte', [tagesbonus.stand.streak, tagesbonus.stand.tomorrow])}
+        title={t('Tagesbonus: {0} Tage in Folge, morgen gibt es {1} Punkte', [tagesbonus.stand.streak, tagesbonus.stand.tomorrow]) +
+          (tagesbonus.stand.next_milestone ? ' · ' + t('noch {0} Tage bis 🏅 {1}', [tagesbonus.stand.days_to_milestone ?? 0, tagesbonus.stand.next_milestone]) : '')}
       >
         🔥 <span class="hidden sm:inline">{t('Tag {0} · morgen +{1}', [tagesbonus.stand.streak, tagesbonus.stand.tomorrow])}</span>
         <span class="sm:hidden">{tagesbonus.stand.streak}</span>

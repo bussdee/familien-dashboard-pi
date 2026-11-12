@@ -21,10 +21,14 @@
   const an = (k: keyof Einstellungen) => werte?.[k] === '1';
 
   async function grenze(wert: string) {
+    await wertSetzen('bonus.max', wert);
+  }
+
+  async function wertSetzen(k: keyof Einstellungen, wert: string) {
     if (arbeitet) return;
     arbeitet = true;
     try {
-      einstellungen.uebernehmen(await einstellungenApi.put({ 'bonus.max': wert }));
+      einstellungen.uebernehmen(await einstellungenApi.put({ [k]: wert }));
     } catch (e) {
       toast(e instanceof ApiError ? e.message : t('Konnte nicht speichern'), { ton: 'fehler' });
     } finally {
@@ -88,6 +92,57 @@
                 onclick={() => grenze(m)}
               >
                 {m === '0' ? t('Ohne Grenze') : t('{0} Punkte', [m])}
+              </button>
+            {/each}
+          </div>
+        </div>
+        <div class="mt-3">
+          <p class="mb-1 text-xs text-muted-foreground">{t('Extra bei 7, 14, 30, 100, 200 und 365 Tagen in Folge')}</p>
+          <div class="flex flex-wrap gap-1.5">
+            {#each ['0', '5', '10', '20', '50'] as m (m)}
+              <button
+                type="button"
+                class="chip"
+                aria-pressed={werte?.['bonus.meilenstein'] === m}
+                disabled={arbeitet}
+                onclick={() => wertSetzen('bonus.meilenstein', m)}
+              >
+                {m === '0' ? t('Kein Extra') : t('{0} Punkte', [m])}
+              </button>
+            {/each}
+          </div>
+        </div>
+      {/if}
+    </Schalter>
+    {#if an('modul.tagesbonus')}
+      <Schalter
+        an={an('bonus.joker')}
+        gesperrt={arbeitet || !werte}
+        titel={t('Serienschutz')}
+        hinweis={t('Ein Joker pro Woche verzeiht einen einzelnen verpassten Tag (krank, Ausflug). Der gerettete Tag bringt keine Punkte, die Serie läuft aber weiter.')}
+        onUmschalten={(neu) => setzen('bonus.joker', neu)}
+      />
+    {/if}
+    <Schalter
+      an={an('modul.tagesaufgabe')}
+      gesperrt={arbeitet || !werte}
+      titel={t('Tagesaufgabe für Kinder')}
+      hinweis={t('Jeden Tag eine kleine Herausforderung aus echter Arbeit, etwa „Erledige heute zwei Aufgaben“. Wer sie schafft, bekommt einen Bonus.')}
+      onUmschalten={(neu) => setzen('modul.tagesaufgabe', neu)}
+    >
+      {#if an('modul.tagesaufgabe')}
+        <div class="mt-2">
+          <p class="mb-1 text-xs text-muted-foreground">{t('Bonus für die Tagesaufgabe')}</p>
+          <div class="flex flex-wrap gap-1.5">
+            {#each ['3', '5', '10', '20'] as m (m)}
+              <button
+                type="button"
+                class="chip"
+                aria-pressed={werte?.['bonus.aufgabe'] === m}
+                disabled={arbeitet}
+                onclick={() => wertSetzen('bonus.aufgabe', m)}
+              >
+                {t('{0} Punkte', [m])}
               </button>
             {/each}
           </div>

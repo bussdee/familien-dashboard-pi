@@ -13,6 +13,8 @@
   import { diashow } from '$lib/stores/diashow.svelte';
   import { einstellungen } from '$lib/stores/einstellungen.svelte';
   import { tagesbonus } from '$lib/stores/tagesbonus.svelte';
+  import { aufgabe } from '$lib/stores/aufgabe.svelte';
+  import PostEingang from '$lib/components/PostEingang.svelte';
   import { board } from '$lib/stores/scores.svelte';
   import Header from '$lib/components/Header.svelte';
   import Footer from '$lib/components/Footer.svelte';
@@ -100,6 +102,20 @@
     };
     document.addEventListener('visibilitychange', wieder);
     return () => document.removeEventListener('visibilitychange', wieder);
+  });
+
+  // Die Tagesaufgabe: beim Öffnen und jedes Mal, wenn sich der Punktestand
+  // ändert (nach einer erledigten Aufgabe) nachsehen, ob sie geschafft ist.
+  $effect(() => {
+    const user = $session.user;
+    const an = einstellungen.werte?.['modul.tagesaufgabe'] === '1';
+    const punkteJetzt = user ? board.for(user.id)?.total_points : undefined;
+    if (!user || user.role !== 'member' || !an) {
+      untrack(() => aufgabe.vergessen());
+      return;
+    }
+    void punkteJetzt;
+    untrack(() => void aufgabe.pruefen(user.id));
   });
 
   /**
@@ -239,6 +255,11 @@
   {/if}
 
   <Toasts />
+
+  <!-- Post von Mama und Papa, die beim Öffnen aufgeht. -->
+  {#if !isLogin && $session.user}
+    <PostEingang />
+  {/if}
 
   <!-- Nach einer Weile ohne Berührung: Diashow oder Uhr. -->
   {#if !isLogin}

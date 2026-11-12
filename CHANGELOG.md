@@ -28,10 +28,36 @@ darauf. Was unter 1.4.5 gesammelt war, ist in 1.5.0 aufgegangen.
   Punkte zählen wie verdiente Punkte, also auch für Level, Rangliste und
   Familienziel.
 
+- **Meilensteine.** Bei 7, 14, 30, 100, 200 und 365 Tagen in Folge gibt es
+  einmal einen Extra-Bonus (einstellbar: kein Extra, 5, 10, 20, 50 Punkte;
+  Vorgabe 10). Im Punkteband steht, wie viele Tage es noch sind.
+- **Serienschutz** (Schalter, standardmäßig aus): Ein Joker pro Woche verzeiht
+  einen einzelnen verpassten Tag. Der gerettete Tag bringt keine Punkte, steht
+  aber mit 🛡️ im Kalender, und die Serie läuft weiter.
+- **Sammelalbum** (Menü → Ich): die Serie mit Kalender (🔥 je Tag), längster
+  Serie und nächstem Meilenstein, darunter alle Abzeichen — gesammelte in
+  Farbe, fehlende als Umriss, geheime als Fragezeichen.
+- **Zehn neue Abzeichen**, fünf davon geheim (Frühaufsteher, Brieffreund,
+  Wunscherfüller, Unaufhaltsam, Experte).
+- **Tagesaufgabe** (Schalter, standardmäßig aus): jeden Tag eine kleine
+  Herausforderung aus echter Arbeit, etwa „Erledige heute zwei Aufgaben" oder
+  „Erledige eine Aufgabe vor 12 Uhr", für alle Kinder dieselbe. Wer sie
+  schafft, bekommt einen Bonus (3, 5, 10, 20 Punkte; Vorgabe 5). Erledigungen,
+  die noch auf die Eltern warten, zählen nicht.
+- **Post von Mama und Papa** (Verwaltung → Familie): eine kurze Nachricht,
+  die erst aufgeht, wenn das Kind das Dashboard das nächste Mal öffnet — als
+  Umschlag zum Antippen, auf Wunsch mit ein paar Punkten. Eine ungeöffnete
+  Nachricht lässt sich zurücknehmen.
+
 ### Intern
 
-- Neue Tabelle `daily_bonus`, neue Schalter `modul.tagesbonus` und
-  `bonus.max`, Wege `GET /api/bonus` und `POST /api/bonus/heute` (nur Personen).
+- Neue Tabellen `daily_bonus`, `daily_quest` und `family_mail`, Spalten
+  `daily_bonus.joker` und `daily_bonus.hour`. Neue Schalter `modul.tagesbonus`,
+  `bonus.max`, `bonus.meilenstein`, `bonus.joker`, `modul.tagesaufgabe` und
+  `bonus.aufgabe`. Neue Wege unter `/api/bonus`, `/api/post` (nur Personen) und
+  `GET /api/badges`.
+- Die Abzeichen stehen in einem Katalog; das Übersetzungs-Prüfskript kennt die
+  neue Schreibweise.
 
 ## [2.5.0] — 2026-10-26
 

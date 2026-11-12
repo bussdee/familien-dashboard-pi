@@ -1,6 +1,6 @@
 import { t } from '$lib/i18n';
 import {
-  BookOpen, Clock, CloudSun, Gift, House, Images, LayoutGrid, Link as LinkIcon, Newspaper,
+  Award, BookOpen, Clock, CloudSun, Gift, House, Images, LayoutGrid, Link as LinkIcon, Newspaper,
   Settings, Shield, ShoppingCart, Trophy, UtensilsCrossed,
 } from 'lucide-svelte';
 import type { ComponentType } from 'svelte';
@@ -55,6 +55,7 @@ export const ZIELE: NavZiel[] = [
   { href: '/neuigkeiten', label: t('Neuigkeiten'), kurz: t('News'), hinweis: t('Feeds der Familie'), icon: Newspaper, gruppe: 'familie', leiste: true, modul: 'neuigkeiten' },
   { href: '/fotos', label: t('Fotos'), kurz: t('Fotos'), hinweis: t('Bildschirmschoner und Fotoarchiv'), icon: Images, gruppe: 'familie', leiste: false },
   { href: '/links', label: t('Links'), kurz: t('Links'), hinweis: t('Lesezeichen der Familie'), icon: LinkIcon, gruppe: 'familie', leiste: false, persoenlich: true },
+  { href: '/sammelalbum', label: t('Sammelalbum'), kurz: t('Album'), hinweis: t('Abzeichen und deine Serie'), icon: Award, gruppe: 'ich', leiste: false, persoenlich: true },
   { href: '/ansicht', label: t('Ansicht anpassen'), kurz: t('Ansicht'), hinweis: t('Fenster ordnen und ausblenden'), icon: LayoutGrid, gruppe: 'ich', leiste: false, persoenlich: true },
   { href: '/settings', label: t('Einstellungen'), kurz: t('Einstellungen'), hinweis: t('Profil, PIN, Design'), icon: Settings, gruppe: 'ich', leiste: false, persoenlich: true },
   { href: '/admin', label: t('Verwaltung'), kurz: t('Verwaltung'), hinweis: t('Personen, Bereiche, Sicherung'), icon: Shield, gruppe: 'verwaltung', leiste: false, nurAdmin: true },

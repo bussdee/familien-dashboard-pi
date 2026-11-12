@@ -22,11 +22,15 @@ class TagesbonusStore {
       const st = await bonusApi.abholen();
       this.stand = st;
       if (st.claimed && st.points > 0) {
-        const label =
+        let label =
           st.streak === 1
             ? t('Tagesbonus! Komm morgen wieder, dann gibt es {0}.', [st.tomorrow])
             : t('Tagesbonus: {0} Tage in Folge! Morgen gibt es {1}.', [st.streak, st.tomorrow]);
-        await board.award(userId, st.points, label);
+        if (st.joker_used) label = t('🛡️ Dein Serienschutz hat gestern gerettet.') + ' ' + label;
+        if (st.milestone) {
+          label = t('🏅 Meilenstein: {0} Tage in Folge! +{1} Extra-Punkte.', [st.milestone, st.milestone_points ?? 0]);
+        }
+        await board.award(userId, st.points + (st.milestone_points ?? 0), label);
       }
     } catch {
       /* Ohne Netz gibt es den Bonus beim nächsten Öffnen. */

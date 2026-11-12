@@ -9,6 +9,7 @@ import type {
   User, WeatherData, WeatherLocation, WeeklyTime, Meal, RecentMeal, Reward,
   RewardOverview, ShoppingSuggestion, RedemptionStatus, PendingCompletion, GoalOverview,
   Wish, Einstellungen, Rezept, RezeptEntwurf, NewsFeed, NewsItem, Tagesbonus,
+  AlbumEintrag, BonusKalender, Brief, Tagesaufgabe,
 } from '$lib/types';
 
 const BASE = '/api';
@@ -391,6 +392,24 @@ export const einstellungenApi = {
 export const bonusApi = {
   stand: () => request<Tagesbonus>('/bonus'),
   abholen: () => request<Tagesbonus>('/bonus/heute', { method: 'POST' }),
+  kalender: (monat?: string) =>
+    request<BonusKalender>(`/bonus/kalender${monat ? `?monat=${encodeURIComponent(monat)}` : ''}`),
+  /** Die Tagesaufgabe; schreibt den Bonus gut, sobald sie geschafft ist. */
+  aufgabe: () => request<Tagesaufgabe>('/bonus/aufgabe'),
+};
+
+/** Post von Mama und Papa. */
+export const postApi = {
+  liste: () => request<{ inbox: Brief[]; sent?: Brief[] }>('/post'),
+  schreiben: (data: { to_user: number; text: string; bonus: number }) =>
+    request<Brief>('/post', { method: 'POST', ...json(data) }),
+  oeffnen: (id: number) => request<{ mail: Brief; first_open: boolean }>(`/post/${id}/open`, { method: 'POST' }),
+  zuruecknehmen: (id: number) => request<void>(`/post/${id}`, { method: 'DELETE' }),
+};
+
+/** Das Sammelalbum: alle Abzeichen, mit dem, was man schon hat. */
+export const albumApi = {
+  liste: () => request<AlbumEintrag[]>('/badges'),
 };
 
 export const rezepteApi = {
