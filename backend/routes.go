@@ -24,6 +24,7 @@ import (
 	"family-dashboard/backend/internal/rewards"
 	"family-dashboard/backend/internal/rezepte"
 	"family-dashboard/backend/internal/shopping"
+	"family-dashboard/backend/internal/tagesbonus"
 	"family-dashboard/backend/internal/times"
 	"family-dashboard/backend/internal/weather"
 	"family-dashboard/backend/internal/wishes"
@@ -55,6 +56,7 @@ type dienste struct {
 	rewardsSvc  *rewards.Service
 	rezepteSvc  *rezepte.Service
 	shoppingSvc *shopping.Service
+	bonusSvc    *tagesbonus.Service
 	timesSvc    *times.Service
 	weatherSvc  *weather.Service
 	wishesSvc   *wishes.Service
@@ -140,6 +142,11 @@ func newRouter(cfg *config.Config, d dienste) http.Handler {
 				r.Post("/wishes/{id}/offers/{oid}/decline", d.wishesSvc.Decline)
 				r.Post("/wishes/{id}/offers/{oid}/done", d.wishesSvc.Done)
 				r.Post("/wishes/{id}/offers/{oid}/confirm", d.wishesSvc.Confirm)
+
+				// Der Tagesbonus gehört einem Kind: Am Wandgerät ist niemand, der
+				// eine Serie haben könnte.
+				r.Get("/bonus", d.bonusSvc.Get)
+				r.Post("/bonus/heute", d.bonusSvc.Claim)
 
 				// Persönliche Feeds gehören einer Person.
 				r.Post("/rss/feeds", d.newsSvc.CreatePersonal)

@@ -1412,4 +1412,15 @@ export const en: Record<string, string> = {
   "ab {0}": "from {0}",
   "Zähneputzen, Nudeln, Hausaufgaben": "Brushing teeth, pasta, homework",
   "Weitere Fenster ({0})": "More windows ({0})",
+
+  // Tagesbonus
+  "Tagesbonus": "Daily bonus",
+  "Tagesbonus! Komm morgen wieder, dann gibt es {0}.": "Daily bonus! Come back tomorrow for {0}.",
+  "Tagesbonus: {0} Tage in Folge! Morgen gibt es {1}.": "Daily bonus: {0} days in a row! Tomorrow you get {1}.",
+  "Tagesbonus: {0} Tage in Folge, morgen gibt es {1} Punkte": "Daily bonus: {0} days in a row, tomorrow you get {1} points",
+  "Tag {0} · morgen +{1}": "Day {0} · tomorrow +{1}",
+  "Tagesbonus für Kinder": "Daily bonus for children",
+  "Wer das Dashboard jeden Tag öffnet, bekommt Punkte: am ersten Tag 1, am zweiten Tag in Folge 2, am dritten 3 … Fehlt ein Tag, geht es wieder bei 1 los. Nur für Kinder, persönlich angemeldet.": "Opening the dashboard every day earns points: 1 on the first day, 2 on the second day in a row, 3 on the third … Miss a day and it starts again at 1. Children only, signed in personally.",
+  "Höchstens pro Tag": "At most per day",
+  "Ohne Grenze": "No limit",
 };

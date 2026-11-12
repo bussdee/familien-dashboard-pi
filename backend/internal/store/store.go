@@ -503,6 +503,17 @@ func (s *Store) Migrate() error {
 			FOREIGN KEY (feed_id) REFERENCES rss_feeds(id) ON DELETE CASCADE
 		)`,
 		`CREATE INDEX IF NOT EXISTS idx_rss_items_published ON rss_items(published DESC)`,
+		// Der Tagesbonus: ein Eintrag je Kind und Tag (Ortszeit des Servers).
+		// streak ist die Serie an diesem Tag, points was es dafür gab.
+		`CREATE TABLE IF NOT EXISTS daily_bonus (
+			user_id INTEGER NOT NULL,
+			day TEXT NOT NULL,
+			streak INTEGER NOT NULL,
+			points INTEGER NOT NULL,
+			created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			PRIMARY KEY (user_id, day),
+			FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+		)`,
 		`CREATE INDEX IF NOT EXISTS idx_shopping_checked ON shopping_items(checked, created_at)`,
 		`CREATE INDEX IF NOT EXISTS idx_notes_owner ON notes(owner_id)`,
 		`CREATE UNIQUE INDEX IF NOT EXISTS idx_notes_source_file ON notes(source_file) WHERE source_file IS NOT NULL`,

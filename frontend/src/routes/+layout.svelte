@@ -12,6 +12,7 @@
   import { player } from '$lib/stores/player.svelte';
   import { diashow } from '$lib/stores/diashow.svelte';
   import { einstellungen } from '$lib/stores/einstellungen.svelte';
+  import { tagesbonus } from '$lib/stores/tagesbonus.svelte';
   import { board } from '$lib/stores/scores.svelte';
   import Header from '$lib/components/Header.svelte';
   import Footer from '$lib/components/Footer.svelte';
@@ -80,6 +81,25 @@
     const wer = $session.user?.id ?? ($session.device ? -1 : 0);
     if (!$session.ready || wer === 0) return;
     untrack(() => void einstellungen.load(wer > 0));
+  });
+
+  // Der Tagesbonus: Ein Kind bekommt ihn beim Öffnen. Sobald die Schalter da
+  // sind (vorher ist unbekannt, ob er eingeschaltet ist), und jedes Mal, wenn
+  // die App wieder in den Vordergrund kommt — der Server gibt ihn nur einmal
+  // am Tag.
+  $effect(() => {
+    const user = $session.user;
+    const an = einstellungen.werte?.['modul.tagesbonus'] === '1';
+    if (!user || user.role !== 'member' || !an) {
+      untrack(() => tagesbonus.vergessen());
+      return;
+    }
+    untrack(() => void tagesbonus.abholen(user.id));
+    const wieder = () => {
+      if (document.visibilityState === 'visible') void tagesbonus.abholen(user.id);
+    };
+    document.addEventListener('visibilitychange', wieder);
+    return () => document.removeEventListener('visibilitychange', wieder);
   });
 
   /**

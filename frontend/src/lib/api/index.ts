@@ -8,7 +8,7 @@ import type {
   PhotoUploadResult, Score, ShoppingEvent, ShoppingItem, TimeOverview, Track,
   User, WeatherData, WeatherLocation, WeeklyTime, Meal, RecentMeal, Reward,
   RewardOverview, ShoppingSuggestion, RedemptionStatus, PendingCompletion, GoalOverview,
-  Wish, Einstellungen, Rezept, RezeptEntwurf, NewsFeed, NewsItem,
+  Wish, Einstellungen, Rezept, RezeptEntwurf, NewsFeed, NewsItem, Tagesbonus,
 } from '$lib/types';
 
 const BASE = '/api';
@@ -385,6 +385,12 @@ export const einstellungenApi = {
   get: () => request<Einstellungen>('/settings'),
   put: (data: Partial<Einstellungen>) =>
     request<Einstellungen>('/admin/settings', { method: 'PUT', ...json(data) }),
+};
+
+/** Der Tagesbonus. Abgeholt wird beim Öffnen; ein zweiter Aufruf am Tag ändert nichts. */
+export const bonusApi = {
+  stand: () => request<Tagesbonus>('/bonus'),
+  abholen: () => request<Tagesbonus>('/bonus/heute', { method: 'POST' }),
 };
 
 export const rezepteApi = {

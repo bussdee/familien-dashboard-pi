@@ -12,6 +12,27 @@ Deshalb gibt es hier **keine 1.4.5**. Sie stand eine Weile in dieser Datei,
 wurde aber nie veröffentlicht: Auf GitHub steht v1.4.4, und der Pi läuft
 darauf. Was unter 1.4.5 gesammelt war, ist in 1.5.0 aufgegangen.
 
+## [Unveröffentlicht]
+
+### Hinzugefügt
+
+- **Tagesbonus für Kinder.** Wer das Dashboard jeden Tag öffnet, bekommt
+  Punkte: am ersten Tag 1, am zweiten Tag in Folge 2, am dritten 3 und so
+  weiter. Fehlt ein Tag, beginnt die Serie wieder bei 1. Abgeholt wird von
+  selbst beim Öffnen (auch wenn die App wieder in den Vordergrund kommt), mit
+  Konfetti und dem Hinweis, was es morgen gibt; im Punkteband steht
+  „🔥 Tag 4 · morgen +5". Gezählt wird nach der Uhr des Servers, nicht der des
+  Geräts. Nur für Kinder und nur persönlich angemeldet, nicht am Wandgerät.
+  Einschalten unter *Verwaltung → Bereiche* (standardmäßig **aus**); dort lässt
+  sich auch eine Obergrenze pro Tag setzen (ohne Grenze, 5, 10, 20, 30). Die
+  Punkte zählen wie verdiente Punkte, also auch für Level, Rangliste und
+  Familienziel.
+
+### Intern
+
+- Neue Tabelle `daily_bonus`, neue Schalter `modul.tagesbonus` und
+  `bonus.max`, Wege `GET /api/bonus` und `POST /api/bonus/heute` (nur Personen).
+
 ## [2.5.0] — 2026-10-26
 
 Ein Rezeptbuch, das aus einem Link entsteht, Neuigkeiten aus Feeds, eine

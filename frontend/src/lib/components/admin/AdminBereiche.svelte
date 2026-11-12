@@ -20,6 +20,18 @@
   const werte = $derived(einstellungen.werte);
   const an = (k: keyof Einstellungen) => werte?.[k] === '1';
 
+  async function grenze(wert: string) {
+    if (arbeitet) return;
+    arbeitet = true;
+    try {
+      einstellungen.uebernehmen(await einstellungenApi.put({ 'bonus.max': wert }));
+    } catch (e) {
+      toast(e instanceof ApiError ? e.message : t('Konnte nicht speichern'), { ton: 'fehler' });
+    } finally {
+      arbeitet = false;
+    }
+  }
+
   async function setzen(k: keyof Einstellungen, neu: boolean) {
     if (arbeitet) return;
     arbeitet = true;
@@ -56,6 +68,32 @@
       hinweis={t('Zeitungen, Blogs und die Schule als Feed. Der Server ruft die Adressen regelmäßig ab; ausgeschaltet ruft er nichts ab.')}
       onUmschalten={(neu) => setzen('modul.neuigkeiten', neu)}
     />
+    <Schalter
+      an={an('modul.tagesbonus')}
+      gesperrt={arbeitet || !werte}
+      titel={t('Tagesbonus für Kinder')}
+      hinweis={t('Wer das Dashboard jeden Tag öffnet, bekommt Punkte: am ersten Tag 1, am zweiten Tag in Folge 2, am dritten 3 … Fehlt ein Tag, geht es wieder bei 1 los. Nur für Kinder, persönlich angemeldet.')}
+      onUmschalten={(neu) => setzen('modul.tagesbonus', neu)}
+    >
+      {#if an('modul.tagesbonus')}
+        <div class="mt-2">
+          <p class="mb-1 text-xs text-muted-foreground">{t('Höchstens pro Tag')}</p>
+          <div class="flex flex-wrap gap-1.5">
+            {#each ['0', '5', '10', '20', '30'] as m (m)}
+              <button
+                type="button"
+                class="chip"
+                aria-pressed={werte?.['bonus.max'] === m}
+                disabled={arbeitet}
+                onclick={() => grenze(m)}
+              >
+                {m === '0' ? t('Ohne Grenze') : t('{0} Punkte', [m])}
+              </button>
+            {/each}
+          </div>
+        </div>
+      {/if}
+    </Schalter>
     {#if an('modul.neuigkeiten')}
       <Schalter
         an={an('modul.neuigkeiten_persoenlich')}

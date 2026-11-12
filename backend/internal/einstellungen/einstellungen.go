@@ -49,6 +49,8 @@ var eintraege = map[string]eintrag{
 	"modul.neuigkeiten":             {art: schalter, standard: "0"},
 	"modul.neuigkeiten_persoenlich": {art: schalter, standard: "0"},
 	"modul.rezepte":                 {art: schalter, standard: "1"},
+	"modul.tagesbonus":              {art: schalter, standard: "0"},
+	"bonus.max":                     {art: zahl, standard: "0", min: 0, max: 365},
 	"schoner.modus":                 {art: wahl, standard: "wandgeraet", erlaubt: []string{"aus", "wandgeraet", "alle"}},
 	"schoner.inhalt":                {art: wahl, standard: "diashow", erlaubt: []string{"diashow", "uhr"}},
 	"schoner.leerlauf_min":          {art: zahl, standard: "5", min: 1, max: 120},

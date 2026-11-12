@@ -304,7 +304,7 @@ export interface Score {
   badges: Badge[];
 }
 
-export type PointSource = 'chore' | 'shopping' | 'bonus';
+export type PointSource = 'chore' | 'shopping' | 'bonus' | 'tagesbonus';
 
 export interface Activity {
   id: number;
@@ -680,6 +680,9 @@ export interface Einstellungen {
   'modul.neuigkeiten': '0' | '1';
   'modul.neuigkeiten_persoenlich': '0' | '1';
   'modul.rezepte': '0' | '1';
+  'modul.tagesbonus': '0' | '1';
+  /** Obergrenze des Tagesbonus in Punkten; '0' heißt: keine Grenze. */
+  'bonus.max': string;
   'schoner.modus': 'aus' | 'wandgeraet' | 'alle';
   'schoner.inhalt': 'diashow' | 'uhr';
   'schoner.leerlauf_min': string;
@@ -743,4 +746,20 @@ export interface NewsItem {
   link: string;
   summary: string;
   published: string;
+}
+
+// --------------------------------------------------------------- Tagesbonus
+
+/** Der Tagesbonus eines Kindes: Tag 1 → 1 Punkt, Tag 2 → 2 Punkte, … */
+export interface Tagesbonus {
+  /** Bekommt diese Person überhaupt einen Bonus (Kind, Bereich eingeschaltet)? */
+  eligible: boolean;
+  /** Gerade eben gutgeschrieben. */
+  claimed: boolean;
+  claimed_today: boolean;
+  /** Tage in Folge, heute eingerechnet, wenn abgeholt. */
+  streak: number;
+  points: number;
+  /** Was es morgen gibt, wenn die Serie hält. */
+  tomorrow: number;
 }
