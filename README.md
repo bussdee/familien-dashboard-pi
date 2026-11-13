@@ -61,6 +61,9 @@ solange es im eigenen, vertrauenswürdigen Netz bleibt.
 | | |
 |---|---|
 | ⭐ **Aufgaben** | Müll, Geschirrspüler, Katzenklo. Jede Aufgabe hat ein Intervall und einen Punktwert. Zuständig ist wahlweise *reihum*, eine feste Person, *alle* oder *wer mag*. Einmal erledigt ist erledigt — ein zweites Abhaken am selben Tag gibt es nicht. Auf Wunsch **bestätigt ein Elternteil**, bevor es Punkte gibt — *Zimmer aufräumen* heisst dann auch aufgeräumt. |
+| 🔥 **Tagesbonus & Serie** | Wer jeden Tag vorbeischaut, bekommt Punkte: am ersten Tag 1, am zweiten 2, am dritten 3 … — fehlt ein Tag, geht es wieder bei 1 los. Meilensteine bei 7, 14, 30, 100 Tagen, auf Wunsch ein Serienschutz pro Woche, dazu eine **Tagesaufgabe** aus echter Arbeit. Alles für Kinder, alles abschaltbar, standardmäßig aus. |
+| 💌 **Post von Mama & Papa** | Eine kurze Nachricht, die erst aufgeht, wenn das Kind das Dashboard das nächste Mal öffnet — als Umschlag zum Antippen, auf Wunsch mit ein paar Punkten. |
+| 🏅 **Sammelalbum** | Alle Abzeichen auf einen Blick, auch die fehlenden — und ein paar geheime, die sich erst zeigen, wenn man sie hat. Dazu die eigene Serie als Kalender. |
 | 🏆 **Punkte & Level** | Wer abhakt, bekommt Punkte. Level von *Neuling* bis *Legende*, Serien, elf Abzeichen, Siegertreppchen. Verklickt? Ein Elternteil nimmt es zurück — die Aufgabe wird dabei wieder fällig. Eltern vergeben und ziehen Punkte auch von Hand ab, für eine Person oder mehrere auf einmal, mit Grund — am Handy oder am Wandtablet mit der **Eltern-PIN**. |
 | 🎁 **Belohnungen** | Wofür die Punkte da sind: Die Eltern legen fest, was es gibt — Bildschirmzeit, ein Eis, den Film am Familienabend. Ein Kind löst ein, ein Elternteil bestätigt. Ausgegeben wird ein **Guthaben**; Level und Rangliste bleiben unberührt. |
 | ✨ **Wunschbörse** | **Alle wünschen, alle erfüllen.** Jede Person trägt einen Wunsch ein — auch die Eltern: *Frühstück ans Bett*. Jede andere macht ein Angebot in Punkten (oder schenkt es). Der Wünschende nimmt eines an und zahlt, wenn es erfüllt ist, **an den, der erfüllt hat**. Level und Rangliste bleiben unberührt. Daneben gibt es den Weg der Eltern: Preis festlegen, das Kind löst ein. Am Wandgerät gibt es die Liste nicht. |
@@ -88,6 +91,13 @@ solange es im eigenen, vertrauenswürdigen Netz bleibt.
 | 📲 **Wie eine App** | Zum Startbildschirm hinzufügen: eigenes Symbol, keine Browserleiste, Offline-Ansicht. |
 
 ---
+
+## Neu in 2.6
+
+- **Tagesbonus**: 1, 2, 3 … Punkte für jeden Tag in Folge, mit **Meilensteinen** und **Serienschutz**
+- **Tagesaufgabe**: jeden Tag eine kleine Herausforderung aus echter Arbeit
+- **Post von Mama & Papa**, die beim nächsten Öffnen aufgeht
+- **Sammelalbum** mit Kalender der Serie und **geheimen Abzeichen**
 
 ## Neu in 2.5
 

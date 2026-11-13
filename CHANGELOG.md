@@ -12,7 +12,16 @@ Deshalb gibt es hier **keine 1.4.5**. Sie stand eine Weile in dieser Datei,
 wurde aber nie veröffentlicht: Auf GitHub steht v1.4.4, und der Pi läuft
 darauf. Was unter 1.4.5 gesammelt war, ist in 1.5.0 aufgegangen.
 
-## [Unveröffentlicht]
+## [2.6.0] — 2026-11-14
+
+Mehr Anreiz, jeden Tag vorbeizuschauen: ein Tagesbonus, der mit der Serie
+wächst, Meilensteine, ein Sammelalbum mit Kalender und geheimen Abzeichen, eine
+Tagesaufgabe aus echter Arbeit und Post von Mama und Papa.
+
+Bestehende Installationen übernehmen alles ohne Zutun: Die neuen Tabellen und
+Spalten legt das Backend beim ersten Start selbst an. **Tagesbonus, Serienschutz
+und Tagesaufgabe sind aus, bis die Eltern sie unter *Verwaltung → Bereiche*
+einschalten.** Sammelalbum und Post gibt es sofort.
 
 ### Hinzugefügt
 

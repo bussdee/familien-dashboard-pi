@@ -454,6 +454,11 @@ Alles geschieht in der Weboberfläche unter *Verwaltung → Bereiche* und
 - **Bildschirmschoner**: Vorgabe ist das Wandgerät nach fünf Minuten. Wo, wie
   lange und wie dunkel es nachts wird, steht unter *Verwaltung → Bildschirm*.
 
+- **Tagesbonus, Serienschutz und Tagesaufgabe** (für Kinder): standardmäßig
+  **aus**, unter *Verwaltung → Bereiche*. Gezählt wird nach der Uhr und
+  Zeitzone des Servers (`TZ` in der `.env`), nicht nach der des Geräts.
+- **Post an die Kinder** schreiben Eltern unter *Verwaltung → Familie*.
+
 Der Abruf fremder Adressen (Kalender-Abos, Rezepte, Neuigkeiten) ruft nie
 Adressen im Heimnetz auf, auch nicht über eine Weiterleitung.
 
