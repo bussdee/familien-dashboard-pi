@@ -269,6 +269,13 @@ export interface Badge {
   label: string;
   emoji: string;
   description: string;
+  /** Geheim: steht im Sammelalbum als Fragezeichen, bis man es hat. */
+  secret?: boolean;
+}
+
+/** Ein Abzeichen im Sammelalbum; geheime ohne Namen, solange man sie nicht hat. */
+export interface AlbumEintrag extends Badge {
+  earned: boolean;
 }
 
 /** One family member's standing on the leaderboard. */
@@ -304,7 +311,7 @@ export interface Score {
   badges: Badge[];
 }
 
-export type PointSource = 'chore' | 'shopping' | 'bonus';
+export type PointSource = 'chore' | 'shopping' | 'bonus' | 'tagesbonus' | 'meilenstein' | 'tagesaufgabe' | 'post';
 
 export interface Activity {
   id: number;
@@ -680,6 +687,14 @@ export interface Einstellungen {
   'modul.neuigkeiten': '0' | '1';
   'modul.neuigkeiten_persoenlich': '0' | '1';
   'modul.rezepte': '0' | '1';
+  'modul.tagesbonus': '0' | '1';
+  /** Obergrenze des Tagesbonus in Punkten; '0' heißt: keine Grenze. */
+  'bonus.max': string;
+  /** Extra-Punkte bei 7, 14, 30, 100 … Tagen in Folge; '0' = keine. */
+  'bonus.meilenstein': string;
+  'bonus.joker': '0' | '1';
+  'modul.tagesaufgabe': '0' | '1';
+  'bonus.aufgabe': string;
   'schoner.modus': 'aus' | 'wandgeraet' | 'alle';
   'schoner.inhalt': 'diashow' | 'uhr';
   'schoner.leerlauf_min': string;
@@ -743,4 +758,69 @@ export interface NewsItem {
   link: string;
   summary: string;
   published: string;
+}
+
+// --------------------------------------------------------------- Tagesbonus
+
+/** Der Tagesbonus eines Kindes: Tag 1 → 1 Punkt, Tag 2 → 2 Punkte, … */
+export interface Tagesbonus {
+  /** Bekommt diese Person überhaupt einen Bonus (Kind, Bereich eingeschaltet)? */
+  eligible: boolean;
+  /** Gerade eben gutgeschrieben. */
+  claimed: boolean;
+  claimed_today: boolean;
+  /** Tage in Folge, heute eingerechnet, wenn abgeholt. */
+  streak: number;
+  points: number;
+  /** Was es morgen gibt, wenn die Serie hält. */
+  tomorrow: number;
+  /** Der Serienschutz hat gerade gestern gerettet. */
+  joker_used?: boolean;
+  joker_available?: boolean;
+  /** Gerade erreichter Meilenstein (0 = keiner) und seine Extra-Punkte. */
+  milestone?: number;
+  milestone_points?: number;
+  next_milestone?: number;
+  days_to_milestone?: number;
+}
+
+export interface KalenderTag {
+  day: string;
+  streak: number;
+  points: number;
+  joker: boolean;
+}
+
+export interface BonusKalender {
+  month: string;
+  days: KalenderTag[];
+  best: number;
+  total_days: number;
+  milestones: number[];
+}
+
+/** Die Tagesaufgabe; den Text kennt die Oberfläche über die Kennung. */
+export interface Tagesaufgabe {
+  eligible: boolean;
+  id: string;
+  goal: number;
+  progress: number;
+  done: boolean;
+  /** Gerade eben geschafft und gutgeschrieben. */
+  claimed: boolean;
+  points: number;
+}
+
+/** Post von Mama oder Papa. Ungeöffnet ist text leer. */
+export interface Brief {
+  id: number;
+  to_user: number;
+  to_name: string;
+  from_user: number | null;
+  from_name: string;
+  from_emoji: string;
+  text: string;
+  bonus: number;
+  created_at: string;
+  opened_at: string | null;
 }

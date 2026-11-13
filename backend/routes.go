@@ -11,6 +11,7 @@ import (
 	"family-dashboard/backend/internal/config"
 	"family-dashboard/backend/internal/devices"
 	"family-dashboard/backend/internal/einstellungen"
+	"family-dashboard/backend/internal/familienpost"
 	"family-dashboard/backend/internal/files"
 	"family-dashboard/backend/internal/goals"
 	"family-dashboard/backend/internal/links"
@@ -24,6 +25,7 @@ import (
 	"family-dashboard/backend/internal/rewards"
 	"family-dashboard/backend/internal/rezepte"
 	"family-dashboard/backend/internal/shopping"
+	"family-dashboard/backend/internal/tagesbonus"
 	"family-dashboard/backend/internal/times"
 	"family-dashboard/backend/internal/weather"
 	"family-dashboard/backend/internal/wishes"
@@ -42,6 +44,7 @@ type dienste struct {
 	choresSvc   *chores.Service
 	devicesSvc  *devices.Service
 	einstSvc    *einstellungen.Service
+	postSvc     *familienpost.Service
 	filesSvc    *files.Service
 	goalsSvc    *goals.Service
 	linksSvc    *links.Service
@@ -55,6 +58,7 @@ type dienste struct {
 	rewardsSvc  *rewards.Service
 	rezepteSvc  *rezepte.Service
 	shoppingSvc *shopping.Service
+	bonusSvc    *tagesbonus.Service
 	timesSvc    *times.Service
 	weatherSvc  *weather.Service
 	wishesSvc   *wishes.Service
@@ -140,6 +144,20 @@ func newRouter(cfg *config.Config, d dienste) http.Handler {
 				r.Post("/wishes/{id}/offers/{oid}/decline", d.wishesSvc.Decline)
 				r.Post("/wishes/{id}/offers/{oid}/done", d.wishesSvc.Done)
 				r.Post("/wishes/{id}/offers/{oid}/confirm", d.wishesSvc.Confirm)
+
+				// Der Tagesbonus gehört einem Kind: Am Wandgerät ist niemand, der
+				// eine Serie haben könnte.
+				r.Get("/bonus", d.bonusSvc.Get)
+				r.Post("/bonus/heute", d.bonusSvc.Claim)
+				r.Get("/bonus/kalender", d.bonusSvc.Kalender)
+				r.Get("/bonus/aufgabe", d.bonusSvc.Aufgabe)
+
+				// Post von Mama und Papa: schreiben Eltern, öffnen nur, wer sie
+				// bekommt — beides persönlich, nicht am Wandgerät.
+				r.Get("/post", d.postSvc.List)
+				r.Post("/post", d.postSvc.Create)
+				r.Post("/post/{id}/open", d.postSvc.Open)
+				r.Delete("/post/{id}", d.postSvc.Delete)
 
 				// Persönliche Feeds gehören einer Person.
 				r.Post("/rss/feeds", d.newsSvc.CreatePersonal)
@@ -272,6 +290,8 @@ func newRouter(cfg *config.Config, d dienste) http.Handler {
 			// Die Monatsranglisten. Sie bleiben stehen, wenn die einmaligen
 			// Aufgaben des Monats längst gelöscht sind.
 			r.Get("/scoreboard/months", d.pointsSvc.Months)
+			// Das Sammelalbum: alle Abzeichen, geheime bleiben geheim.
+			r.Get("/badges", d.pointsSvc.Album)
 			r.Get("/chores/stats", d.pointsSvc.Scoreboard)
 
 			r.Get("/devices", d.devicesSvc.GetStatus)

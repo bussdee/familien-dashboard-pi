@@ -15,6 +15,7 @@
   import { layout } from '$lib/stores/layout.svelte';
   import WeatherHero from '$lib/components/WeatherHero.svelte';
   import PointsBand from '$lib/components/PointsBand.svelte';
+  import AufgabeKarte from '$lib/components/AufgabeKarte.svelte';
   import CalendarWidget from '$lib/components/widgets/CalendarWidget.svelte';
   import ShoppingWidget from '$lib/components/widgets/ShoppingWidget.svelte';
   import ChoresWidget from '$lib/components/widgets/ChoresWidget.svelte';
@@ -228,6 +229,7 @@
 
   {#if !$session.device}
     <PointsBand {me} total={board.scores.length} />
+    <AufgabeKarte />
   {/if}
 
   {#if $session.user?.pin_is_default && !$session.device}

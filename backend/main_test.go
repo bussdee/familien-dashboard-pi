@@ -16,6 +16,7 @@ import (
 	"family-dashboard/backend/internal/config"
 	"family-dashboard/backend/internal/devices"
 	"family-dashboard/backend/internal/einstellungen"
+	"family-dashboard/backend/internal/familienpost"
 	"family-dashboard/backend/internal/files"
 	"family-dashboard/backend/internal/goals"
 	"family-dashboard/backend/internal/links"
@@ -30,6 +31,7 @@ import (
 	"family-dashboard/backend/internal/rezepte"
 	"family-dashboard/backend/internal/shopping"
 	"family-dashboard/backend/internal/store"
+	"family-dashboard/backend/internal/tagesbonus"
 	"family-dashboard/backend/internal/times"
 	"family-dashboard/backend/internal/weather"
 	"family-dashboard/backend/internal/wishes"
@@ -91,6 +93,10 @@ var schreibwege = map[string]stufe{
 	"DELETE /api/wishes/{id}":                    person,
 	"POST /api/wishes/{id}/redeem":               person,
 	"POST /api/rss/feeds":                        person,
+	"POST /api/bonus/heute":                      person,
+	"POST /api/post":                             person,
+	"POST /api/post/{id}/open":                   person,
+	"DELETE /api/post/{id}":                      person,
 	"POST /api/wishes/{id}/offers":               person,
 	"DELETE /api/wishes/{id}/offers/{oid}":       person,
 	"POST /api/wishes/{id}/offers/{oid}/accept":  person,
@@ -182,6 +188,10 @@ var lesewege = map[string]stufe{
 	"GET /api/health":                       oeffentlich,
 	"GET /api/auth/users":                   oeffentlich,
 	"GET /api/preferences/{key}":            person,
+	"GET /api/bonus":                        person,
+	"GET /api/bonus/kalender":               person,
+	"GET /api/bonus/aufgabe":                person,
+	"GET /api/post":                         person,
 	"GET /api/admin/users":                  admin,
 	"GET /api/admin/points":                 admin,
 	"GET /api/admin/calendar/subscriptions": admin,
@@ -280,6 +290,8 @@ func testRouter(t *testing.T) http.Handler {
 		einstSvc:    einst,
 		rezepteSvc:  rezepte.NewService(sql, filepath.Join(dir, "recipes"), shop, einst),
 		newsSvc:     neuigkeiten.NewService(sql, einst),
+		bonusSvc:    tagesbonus.NewService(sql, einst),
+		postSvc:     familienpost.NewService(sql),
 		backupSvc: backup.NewService(sql, filepath.Join(dir, "db.sqlite"), filepath.Join(dir, "backup"),
 			dir, 7, "0 3 * * *"),
 		notifySvc: ns,

@@ -67,6 +67,10 @@ export const sourceLabels: Record<string, { label: string; emoji: string }> = {
   chore: { label: t('Aufgabe'), emoji: '⭐' },
   shopping: { label: t('Einkauf'), emoji: '🛒' },
   bonus: { label: t('Bonus'), emoji: '🎁' },
+  tagesbonus: { label: t('Tagesbonus'), emoji: '🔥' },
+  meilenstein: { label: t('Meilenstein'), emoji: '🏅' },
+  tagesaufgabe: { label: t('Tagesaufgabe'), emoji: '🎯' },
+  post: { label: t('Post'), emoji: '💌' },
 };
 
 /**
