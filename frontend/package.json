@@ -16,7 +16,7 @@
     "marked": "^12.0.2"
   },
   "devDependencies": {
-    "@sveltejs/adapter-static": "^3.0.5",
+    "@sveltejs/adapter-static": "^3.0.11",
     "@sveltejs/kit": "^2.5.28",
     "@sveltejs/vite-plugin-svelte": "^4.0.0",
     "@types/node": "^26.6.5",
