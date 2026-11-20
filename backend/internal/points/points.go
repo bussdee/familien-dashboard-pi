@@ -67,6 +67,8 @@ type Badge struct {
 	Label       string `json:"label"`
 	Emoji       string `json:"emoji"`
 	Description string `json:"description"`
+	// Secret: Im Sammelalbum steht es als Fragezeichen, bis jemand es hat.
+	Secret bool `json:"secret,omitempty"`
 }
 
 type Score struct {
@@ -202,10 +204,11 @@ func (s *Service) Leaderboard() ([]Score, error) {
 		weekLeader = weekly[0].ID
 	}
 
+	zusatz := s.ladeExtras()
 	for i := range scores {
 		scores[i].StreakDays = streaks[scores[i].ID]
 		scores[i].WeekRank = weekRank[scores[i].ID]
-		scores[i].Badges = badgesFor(scores[i], weekLeader)
+		scores[i].Badges = badgesFor(scores[i], zusatz[scores[i].ID], weekLeader)
 	}
 	return scores, nil
 }
@@ -330,44 +333,151 @@ func (s *Service) streaks() (map[int]int, error) {
 }
 
 // badgesFor turns raw numbers into things worth showing off.
-func badgesFor(sc Score, weekLeader int) []Badge {
-	badges := []Badge{}
-	add := func(id, emoji, label, description string) {
-		badges = append(badges, Badge{ID: id, Emoji: emoji, Label: label, Description: description})
-	}
+// extras sind Zahlen für Abzeichen, die nicht in der Rangliste stehen: Serie
+// des Tagesbonus, Post, Tagesaufgaben, erfüllte Wünsche.
+type extras struct {
+	bonusBeste int
+	frueh      bool
+	post       int
+	aufgaben   int
+	wuensche   int
+}
 
-	if sc.ChoreCount >= 1 {
-		add("first-chore", "🌱", "Angefangen", "Erste Aufgabe erledigt")
+type abzeichenDef struct {
+	Badge
+	hat func(sc Score, x extras, weekLeader int) bool
+}
+
+// badge legt ein Abzeichen an. Die Form (vier Texte vorn) liest das
+// Übersetzungs-Prüfskript; Bezeichnung und Beschreibung brauchen eine
+// englische Fassung.
+func badge(id, emoji, label, beschreibung string, geheim bool, hat func(Score, extras, int) bool) abzeichenDef {
+	return abzeichenDef{Badge: Badge{ID: id, Emoji: emoji, Label: label, Description: beschreibung, Secret: geheim}, hat: hat}
+}
+
+// katalog ist das Sammelalbum: alle Abzeichen, die es gibt, in der Reihenfolge
+// des Albums.
+func katalog() []abzeichenDef {
+	return []abzeichenDef{
+		badge("first-chore", "🌱", "Angefangen", "Erste Aufgabe erledigt", false,
+			func(sc Score, _ extras, _ int) bool { return sc.ChoreCount >= 1 }),
+		badge("chores-10", "💪", "Fleißig", "10 Aufgaben erledigt", false,
+			func(sc Score, _ extras, _ int) bool { return sc.ChoreCount >= 10 }),
+		badge("chores-50", "🏅", "Ausdauernd", "50 Aufgaben erledigt", false,
+			func(sc Score, _ extras, _ int) bool { return sc.ChoreCount >= 50 }),
+		badge("first-shop", "🛒", "Eingekauft", "Einen Einkauf erledigt", false,
+			func(sc Score, _ extras, _ int) bool { return sc.ShopCount >= 1 }),
+		badge("shop-5", "🥕", "Einkaufsheld", "5 Einkäufe erledigt", false,
+			func(sc Score, _ extras, _ int) bool { return sc.ShopCount >= 5 }),
+		badge("streak-3", "🔥", "3 Tage Serie", "An mehreren Tagen hintereinander aktiv", false,
+			func(sc Score, _ extras, _ int) bool { return sc.StreakDays >= 3 }),
+		badge("points-100", "⭐", "100 Punkte", "Insgesamt 100 Punkte gesammelt", false,
+			func(sc Score, _ extras, _ int) bool { return sc.TotalPoints >= 100 }),
+		badge("points-500", "🌟", "500 Punkte", "Insgesamt 500 Punkte gesammelt", false,
+			func(sc Score, _ extras, _ int) bool { return sc.TotalPoints >= 500 }),
+		badge("leader", "👑", "Spitzenreiter", "Aktuell die meisten Punkte", false,
+			func(sc Score, _ extras, _ int) bool { return sc.Rank == 1 && sc.TotalPoints > 0 }),
+		badge("week-leader", "🏆", "Woche gewonnen", "Diese Woche die meisten Punkte", false,
+			func(sc Score, _ extras, wl int) bool { return wl == sc.ID }),
+		badge("serie-7", "🔥", "Eine Woche dabei", "7 Tage in Folge vorbeigeschaut", false,
+			func(_ Score, x extras, _ int) bool { return x.bonusBeste >= 7 }),
+		badge("serie-14", "⚡", "Zwei Wochen dabei", "14 Tage in Folge vorbeigeschaut", false,
+			func(_ Score, x extras, _ int) bool { return x.bonusBeste >= 14 }),
+		badge("serie-30", "🌙", "Einen Monat dabei", "30 Tage in Folge vorbeigeschaut", false,
+			func(_ Score, x extras, _ int) bool { return x.bonusBeste >= 30 }),
+		badge("serie-100", "💎", "Hundert Tage", "100 Tage in Folge vorbeigeschaut", false,
+			func(_ Score, x extras, _ int) bool { return x.bonusBeste >= 100 }),
+		badge("aufgabe-10", "🎯", "Herausforderer", "10 Tagesaufgaben geschafft", false,
+			func(_ Score, x extras, _ int) bool { return x.aufgaben >= 10 }),
+		badge("fruehaufsteher", "🌅", "Frühaufsteher", "Vor 7 Uhr vorbeigeschaut", true,
+			func(_ Score, x extras, _ int) bool { return x.frueh }),
+		badge("post-5", "💌", "Brieffreund", "5 Nachrichten von Mama oder Papa gelesen", true,
+			func(_ Score, x extras, _ int) bool { return x.post >= 5 }),
+		badge("wunsch", "🎁", "Wunscherfüller", "Einen Wunsch erfüllt", true,
+			func(_ Score, x extras, _ int) bool { return x.wuensche >= 1 }),
+		badge("chores-100", "🚀", "Unaufhaltsam", "100 Aufgaben erledigt", true,
+			func(sc Score, _ extras, _ int) bool { return sc.ChoreCount >= 100 }),
+		badge("level-5", "🧙", "Experte", "Level 5 erreicht", true,
+			func(sc Score, _ extras, _ int) bool { return sc.Level >= 5 }),
 	}
-	if sc.ChoreCount >= 10 {
-		add("chores-10", "💪", "Fleißig", "10 Aufgaben erledigt")
-	}
-	if sc.ChoreCount >= 50 {
-		add("chores-50", "🏅", "Ausdauernd", "50 Aufgaben erledigt")
-	}
-	if sc.ShopCount >= 1 {
-		add("first-shop", "🛒", "Eingekauft", "Einen Einkauf erledigt")
-	}
-	if sc.ShopCount >= 5 {
-		add("shop-5", "🥕", "Einkaufsheld", "5 Einkäufe erledigt")
-	}
-	if sc.StreakDays >= 3 {
-		add("streak-3", "🔥", fmt.Sprintf("%d Tage Serie", sc.StreakDays),
-			"An mehreren Tagen hintereinander aktiv")
-	}
-	if sc.TotalPoints >= 100 {
-		add("points-100", "⭐", "100 Punkte", "Insgesamt 100 Punkte gesammelt")
-	}
-	if sc.TotalPoints >= 500 {
-		add("points-500", "🌟", "500 Punkte", "Insgesamt 500 Punkte gesammelt")
-	}
-	if sc.Rank == 1 && sc.TotalPoints > 0 {
-		add("leader", "👑", "Spitzenreiter", "Aktuell die meisten Punkte")
-	}
-	if weekLeader == sc.ID {
-		add("week-leader", "🏆", "Woche gewonnen", "Diese Woche die meisten Punkte")
+}
+
+func badgesFor(sc Score, x extras, weekLeader int) []Badge {
+	badges := []Badge{}
+	for _, d := range katalog() {
+		if !d.hat(sc, x, weekLeader) {
+			continue
+		}
+		b := d.Badge
+		if b.ID == "streak-3" {
+			b.Label = fmt.Sprintf("%d Tage Serie", sc.StreakDays)
+		}
+		badges = append(badges, b)
 	}
 	return badges
+}
+
+// ladeExtras liest die Zahlen für die Abzeichen aller Personen auf einmal.
+func (s *Service) ladeExtras() map[int]extras {
+	out := map[int]extras{}
+	je := func(query string, setze func(x *extras, n int)) {
+		rows, err := s.db.Query(query)
+		if err != nil {
+			log.Error().Err(err).Msg("Abzeichen-Zahlen konnten nicht gelesen werden")
+			return
+		}
+		defer rows.Close()
+		for rows.Next() {
+			var uid, n int
+			if rows.Scan(&uid, &n) == nil {
+				x := out[uid]
+				setze(&x, n)
+				out[uid] = x
+			}
+		}
+	}
+	je(`SELECT user_id, MAX(streak) FROM daily_bonus GROUP BY user_id`, func(x *extras, n int) { x.bonusBeste = n })
+	je(`SELECT user_id, COUNT(*) FROM daily_bonus WHERE joker = 0 AND hour BETWEEN 0 AND 6 GROUP BY user_id`,
+		func(x *extras, n int) { x.frueh = n > 0 })
+	je(`SELECT to_user, COUNT(*) FROM family_mail WHERE opened_at IS NOT NULL GROUP BY to_user`, func(x *extras, n int) { x.post = n })
+	je(`SELECT user_id, COUNT(*) FROM daily_quest GROUP BY user_id`, func(x *extras, n int) { x.aufgaben = n })
+	je(`SELECT to_user, COUNT(*) FROM point_transfers GROUP BY to_user`, func(x *extras, n int) { x.wuensche = n })
+	return out
+}
+
+// AlbumEintrag ist ein Abzeichen im Sammelalbum.
+type AlbumEintrag struct {
+	Badge
+	Earned bool `json:"earned"`
+}
+
+// Album liefert alle Abzeichen mit dem, was die angemeldete Person schon hat.
+// Geheime, die sie noch nicht hat, bleiben geheim: ohne Namen, ohne
+// Beschreibung.
+func (s *Service) Album(w http.ResponseWriter, r *http.Request) {
+	uid, _ := auth.GetUserID(r)
+	scores, err := s.Leaderboard()
+	if err != nil {
+		auth.HTTPError(w, http.StatusInternalServerError, "Server-Fehler")
+		return
+	}
+	hat := map[string]bool{}
+	for _, sc := range scores {
+		if sc.ID == uid {
+			for _, b := range sc.Badges {
+				hat[b.ID] = true
+			}
+		}
+	}
+	out := []AlbumEintrag{}
+	for _, d := range katalog() {
+		e := AlbumEintrag{Badge: d.Badge, Earned: hat[d.ID]}
+		if e.Secret && !e.Earned {
+			e.Label, e.Description, e.Emoji = "", "", ""
+		}
+		out = append(out, e)
+	}
+	auth.WriteJSON(w, out)
 }
 
 // ------------------------------------------------------------------ Handlers

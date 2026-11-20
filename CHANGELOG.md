@@ -12,6 +12,62 @@ Deshalb gibt es hier **keine 1.4.5**. Sie stand eine Weile in dieser Datei,
 wurde aber nie veröffentlicht: Auf GitHub steht v1.4.4, und der Pi läuft
 darauf. Was unter 1.4.5 gesammelt war, ist in 1.5.0 aufgegangen.
 
+## [2.6.0] — 2026-11-14
+
+Mehr Anreiz, jeden Tag vorbeizuschauen: ein Tagesbonus, der mit der Serie
+wächst, Meilensteine, ein Sammelalbum mit Kalender und geheimen Abzeichen, eine
+Tagesaufgabe aus echter Arbeit und Post von Mama und Papa.
+
+Bestehende Installationen übernehmen alles ohne Zutun: Die neuen Tabellen und
+Spalten legt das Backend beim ersten Start selbst an. **Tagesbonus, Serienschutz
+und Tagesaufgabe sind aus, bis die Eltern sie unter *Verwaltung → Bereiche*
+einschalten.** Sammelalbum und Post gibt es sofort.
+
+### Hinzugefügt
+
+- **Tagesbonus für Kinder.** Wer das Dashboard jeden Tag öffnet, bekommt
+  Punkte: am ersten Tag 1, am zweiten Tag in Folge 2, am dritten 3 und so
+  weiter. Fehlt ein Tag, beginnt die Serie wieder bei 1. Abgeholt wird von
+  selbst beim Öffnen (auch wenn die App wieder in den Vordergrund kommt), mit
+  Konfetti und dem Hinweis, was es morgen gibt; im Punkteband steht
+  „🔥 Tag 4 · morgen +5". Gezählt wird nach der Uhr des Servers, nicht der des
+  Geräts. Nur für Kinder und nur persönlich angemeldet, nicht am Wandgerät.
+  Einschalten unter *Verwaltung → Bereiche* (standardmäßig **aus**); dort lässt
+  sich auch eine Obergrenze pro Tag setzen (ohne Grenze, 5, 10, 20, 30). Die
+  Punkte zählen wie verdiente Punkte, also auch für Level, Rangliste und
+  Familienziel.
+
+- **Meilensteine.** Bei 7, 14, 30, 100, 200 und 365 Tagen in Folge gibt es
+  einmal einen Extra-Bonus (einstellbar: kein Extra, 5, 10, 20, 50 Punkte;
+  Vorgabe 10). Im Punkteband steht, wie viele Tage es noch sind.
+- **Serienschutz** (Schalter, standardmäßig aus): Ein Joker pro Woche verzeiht
+  einen einzelnen verpassten Tag. Der gerettete Tag bringt keine Punkte, steht
+  aber mit 🛡️ im Kalender, und die Serie läuft weiter.
+- **Sammelalbum** (Menü → Ich): die Serie mit Kalender (🔥 je Tag), längster
+  Serie und nächstem Meilenstein, darunter alle Abzeichen — gesammelte in
+  Farbe, fehlende als Umriss, geheime als Fragezeichen.
+- **Zehn neue Abzeichen**, fünf davon geheim (Frühaufsteher, Brieffreund,
+  Wunscherfüller, Unaufhaltsam, Experte).
+- **Tagesaufgabe** (Schalter, standardmäßig aus): jeden Tag eine kleine
+  Herausforderung aus echter Arbeit, etwa „Erledige heute zwei Aufgaben" oder
+  „Erledige eine Aufgabe vor 12 Uhr", für alle Kinder dieselbe. Wer sie
+  schafft, bekommt einen Bonus (3, 5, 10, 20 Punkte; Vorgabe 5). Erledigungen,
+  die noch auf die Eltern warten, zählen nicht.
+- **Post von Mama und Papa** (Verwaltung → Familie): eine kurze Nachricht,
+  die erst aufgeht, wenn das Kind das Dashboard das nächste Mal öffnet — als
+  Umschlag zum Antippen, auf Wunsch mit ein paar Punkten. Eine ungeöffnete
+  Nachricht lässt sich zurücknehmen.
+
+### Intern
+
+- Neue Tabellen `daily_bonus`, `daily_quest` und `family_mail`, Spalten
+  `daily_bonus.joker` und `daily_bonus.hour`. Neue Schalter `modul.tagesbonus`,
+  `bonus.max`, `bonus.meilenstein`, `bonus.joker`, `modul.tagesaufgabe` und
+  `bonus.aufgabe`. Neue Wege unter `/api/bonus`, `/api/post` (nur Personen) und
+  `GET /api/badges`.
+- Die Abzeichen stehen in einem Katalog; das Übersetzungs-Prüfskript kennt die
+  neue Schreibweise.
+
 ## [2.5.0] — 2026-10-26
 
 Ein Rezeptbuch, das aus einem Link entsteht, Neuigkeiten aus Feeds, eine

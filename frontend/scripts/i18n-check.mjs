@@ -71,6 +71,11 @@ if (existsSync(backend)) {
     }
     // Kurze Meldungen aus Hilfsfunktionen (z. B. warum ein Gerät nicht antwortet)
     for (const m of src.matchAll(/return "([A-ZÄÖÜ][^"%]* [^"%]*)"/g)) server.set(m[1], kurz);
+    // Abzeichen im Katalog: badge("id", "emoji", "Label", "Beschreibung", geheim, …)
+    for (const m of src.matchAll(/\bbadge\("[^"]+",\s*"[^"]+",\s*"([^"]+)",\s*"([^"]+)",/g)) {
+      server.set(m[1], kurz);
+      server.set(m[2], kurz);
+    }
     // Abzeichen: add("id", "emoji", "Label", "Beschreibung")
     for (const m of src.matchAll(/\badd\("[^"]+",\s*"[^"]+",\s*"([^"]+)",\s*"([^"]+)"\)/g)) {
       server.set(m[1], kurz);

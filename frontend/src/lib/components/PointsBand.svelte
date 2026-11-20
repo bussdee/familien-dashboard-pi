@@ -2,6 +2,7 @@
   import { t, tServer } from '$lib/i18n';
   import { Flame, Gift, Trophy } from 'lucide-svelte';
   import type { Score } from '$lib/types';
+  import { tagesbonus } from '$lib/stores/tagesbonus.svelte';
 
   let { me, total = 0 }: { me: Score | null; total?: number } = $props();
 
@@ -48,7 +49,18 @@
       </span>
     </span>
 
-    {#if me.streak_days >= 2}
+    <!-- Der Tagesbonus eines Kindes: Wie weit die Serie ist, und was morgen
+         wartet. Das „morgen" ist der eigentliche Anreiz. -->
+    {#if tagesbonus.stand?.eligible && tagesbonus.stand.claimed_today}
+      <span
+        class="flex shrink-0 items-center gap-1.5 rounded-full bg-amber-500/15 px-2.5 py-1 text-xs font-medium text-amber-600 dark:text-amber-400"
+        title={t('Tagesbonus: {0} Tage in Folge, morgen gibt es {1} Punkte', [tagesbonus.stand.streak, tagesbonus.stand.tomorrow]) +
+          (tagesbonus.stand.next_milestone ? ' · ' + t('noch {0} Tage bis 🏅 {1}', [tagesbonus.stand.days_to_milestone ?? 0, tagesbonus.stand.next_milestone]) : '')}
+      >
+        🔥 <span class="hidden sm:inline">{t('Tag {0} · morgen +{1}', [tagesbonus.stand.streak, tagesbonus.stand.tomorrow])}</span>
+        <span class="sm:hidden">{tagesbonus.stand.streak}</span>
+      </span>
+    {:else if me.streak_days >= 2}
       <span class="flex shrink-0 items-center gap-1.5 text-xs text-amber-500 dark:text-amber-400">
         <Flame class="h-3.5 w-3.5" />
         <span class="hidden sm:inline">{t('{0} Tage in Folge', [me.streak_days])}</span>

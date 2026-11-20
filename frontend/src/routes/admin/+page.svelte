@@ -20,6 +20,7 @@
   import { confirmAction } from '$lib/stores/confirm.svelte';
   import AdminBereiche from '$lib/components/admin/AdminBereiche.svelte';
   import AdminSchoner from '$lib/components/admin/AdminSchoner.svelte';
+  import AdminPost from '$lib/components/admin/AdminPost.svelte';
 
   // ---- Die Bereiche der Verwaltung ----
   // Früher eine einzige lange Seite mit acht Kästen untereinander. Jetzt vier
@@ -738,6 +739,9 @@
       </ul>
     {/if}
   </section>
+  {/if}
+  {#if bereich === 'familie'}
+  <AdminPost />
   {/if}
 
   {#if bereich === 'familie'}
